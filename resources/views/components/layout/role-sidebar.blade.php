@@ -115,15 +115,9 @@
         {{-- Logo & Toggle --}}
         <div class="flex items-center justify-between p-4 border-b border-slate-800/50">
             <div class="flex items-center gap-3 w-full" x-bind:class="!expanded && 'justify-center w-full'">
-                {{-- Logo: light/dark variants --}}
-                <img src="{{ asset('/assets/images/scmai.png') }}" class="w-fit block dark:hidden" alt="Logo light"/>
-                <img src="{{ asset('/assets/images/scmai_light.png') }}" class="w-fit hidden dark:block" alt="Logo dark"/>
-
-                {{--                <span x-show="expanded"--}}
-                {{--                      x-transition--}}
-                {{--                      class="text-lg font-bold text-white tracking-tight">--}}
-                {{--                    {{ config('app.name') }}--}}
-                {{--                </span>--}}
+                {{-- Temporary 48Source wordmark until the commercial identity is finalized. --}}
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-sm font-extrabold tracking-tight text-lime-300" aria-hidden="true">48</div>
+                <span x-show="expanded" class="text-lg font-bold tracking-tight text-slate-100 whitespace-nowrap">{{ config('app.name', '48Source') }}</span>
             </div>
             <button x-on:click="expanded = !expanded"
                     class="hidden lg:block p-2 rounded-lg hover:bg-slate-800/50 transition">
