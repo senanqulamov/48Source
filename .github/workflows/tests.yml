@@ -61,11 +61,13 @@ jobs:
       - name: Run Migrations
         run: php artisan migrate:fresh --step --force --no-interaction --seed
 
+      - name: Feature Tests
+        id: tests
+        run: ./vendor/bin/pest --ci --parallel
+
       - name: Pint
         run: ./vendor/bin/pint --test
 
       - name: PhpStan
+        if: always() && steps.tests.outcome != 'cancelled'
         run: ./vendor/bin/phpstan --configuration="phpstan.neon"
-
-      - name: Feature Tests
-        run: ./vendor/bin/pest --ci --parallel
