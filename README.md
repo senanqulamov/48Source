@@ -19,14 +19,14 @@ Some modules have partial test coverage; features and isolation must be verified
 
 ## Technology
 
-- PHP 8.2+ and Laravel 12
+- PHP 8.4 and Laravel 12
 - Livewire 3 and TallStackUI 2
 - Vite and Tailwind
 - Pest tests, Laravel Pint and Larastan
 
 ## Development setup
 
-Prerequisites: PHP, Composer, Node.js, and a configured database.
+Prerequisites: PHP 8.4, Composer, Node.js, and a configured database. The checked-in dependency lockfile currently requires PHP 8.4.
 
 ```bash
 composer install
