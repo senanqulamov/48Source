@@ -15,11 +15,16 @@ return new class extends Migration
         });
 
         // Migrate existing data: copy product names from products table
-        DB::statement('
-            UPDATE request_items
-            INNER JOIN products ON request_items.product_id = products.id
-            SET request_items.product_name = products.name
-        ');
+        // A correlated subquery works with SQLite, MySQL and PostgreSQL.
+        // Keep this as an UPDATE so existing request items retain their IDs.
+        DB::table('request_items')
+            ->whereNotNull('product_id')
+            ->update([
+                'product_name' => DB::table('products')
+                    ->select('name')
+                    ->whereColumn('products.id', 'request_items.product_id')
+                    ->limit(1),
+            ]);
 
         // Make product_name required now that data is migrated
         Schema::table('request_items', function (Blueprint $table) {
