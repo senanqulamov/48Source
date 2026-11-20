@@ -1,9 +1,16 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "senanqulamov/dpanel",
+    "name": "senanqulamov/48source",
     "type": "project",
-    "description": "SAP ariba supplier system",
-    "keywords": ["laravel", "framework", "tallstackui"],
+    "description": "48Source procurement and supplier workflow platform",
+    "keywords": [
+        "procurement",
+        "sourcing",
+        "rfq",
+        "supplier-management",
+        "laravel",
+        "livewire"
+    ],
     "license": "MIT",
     "authors": [
         {

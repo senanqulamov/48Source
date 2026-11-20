@@ -3,13 +3,10 @@ name: Tests
 on:
   push:
     branches:
-      - 2.x
-    paths-ignore:
-      - '.github/**'
-      - 'README.md'
+      - main
   pull_request:
     branches:
-      - 2.x
+      - main
   workflow_dispatch:
 
 jobs:
@@ -20,10 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        php: [8.2,8.3]
-        laravel: ['11.*', '12.*']
+        php: ['8.2', '8.3']
 
-    name: OS:${{ matrix.os }} / PHP:${{ matrix.php }} / Laravel:${{ matrix.laravel }}
+    name: OS:${{ matrix.os }} / PHP:${{ matrix.php }}
 
     steps:
       - name: Checkout
@@ -42,16 +38,12 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - name: Install Composer
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-progress --ansi --no-update
-          composer update --no-interaction --no-progress --ansi
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --ansi
 
-      - name: Install Node Dependencies
+      - name: Install Node dependencies
         run: |
-          rm -rf node_modules
-          rm -f package-lock.json
-          npm install
+          npm ci
           npm run build
 
       - name: Copy .env

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,6 +17,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('48Source demo seeding is restricted to local and testing environments.');
+        }
+
         $this->command->info('🌱 Starting comprehensive database seeding...');
 
         // STEP 1: Ensure core roles and permissions exist before any users are created
@@ -28,10 +33,10 @@ class DatabaseSeeder extends Seeder
 
         // Create main admin (outside the 100-user pool)
         $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@48source.test'],
             [
                 'name' => 'Admin User',
-                'password' => 'password',
+                'password' => Str::random(48),
                 'is_buyer' => true,
                 'is_seller' => true,
                 'is_supplier' => true,

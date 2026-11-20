@@ -27,7 +27,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->command->info('✅ Assigned permissions to roles');
 
         // Create Admin User
-            $this->createAdminUser($roles);
+            if (app()->environment(['local', 'testing']) && filter_var(env('SEED_DEMO_ADMIN', false), FILTER_VALIDATE_BOOLEAN)) {
+                $this->createAdminUser($roles);
+            }
     }
 
     private function createPermissions(): array
@@ -217,11 +219,16 @@ class RolesAndPermissionsSeeder extends Seeder
 
     private function createAdminUser(array $roles): void
     {
+        $password = (string) env('DEMO_ADMIN_PASSWORD', '');
+        if (strlen($password) < 16) {
+            throw new \RuntimeException('Set DEMO_ADMIN_PASSWORD (at least 16 characters) for local demo admin provisioning.');
+        }
+
         $admin = User::firstOrCreate(
-            ['email' => 'admin@dpanel.test'],
+            ['email' => 'admin@48source.test'],
             [
                 'name' => 'System Administrator',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($password),
                 'email_verified_at' => now(),
                 'is_admin' => true,
                 'is_buyer' => true,
@@ -230,13 +237,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 'role' => 'admin',
                 'is_active' => true,
                 // Complete profile for admin
-                'company_name' => 'DPanel Administration',
+                'company_name' => '48Source Demo Administration',
                 'tax_id' => 'TAX-ADMIN001',
                 'business_type' => 'Corporation',
                 'business_description' => 'System administration and management',
                 'phone' => '+1-555-0100',
                 'mobile' => '+1-555-0101',
-                'website' => 'https://dpanel.test',
+                'website' => 'https://48source.test',
                 'address_line1' => '123 Admin Street',
                 'address_line2' => 'Suite 100',
                 'city' => 'Tech City',
@@ -255,6 +262,6 @@ class RolesAndPermissionsSeeder extends Seeder
             $admin->roles()->attach($roles['admin']);
         }
 
-        $this->command->info('✅ Admin user: admin@dpanel.test / password');
+        $this->command->info('✅ Local demo admin provisioned: admin@48source.test');
     }
 }

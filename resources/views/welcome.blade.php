@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'DPanel') }} - Modern Procurement Platform</title>
+    <title>{{ config('app.name', '48Source') }} - Modern Procurement Platform</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700|inter:300,400,500,600,700&display=swap" rel="stylesheet"/>
     <style>
@@ -1114,7 +1114,7 @@
         <div class="cta-content reveal">
             <h2 class="cta-title">Ready to Transform Your Procurement?</h2>
             <p class="cta-description">
-                Join thousands of forward-thinking companies leveraging DPanel
+                Join thousands of forward-thinking companies leveraging 48Source
                 to achieve operational excellence and drive sustainable growth.
             </p>
             <div class="cta-actions">
@@ -1142,7 +1142,7 @@
     <div class="container">
         <div class="footer-content">
             <div class="footer-text">
-                © {{ date('Y') }} {{ config('app.name', 'DPanel') }}. All rights reserved.
+                © {{ date('Y') }} {{ config('app.name', '48Source') }}. All rights reserved.
             </div>
             <div class="footer-links">
                 <a href="#" class="footer-link">Privacy Policy</a>
