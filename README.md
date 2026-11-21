@@ -40,6 +40,8 @@ php artisan serve
 
 Configure `.env` for your database and mail service before starting. The example defaults to SQLite for development.
 
+**Local admin login:** After migration and roles seeding, run `php artisan 48source:admin`. It prompts securely for a password (at least 16 characters) and creates or resets `admin@48source.test` in your local database. Use `--email=you@example.com` to choose another email. This command refuses to run outside `local`/`testing` and does not print or commit the password. If the admin role is absent, run `php artisan db:seed --class=RolesAndPermissionsSeeder` first. Never use this procedure for production provisioning.
+
 **Seeding policy:** `php artisan db:seed` generates synthetic demo records and is restricted to `local` and `testing` environments. Never seed the demo dataset into a production database. `RolesAndPermissionsSeeder` provisions roles and permissions; a demo administrator is created only when `SEED_DEMO_ADMIN=true` in a local/test environment, and requires `DEMO_ADMIN_PASSWORD`. A fresh production admin should be provisioned by an explicit, separately reviewed administrative process.
 
 ## Checks
