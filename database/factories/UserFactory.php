@@ -70,15 +70,9 @@ class UserFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function ($user) {
-            // Support multi-role users via `roles_to_attach` (array of role names).
-            $roleNames = [];
-
-            if (!empty($user->roles_to_attach) && is_array($user->roles_to_attach)) {
-                $roleNames = $user->roles_to_attach;
-            } elseif (!empty($user->role)) {
-                // Backward compatibility: single role column
-                $roleNames = [$user->role];
-            }
+            // The persisted role column drives the default pivot assignment.
+            // Additional roles are attached by roles() after creation, never inserted into users.
+            $roleNames = $user->role ? [$user->role] : [];
 
             // Ensure unique + normalized
             $roleNames = collect($roleNames)
@@ -121,10 +115,21 @@ class UserFactory extends Factory
      */
     public function roles(array $roles): static
     {
-        return $this->state(fn (array $attributes) => [
-            // Stored as a transient attribute; used in configure()->afterCreating()
-            'roles_to_attach' => $roles,
-        ]);
+        return $this->afterCreating(function ($user) use ($roles) {
+            foreach (collect($roles)->filter()->map(fn ($role) => strtolower((string) $role))->unique() as $roleName) {
+                $role = Role::where('name', $roleName)->first();
+
+                if (! $role) {
+                    throw new \RuntimeException("UserFactory: Role '{$roleName}' not found. Seed roles first.");
+                }
+
+                $user->roles()->syncWithoutDetaching([$role->id]);
+
+                if ($roleName === 'admin' && ! $user->is_admin) {
+                    $user->forceFill(['is_admin' => true])->saveQuietly();
+                }
+            }
+        });
     }
 
     /**
