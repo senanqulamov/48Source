@@ -8,7 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -28,29 +28,26 @@ class DatabaseSeeder extends Seeder
         $this->call(RolesAndPermissionsSeeder::class);
 
         // STEP 2: Create users with proper distribution
-        // 50 suppliers, 40 buyers, 10 sellers (100 total + 1 admin)
+        // 50 suppliers, 40 buyers, 10 sellers, 2 workers, and 1 admin.
         $this->command->info('👥 Step 2: Creating users...');
 
-        // Create main admin (outside the 100-user pool)
-        $admin = User::firstOrCreate(
+        // Create a predictable demo administrator only in local/testing.
+        $admin = User::updateOrCreate(
             ['email' => 'admin@48source.test'],
             [
-                'name' => 'Admin User',
-                'password' => Str::random(48),
+                'name' => '48Source Administrator',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'is_admin' => true,
                 'is_buyer' => true,
                 'is_seller' => true,
                 'is_supplier' => true,
                 'role' => 'admin',
-                'is_admin' => true,
+                'is_active' => true,
             ]
         );
-
-        if ($admin->wasRecentlyCreated || ! $admin->roles()->where('name', 'admin')->exists()) {
-            $adminRole = \App\Models\Role::where('name', 'admin')->first();
-            if ($adminRole && ! $admin->roles()->where('roles.id', $adminRole->id)->exists()) {
-                $admin->roles()->attach($adminRole->id);
-            }
-        }
+        $adminRole = \App\Models\Role::where('name', 'admin')->firstOrFail();
+        $admin->roles()->syncWithoutDetaching([$adminRole->id]);
 
         // Create exactly 10 sellers
         $this->command->info('  → Creating 10 sellers...');
@@ -87,6 +84,25 @@ class DatabaseSeeder extends Seeder
             $buyers->push($buyer);
         }
         $this->command->info("  ✓ Created {$buyers->count()} buyers");
+
+        // Create one login for each worker role, linked to its parent account.
+        $marketWorker = User::factory()->marketWorker()->create([
+            'name' => 'Demo Market Worker',
+            'email' => 'market_worker@48source.test',
+            'password' => Hash::make('password'),
+            'seller_id' => $sellers->first()->id,
+        ]);
+        $supplierWorker = User::factory()->create([
+            'name' => 'Demo Supplier Worker',
+            'email' => 'supplier_worker@48source.test',
+            'password' => Hash::make('password'),
+            'role' => 'supplier_worker',
+            'supplier_id' => $suppliers->first()->id,
+            'is_buyer' => false,
+            'is_seller' => false,
+            'is_supplier' => false,
+            'is_active' => true,
+        ]);
 
         // STEP 3: Create markets - each seller gets exactly 10 markets
         $this->command->info('🏪 Step 3: Creating markets (10 per seller = 100 total)...');
@@ -171,7 +187,7 @@ class DatabaseSeeder extends Seeder
 
         // STEP 6: Create logs with proper user associations
         $this->command->info('📝 Step 6: Creating activity logs...');
-        $allUsers = collect([$admin])->merge($sellers)->merge($suppliers)->merge($buyers);
+        $allUsers = collect([$admin, $marketWorker, $supplierWorker])->merge($sellers)->merge($suppliers)->merge($buyers);
         for ($i = 0; $i < 300; $i++) {
             Log::factory()->create([
                 'user_id' => $allUsers->random()->id,
@@ -198,6 +214,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info("    - Sellers: {$sellers->count()}");
         $this->command->info("    - Suppliers: {$suppliers->count()}");
         $this->command->info("    - Buyers: {$buyers->count()}");
+        $this->command->info("    - Workers: 2 (market and supplier)");
         $this->command->info("  • Markets: {$marketCount}");
         $this->command->info("  • Products: {$productCount}");
         $this->command->info("  • Orders: {$orderCountFinal}");
@@ -211,8 +228,19 @@ class DatabaseSeeder extends Seeder
             $this->command->info("  • All users have proper role assignments ✓");
         }
 
-        if ($nonAdminUsers !== 100) {
-            $this->command->warn("⚠️  Expected 100 non-admin users, got {$nonAdminUsers}");
+        if ($nonAdminUsers !== 102) {
+            $this->command->warn("⚠️  Expected 102 non-admin users, got {$nonAdminUsers}");
+        }
+
+        // Fail CI/fresh installs if a seeded account cannot use the documented password.
+        $demoUsers = User::whereIn('role', ['admin', 'buyer', 'seller', 'supplier', 'market_worker', 'supplier_worker'])->get();
+        foreach ($demoUsers as $demoUser) {
+            if (! Hash::check('password', $demoUser->password)) {
+                throw new \RuntimeException("Demo user {$demoUser->email} does not have the expected local password.");
+            }
+        }
+        if ($usersWithoutRoles > 0 || $nonAdminUsers !== 102) {
+            throw new \RuntimeException('Demo user seeding did not create the expected accounts and role assignments.');
         }
 
         $this->command->info("\n🎉 Database seeding completed successfully!");
