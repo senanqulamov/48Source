@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark" x-data="tallstackui_darkTheme()">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ config('source48.redesign_enabled') ? '' : 'dark' }}" x-data="tallstackui_darkTheme()">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,11 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
+    @if(config('source48.redesign_enabled'))
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @endif
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet"/>
 
@@ -57,6 +62,9 @@
     }
 @endphp
 
+@if(config('source48.redesign_enabled'))
+    <x-layout.source-shell :role="$currentRole">{{ $slot }}</x-layout.source-shell>
+@else
 <div class="flex min-h-screen bg-slate-950" x-data="{ sidebarExpanded: $persist(true).as('sidebar-expanded') }">
     {{-- Sidebar --}}
     <x-layout.role-sidebar :role="$currentRole"/>
@@ -150,6 +158,7 @@
         </main>
     </div>
 </div>
+@endif
 
 {{-- Global Search --}}
 @auth
