@@ -82,8 +82,37 @@ class Show extends Component
             && ($this->request->deadline === null || $this->request->deadline->isFuture());
     }
 
+
+    private function authorizeRfqDecision(): void
+    {
+        $actor = Auth::user();
+        abort_unless(
+            $actor && $actor->can('view_rfqs')
+                && ($actor->isAdmin() || ($actor->isBuyer() && (int) $this->request->buyer_id === (int) $actor->id)),
+            403
+        );
+    }
+
     public function updatedStatusValue($value): void
     {
+        // Only an administrator can alter the RFQ status from the legacy detail form.
+        // Awards are never a direct status write; they create an auditable purchase order.
+        $actor = Auth::user();
+        abort_unless($actor && $actor->isAdmin() && $actor->can('view_rfqs'), 403);
+        $this->request->refresh();
+        $allowed = [
+            'draft' => ['open', 'cancelled'],
+            'open' => ['closed', 'cancelled'],
+            'closed' => [],
+            'awarded' => [],
+            'cancelled' => [],
+        ];
+        if ($value !== $this->request->status &&
+            !in_array($value, $allowed[$this->request->status] ?? [], true)) {
+            $this->statusValue = $this->request->status;
+            $this->addError('statusValue', __('Invalid RFQ status transition. Use the audited award flow to select a supplier.'));
+            return;
+        }
         if (!$value || !array_key_exists($value, $this->availableStatuses)) {
             $this->error(__('Invalid status selected.'));
             $this->statusValue = $this->request->status; // Reset to current status
@@ -121,6 +150,7 @@ class Show extends Component
 
     public function updatedRequestTypeValue($value): void
     {
+        $this->request->refresh();
         $user = Auth::user();
         if (!$user || !$user->is_admin) {
             $this->error(__('Only admins can change request type.'));
@@ -154,6 +184,7 @@ class Show extends Component
 
     public function updatedRequiresFieldAssessmentValue($value): void
     {
+        $this->request->refresh();
         $user = Auth::user();
         if (!$user || !$user->is_admin) {
             $this->error(__('Only admins can change field assessment requirement.'));
@@ -191,6 +222,7 @@ class Show extends Component
 
     public function updatedFieldEvaluatorId($value): void
     {
+        $this->request->refresh();
         $user = Auth::user();
         if (!$user || !$user->is_admin) {
             $this->error(__('Only admins can assign field evaluators.'));
@@ -234,6 +266,8 @@ class Show extends Component
      */
     public function confirmAcceptQuote(int $quoteId): void
     {
+        $this->authorizeRfqDecision();
+        abort_unless($this->request->fresh()?->status === 'closed', 403);
         $quote = \App\Models\Quote::where('id', $quoteId)
             ->where('request_id', $this->request->id)
             ->first();
@@ -257,93 +291,13 @@ class Show extends Component
      */
     public function acceptQuote($params): void
     {
-        $quoteId = is_array($params) && isset($params['quoteId']) ? (int)$params['quoteId'] : (int)$params;
-        $quote = \App\Models\Quote::where('id', $quoteId)
-            ->where('request_id', $this->request->id)
-            ->first();
-
-        if (!$quote) {
-            $this->error(__('Quote not found.'));
-            return;
-        }
-
-        $oldStatus = $quote->status;
-
-        // Update quote status to accepted
-        $quote->status = 'accepted';
-        $quote->save();
-
-        // Optionally, reject all other quotes for this RFQ
-        \App\Models\Quote::where('request_id', $this->request->id)
-            ->where('id', '!=', $quoteId)
-            ->where('status', '!=', 'rejected')
-            ->update(['status' => 'rejected']);
-
-        // Update RFQ status to awarded
-        $this->request->status = 'awarded';
-        $this->request->save();
-        $this->statusValue = 'awarded';
-
-        // Send notification to supplier
-        if ($quote->supplier) {
-            $quote->supplier->notify(new \App\Notifications\QuoteStatusChanged($quote, $oldStatus, 'accepted'));
-        }
-
-        // Notify other suppliers their quotes were rejected
-        $otherQuotes = \App\Models\Quote::where('request_id', $this->request->id)
-            ->where('id', '!=', $quoteId)
-            ->with('supplier')
-            ->get();
-
-        foreach ($otherQuotes as $otherQuote) {
-            if ($otherQuote->supplier) {
-                $otherQuote->supplier->notify(new \App\Notifications\QuoteStatusChanged($otherQuote, $otherQuote->status, 'rejected'));
-            }
-        }
-
-        $this->logUpdate(
-            \App\Models\Quote::class,
-            $quote->id,
-            [
-                'status' => [
-                    'old' => $oldStatus,
-                    'new' => 'accepted',
-                ],
-                'action' => 'Quote accepted by buyer',
-            ]
-        );
-
-        // Record workflow event
-        $user = Auth::user();
-        try {
-            \App\Models\WorkflowEvent::create([
-                'eventable_type' => get_class($this->request),
-                'eventable_id' => $this->request->id,
-                'user_id' => $user?->id,
-                'event_type' => 'quote_accepted',
-                'from_state' => null,
-                'to_state' => null,
-                'description' => 'User ' . ($user?->name ?? 'system') . ' accepted quote #' . $quote->id . ' from supplier ' . ($quote->supplier?->name ?? 'unknown'),
-                'occurred_at' => now(),
-                'metadata' => [
-                    'user_id' => $user?->id,
-                    'user_name' => $user?->name,
-                    'quote_id' => $quote->id,
-                    'supplier_id' => $quote->supplier?->id ?? null,
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            $this->logException($e);
-        }
-
-        // Refresh the request
-        $this->request->refresh()->load([
-            'items',
-            'quotes.supplier',
-            'quotes.items.requestItem',
-        ]);
-
-        $this->success(__('Quote accepted successfully. Other quotes have been rejected.'));
+        $this->authorizeRfqDecision();
+        $quoteId = is_array($params) && isset($params['quoteId']) ? (int) $params['quoteId'] : (int) $params;
+        // All checks, concurrency locks, quote line snapshots, justification and
+        // purchase order creation live in one audited service. Do not duplicate them.
+        $order = app(\\App\\Services\\Procurement\\AwardAndPurchaseOrderService::class)
+            ->award($this->request, $quoteId, Auth::user());
+        $this->redirectRoute('procurement.orders.show', ['purchaseOrder' => $order->id], navigate: true);
     }
 
     /**
@@ -351,6 +305,8 @@ class Show extends Component
      */
     public function confirmRejectQuote(int $quoteId): void
     {
+        $this->authorizeRfqDecision();
+        abort_unless($this->request->fresh()?->status === 'closed', 403);
         $quote = \App\Models\Quote::where('id', $quoteId)
             ->where('request_id', $this->request->id)
             ->first();
@@ -374,6 +330,8 @@ class Show extends Component
      */
     public function rejectQuote($params): void
     {
+        $this->authorizeRfqDecision();
+        abort_unless($this->request->fresh()?->status === 'closed', 403);
         $quoteId = is_array($params) && isset($params['quoteId']) ? (int)$params['quoteId'] : (int)$params;
         $quote = \App\Models\Quote::where('id', $quoteId)
             ->where('request_id', $this->request->id)
@@ -384,6 +342,7 @@ class Show extends Component
             return;
         }
 
+        abort_unless($quote->status === 'submitted', 403);
         $oldStatus = $quote->status;
 
         // Update quote status to rejected
