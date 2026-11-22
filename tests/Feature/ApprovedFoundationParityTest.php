@@ -31,3 +31,16 @@ it('keeps the global search inside the approved design and avoids navigation lis
     expect($search)->not->toContain('window.addEventListener', 'document.addEventListener');
     expect($shell)->toContain('open-search', '48source-sidebar-collapsed');
 });
+
+it('keeps admin and buyer RFQ lists on one shared server-driven table', function () {
+    $table = file_get_contents(resource_path('views/components/source/rfq-table.blade.php'));
+    $admin = file_get_contents(app_path('Livewire/Rfq/Index.php'));
+    $buyer = file_get_contents(app_path('Livewire/Buyer/Rfq/Index.php'));
+
+    expect($table)->toContain('wire:click="changeSort', 'wire:model.live="typeFilter"',
+        'clearTableFilters', 'source-column-chooser', 'supplier_invitations_count');
+    expect($admin)->toContain("changeSort(string \$column)", "updatedBuyerFilter(): void",
+        "'buyer_id'", "whereIn('id', Request::query()->select('buyer_id'))");
+    expect($buyer)->toContain("where('buyer_id', auth()->id())",
+        "changeSort(string \$column)", "updatedTypeFilter(): void");
+});

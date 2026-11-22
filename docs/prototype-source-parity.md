@@ -31,3 +31,11 @@ Do not merge this batch as evidence of pixel-perfect completion.
 - Replaced slate-coloured global search overlay with approved modal, keyboard navigation, source-aligned result rows, and `wire:navigate` links
 - Removed Alpine `window.addEventListener` and `document.addEventListener` handlers from search initialization to prevent listener accumulation during SPA navigation
 - Added prototype-matching sidebar collapse toggle with local device preference
+
+## Appendix C implementation: shared RFQ lists (new batch)
+
+- Both administrator and buyer lists use the same table component and now display request reference, title, buyer, type, status, deadline, item count, submitted quotation/invitation count, created date and action.
+- Server-side status/type/buyer filtering, restricted sortable columns, search including reference and buyer, 10/25/50 pagination, filter reset; buyer records stay restricted to `buyer_id = auth()->id()`.
+- Column show/hide is a display-only preference; core columns remain locked.
+- Deferred from this batch: bulk selection/actions, export formats, independent category association (the Request model has no category column), tooltip keyboard regression, and pixel-by-pixel visual tests.
+- Source mapping: Appendix B.7 and Appendix C of `Pasted text(3).txt`.

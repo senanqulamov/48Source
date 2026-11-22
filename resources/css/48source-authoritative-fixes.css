@@ -59,3 +59,29 @@ html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
 .source-search-result-text small {font-size:12px;color:var(--text-2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .source-search-footer {font-size:11.5px;color:var(--text-3)}
 @media(max-width:640px){.source-search-footer {gap:12px;font-size:10.5px}}
+
+/* Shared RFQ index: reference table controls, reused for admin and buyer. */
+.source-ui .source-rfq-table .dt-tools {justify-content:flex-end;flex-wrap:wrap}
+.source-ui .source-rfq-table .seg {max-width:100%;overflow-x:auto}
+.source-ui .source-rfq-table .source-filter {min-width:0}
+.source-ui .source-rfq-table select.fbtn {appearance:none;padding:0 28px 0 12px;background-color:var(--surface);border:1px dashed var(--line-2);color:var(--text-2);min-width:115px}
+.source-ui .source-rfq-table .source-page-size {width:70px;min-width:70px}
+.source-ui .source-column-chooser {position:relative}
+.source-ui .source-columns-pop {position:absolute;top:calc(100% + 8px);right:0;min-width:220px;z-index:55}
+.source-ui .source-columns-pop .pop-i {cursor:pointer}
+.source-ui .source-columns-pop .pop-i:has(input:disabled) {opacity:.75}
+.source-ui .source-rfq-grid .num {text-align:right}
+.source-ui .source-rfq-grid .t2 {max-width:36ch}
+.source-ui .source-rfq-grid th button svg {color:var(--primary)}
+.source-ui .source-rfq-loading {opacity:.55;transition:opacity .15s}
+@media(max-width:900px) {
+ .source-ui .source-rfq-grid th:nth-child(3),.source-ui .source-rfq-grid td:nth-child(3),
+ .source-ui .source-rfq-grid th:nth-child(4),.source-ui .source-rfq-grid td:nth-child(4),
+ .source-ui .source-rfq-grid th:nth-child(7),.source-ui .source-rfq-grid td:nth-child(7),
+ .source-ui .source-rfq-grid th:nth-child(9),.source-ui .source-rfq-grid td:nth-child(9) {display:none}
+}
+@media(max-width:640px){
+ .source-ui .source-rfq-grid th:nth-child(1),.source-ui .source-rfq-grid td:nth-child(1),
+ .source-ui .source-rfq-grid th:nth-child(8),.source-ui .source-rfq-grid td:nth-child(8) {display:none}
+ .source-ui .source-rfq-table .dt-tools {justify-content:flex-start}
+}
