@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './48source-approved.css';
+@import './48source-exact-scoped.css';
 @import '../../vendor/tallstackui/tallstackui/css/v4.css';
 
 @source '../views';
