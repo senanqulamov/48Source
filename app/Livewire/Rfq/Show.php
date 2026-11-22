@@ -295,7 +295,7 @@ class Show extends Component
         $quoteId = is_array($params) && isset($params['quoteId']) ? (int) $params['quoteId'] : (int) $params;
         // All checks, concurrency locks, quote line snapshots, justification and
         // purchase order creation live in one audited service. Do not duplicate them.
-        $order = app(\\App\\Services\\Procurement\\AwardAndPurchaseOrderService::class)
+        $order = app(\App\Services\Procurement\AwardAndPurchaseOrderService::class)
             ->award($this->request, $quoteId, Auth::user());
         $this->redirectRoute('procurement.orders.show', ['purchaseOrder' => $order->id], navigate: true);
     }
