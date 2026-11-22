@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Supplier\Rfq;
 
+use App\Models\FieldAssessment;
 use App\Models\Quote;
 use App\Models\Request;
 use Illuminate\Contracts\View\View;
@@ -12,42 +13,41 @@ class Show extends Component
 {
     public Request $request;
     public bool $canQuote = false;
+    public bool $assessmentComplete = false;
     public ?Quote $supplierQuote = null;
 
     public function mount(Request $request): void
     {
-        $this->request = $request->load([
-            'buyer',
-            'items',
-            'quotes.supplier',
-            'quotes.items',
-            'latestFieldAssessment',
-            'fieldEvaluator'
-        ]);
-
         $user = Auth::user();
+        abort_unless($user && $user->isSupplier(), 403);
 
-        // Find supplier's own quote
-        $this->supplierQuote = Quote::where('request_id', $this->request->id)
-                                    ->where('supplier_id', $user->id)
-                                    ->first();
+        $allowed = $request->status !== 'draft'
+            && $request->status !== 'cancelled'
+            && ($request->request_type === 'public'
+                || $request->supplierInvitations()->where('supplier_id', $user->id)->exists());
+        abort_unless($allowed, 403);
 
-        // Check if supplier can submit a quote
-        if ($user && $user->id !== $this->request->buyer_id) {
-            // Check if RFQ is open and not past deadline
-            $isOpen = $this->request->status === 'open' &&
-                      (!$this->request->deadline || !$this->request->deadline->isPast());
+        // Never eager-load other suppliers' confidential quotations.
+        $this->request = $request->load(['buyer', 'items.product', 'fieldEvaluator']);
+        $this->supplierQuote = Quote::query()
+            ->where('request_id', $request->id)
+            ->where('supplier_id', $user->id)
+            ->first();
 
-            // Check if supplier hasn't already submitted a quote
-            $hasQuoted = $this->supplierQuote !== null;
+        $this->assessmentComplete = ! $request->requires_field_assessment
+            || FieldAssessment::query()
+                ->where('request_id', $request->id)
+                ->where('supplier_id', $user->id)
+                ->where('status', 'completed')
+                ->exists();
 
-            $this->canQuote = $isOpen && !$hasQuoted;
-        }
+        $this->canQuote = $request->status === 'open'
+            && (! $request->deadline || $request->deadline->isFuture())
+            && $this->supplierQuote === null;
     }
 
     public function render(): View
     {
-        return view('livewire.supplier.rfq.show')
-            ->layout('layouts.app');
+        return view('livewire.supplier.rfq.show')->layout('layouts.app');
     }
 }

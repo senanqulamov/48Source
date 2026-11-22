@@ -51,11 +51,14 @@ class Index extends Component
     #[Computed]
     public function rows(): LengthAwarePaginator
     {
-        if ($this->quantity == 'all') {
-            $this->quantity = Request::count();
-        }
+        $this->quantity = in_array((int) $this->quantity, [10, 20, 50], true) ? (int) $this->quantity : 10;
 
         return Request::query()
+            ->where(function (Builder $query) {
+                $query->where('request_type', 'public')
+                    ->orWhereHas('supplierInvitations', fn (Builder $invites) => $invites->where('supplier_id', auth()->id()));
+            })
+            ->whereNotIn('status', ['draft', 'cancelled'])
             ->with(['buyer', 'items'])
             ->withCount(['items', 'quotes'])
             ->when($this->search !== null, fn (Builder $query) => $query->whereAny(['title', 'description'], 'like', '%'.trim($this->search).'%'))
