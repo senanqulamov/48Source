@@ -27,7 +27,7 @@
         <div class="ph-a">
             <span class="badge {{ $tone }}">{{ ucfirst($request->status) }}</span>
             @can('edit_rfqs')
-                <button type="button" class="btn" @if($buyer) wire:click="$dispatch('buyer::load::rfq', { rfq: '{{ $request->id }}' })" @else wire:click="$dispatch('load::rfq', { rfq: '{{ $request->id }}' })" @endif>{{ __('Edit request') }}</button>
+                <button type="button" class="btn" @if($buyer) wire:click="$dispatch('buyer::load::rfq', { rfq: '{{ $request->id }}' })" @elseif(request()->routeIs('monitoring.rfq.show')) wire:click="$dispatch('monitoring::load::rfq', { rfq: '{{ $request->id }}' })" @else wire:click="$dispatch('load::rfq', { rfq: '{{ $request->id }}' })" @endif>{{ __('Edit request') }}</button>
             @endcan
         </div>
     </header>

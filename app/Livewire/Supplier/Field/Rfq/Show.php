@@ -42,8 +42,14 @@ class Show extends Component
             return;
         }
 
-        $this->assignment->update(['status' => $status]);
-        $this->assignment->refresh();
+        $assignment = RfqWorkerAssignment::query()
+            ->whereKey($this->assignment?->id)
+            ->where('request_id', $this->request->id)
+            ->where('worker_id', auth()->id())
+            ->firstOrFail();
+
+        $assignment->update(['status' => $status]);
+        $this->assignment = $assignment->refresh();
         $this->success(__('Status updated to :status.', ['status' => ucfirst(str_replace('_', ' ', $status))]));
     }
 

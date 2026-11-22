@@ -1,290 +1,108 @@
-<div class="space-y-6">
-    {{-- Header --}}
-    <x-card>
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ __('KPI Reports & Analytics') }}</h1>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ __('Performance metrics and insights') }}</p>
+<div class="stack">
+<header class="ph">
+    <div><h1 class="ph-t">{{ __('KPI reports & analytics') }}</h1>
+        <p class="ph-d">{{ __('Procurement performance, response speed, supplier participation and RFQ execution.') }}</p></div>
+    <div class="ph-a">
+        @if(\Illuminate\Support\Facades\Route::has('export.kpi.pdf'))<a class="btn" href="{{ route('export.kpi.pdf') }}" target="_blank" rel="noopener">{{ __('Export PDF') }}</a>@endif
+        @if(\Illuminate\Support\Facades\Route::has('export.kpi.excel'))<a class="btn" href="{{ route('export.kpi.excel') }}">{{ __('Export Excel') }}</a>@endif
+    </div>
+</header>
+<div class="tabs" role="tablist" aria-label="{{ __('Report section') }}">
+    <button type="button" class="tab {{ $reportType === 'overview' ? 'on' : '' }}" wire:click="$set('reportType','overview')">{{ __('Overview') }}</button>
+    <button type="button" class="tab {{ $reportType === 'suppliers' ? 'on' : '' }}" wire:click="$set('reportType','suppliers')">{{ __('Supplier performance') }}</button>
+    <button type="button" class="tab {{ $reportType === 'rfqs' ? 'on' : '' }}" wire:click="$set('reportType','rfqs')">{{ __('RFQ execution') }}</button>
+</div>
+@if($reportType === 'overview')
+    <div class="strip">
+        @foreach([
+            __('Total RFQs') => $aggregate['total_rfqs'] ?? 0,
+            __('Completed RFQs') => $aggregate['completed_rfqs'] ?? 0,
+            __('Total quotations') => $aggregate['total_quotes'] ?? 0,
+            __('Accepted quotes') => $aggregate['accepted_quotes'] ?? 0,
+            __('Avg RFQ days') => $aggregate['avg_rfq_execution_days'] ?? 0,
+            __('Avg response days') => $aggregate['avg_supplier_response_days'] ?? 0,
+        ] as $label => $value)
+            <div class="strip-i"><span class="strip-l">{{ $label }}</span><span class="strip-v">{{ $value }}</span></div>
+        @endforeach
+    </div>
+    <div class="grid g-2-1">
+        <section class="card">
+            <div class="card-h"><h2 class="card-t">{{ __('Supplier response performance') }}</h2></div>
+            <div class="card-b">
+                <dl class="kv">
+                    <dt>{{ __('Sent invitations') }}</dt><dd class="mono">{{ $aggregate['total_invitations'] ?? 0 }}</dd>
+                    <dt>{{ __('Responded invitations') }}</dt><dd class="mono">{{ $aggregate['responded_invitations'] ?? 0 }}</dd>
+                    <dt>{{ __('Avg response hours') }}</dt><dd class="mono">{{ $aggregate['avg_supplier_response_hours'] ?? 0 }}</dd>
+                    <dt>{{ __('Quote acceptance rate') }}</dt><dd class="mono">{{ $aggregate['overall_quote_acceptance_rate'] ?? 0 }}%</dd>
+                </dl>
             </div>
-
-            {{-- Export Buttons --}}
-            <div class="flex gap-2">
-                <x-button
-                    icon="document-text"
-                    color="secondary"
-                    href="{{ route('export.kpi.pdf') }}"
-                    target="_blank"
-                >
-                    {{ __('Export PDF') }}
-                </x-button>
-                <x-button
-                    icon="table-cells"
-                    color="secondary"
-                    href="{{ route('export.kpi.excel') }}"
-                >
-                    {{ __('Export Excel') }}
-                </x-button>
+        </section>
+        <aside class="card">
+            <div class="card-h"><h2 class="card-t">{{ __('Fastest supplier responses') }}</h2></div>
+            <div class="tbl-wrap"><table class="tbl">
+                <thead><tr><th>{{ __('Supplier') }}</th><th class="num">{{ __('Response (hours)') }}</th></tr></thead>
+                <tbody>
+                    @forelse($this->topSuppliers as $entry)
+                        <tr><td>{{ $entry['supplier']?->company_name ?: $entry['supplier']?->name ?: '—' }}</td>
+                            <td class="num mono">{{ data_get($entry,'metrics.avg_response_time_hours',0) }}</td></tr>
+                    @empty<tr><td colspan="2"><div class="empty">{{ __('No response data yet') }}</div></td></tr>@endforelse
+                </tbody>
+            </table></div>
+        </aside>
+    </div>
+    <section class="card"><div class="card-h"><h2 class="card-t">{{ __('Longest RFQ execution times') }}</h2></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>{{ __('RFQ') }}</th><th>{{ __('Status') }}</th><th class="num">{{ __('Execution days') }}</th><th class="num">{{ __('Quotes') }}</th></tr></thead>
+        <tbody>
+            @forelse($this->slowestRfqs as $item)
+                <tr><td><a class="link t1" href="{{ route('rfq.show', $item['rfq_id']) }}">{{ $item['rfq_title'] }}</a></td>
+                    <td><span class="badge">{{ ucfirst($item['status']) }}</span></td>
+                    <td class="num mono">{{ $item['execution_time_days'] }}</td>
+                    <td class="num mono">{{ $item['total_quotes_received'] }}</td></tr>
+            @empty<tr><td colspan="4"><div class="empty">{{ __('No completed RFQ data yet') }}</div></td></tr>@endforelse
+        </tbody></table></div>
+    </section>
+@else
+    <section class="card"><div class="dt">
+        <div class="dt-top">
+            <label class="dt-search"><x-source.icon name="search" :size="16"/><span class="sr">{{ __('Search reports') }}</span>
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search records') }}"></label>
+            <div class="dt-tools">
+                @if($reportType === 'rfqs')
+                    <label for="kpi-status" class="sr">{{ __('Status') }}</label>
+                    <select id="kpi-status" class="select" wire:model.live="statusFilter">
+                        <option value="">{{ __('All statuses') }}</option><option value="open">{{ __('Open') }}</option>
+                        <option value="closed">{{ __('Closed') }}</option><option value="awarded">{{ __('Awarded') }}</option>
+                    </select>
+                @endif
+                <label for="kpi-rows" class="sr">{{ __('Rows') }}</label>
+                <select id="kpi-rows" class="select" wire:model.live="quantity">
+                    <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                </select>
             </div>
         </div>
-
-        <div class="flex gap-2">
-            <x-button
-                :color="$reportType === 'overview' ? 'primary' : 'secondary'"
-                wire:click="$set('reportType', 'overview')"
-            >
-                {{ __('Overview') }}
-            </x-button>
-            <x-button
-                :color="$reportType === 'suppliers' ? 'primary' : 'secondary'"
-                wire:click="$set('reportType', 'suppliers')"
-            >
-                {{ __('Supplier Performance') }}
-            </x-button>
-            <x-button
-                :color="$reportType === 'rfqs' ? 'primary' : 'secondary'"
-                wire:click="$set('reportType', 'rfqs')"
-            >
-                {{ __('RFQ Execution') }}
-            </x-button>
-        </div>
-    </x-card>
-
-    @if($reportType === 'overview')
-        {{-- Aggregate KPIs --}}
-        <x-card>
-            <h2 class="text-lg font-semibold mb-4">{{ __('Aggregate KPIs') }}</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <x-stat
-                    label="{{ __('Total RFQs') }}"
-                    :value="$aggregate['total_rfqs']"
-                    icon="document-text"
-                />
-                <x-stat
-                    label="{{ __('Avg RFQ Execution') }}"
-                    :value="$aggregate['avg_rfq_execution_days'] .' '.  __('days')"
-                    icon="clock"
-                />
-                <x-stat
-                    label="{{ __('Avg Supplier Response') }}"
-                    :value="$aggregate['avg_supplier_response_days'] .' '.  __('days')"
-                    icon="paper-airplane"
-                />
-                <x-stat
-                    label="{{ __('Quote Acceptance Rate') }}"
-                    :value="$aggregate['overall_quote_acceptance_rate'] . '%'"
-                    icon="chart-bar"
-                />
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <x-stat
-                    label="{{ __('Completed RFQs') }}"
-                    :value="$aggregate['completed_rfqs']"
-                    icon="check-circle"
-                />
-                <x-stat
-                    label="{{ __('Total Quotes') }}"
-                    :value="$aggregate['total_quotes']"
-                    icon="document-duplicate"
-                />
-                <x-stat
-                    label="{{ __('Accepted Quotes') }}"
-                    :value="$aggregate['accepted_quotes']"
-                    icon="check-badge"
-                />
-            </div>
-        </x-card>
-
-        {{-- Top Suppliers by Response Speed --}}
-        <x-card>
-            <h2 class="text-lg font-semibold mb-4">{{ __('Top Suppliers by Response Speed') }}</h2>
-
-            <x-table
-                :headers="$topSuppliersHeaders"
-                :rows="$this->topSuppliers"
-                loading
-            >
-                @interact('column_rank', $row)
-                    <span class="font-bold text-lg">{{ $loop->iteration }}</span>
-                @endinteract
-
-                @interact('column_supplier', $row)
-                    <a href="{{ route('users.show', $row['supplier']) }}" class="text-blue-600 hover:underline font-medium">
-                        <x-badge text="{{ $row['supplier']->name }}" icon="eye" position="left"/>
-                    </a>
-                @endinteract
-
-                @interact('column_response_time', $row)
-                    <div class="flex flex-col">
-                        <span class="font-semibold">{{ $row['metrics']['avg_response_time_hours'] }} {{ __('hour') }}</span>
-                        <span class="text-xs text-gray-500">{{ $row['metrics']['avg_response_time_days'] }} {{ __('days') }}</span>
-                    </div>
-                @endinteract
-
-                @interact('column_response_rate', $row)
-                    <x-badge :text="$row['metrics']['response_rate'] . '%'" :color="$row['metrics']['response_rate'] >= 80 ? 'green' : 'yellow'" />
-                @endinteract
-
-                @interact('column_win_rate', $row)
-                    <x-badge :text="$row['metrics']['win_rate'] . '%'" :color="$row['metrics']['win_rate'] >= 50 ? 'green' : 'slate'" />
-                @endinteract
-            </x-table>
-        </x-card>
-
-        {{-- Slowest RFQs --}}
-        <x-card>
-            <h2 class="text-lg font-semibold mb-4">{{ __('RFQs with Longest Execution Time') }}</h2>
-
-            <x-table
-                :headers="$slowestRfqsHeaders"
-                :rows="$this->slowestRfqs"
-                loading
-            >
-                @interact('column_rfq', $row)
-                    <a href="{{ route('rfq.show', $row['rfq_id']) }}" class="text-blue-600 hover:underline">
-                        <x-badge text="{{ $row['rfq_title'] }}" icon="queue-list" position="left"/>
-                    </a>
-                @endinteract
-
-                @interact('column_status', $row)
-                    <x-badge :text="ucfirst($row['status'])" />
-                @endinteract
-
-                @interact('column_execution_time', $row)
-                    <div class="flex flex-col">
-                        <span class="font-semibold">{{ $row['execution_time_days'] }} {{ __('days') }}</span>
-                        <span class="text-xs text-gray-500">{{ $row['execution_time_hours'] }}{{ __('hour') }}</span>
-                    </div>
-                @endinteract
-
-                @interact('column_quotes', $row)
-                    <x-badge :text="$row['total_quotes_received']" color="slate" />
-                @endinteract
-            </x-table>
-        </x-card>
-    @endif
-
-    @if($reportType === 'suppliers')
-        <x-card>
-            <h2 class="text-lg font-semibold mb-4">{{ __('Supplier Performance Metrics') }}</h2>
-
-            <x-table
-                :headers="$supplierHeaders"
-                :$sort
-                :rows="$this->suppliers"
-                paginate
-                :paginator="null"
-                filter
-                loading
-                :quantity="[10, 20, 50, 'all']"
-            >
-                @interact('column_name', $row)
-                    <a href="{{ route('users.show', $row->supplier) }}" class="text-blue-600 hover:underline font-medium">
-                        <x-badge text="{{ $row->supplier->name }}" icon="eye" position="left"/>
-                    </a>
-                @endinteract
-
-                @interact('column_company_name', $row)
-                    {{ $row->supplier->company_name ?? '-' }}
-                @endinteract
-
-                @interact('column_email', $row)
-                    {{ $row->supplier->email }}
-                @endinteract
-
-                @interact('column_invitations', $row)
-                    {{ $row->metrics['total_invitations'] }} / {{ $row->metrics['total_responses'] }}
-                @endinteract
-
-                @interact('column_response_rate', $row)
-                    <x-badge
-                        :text="$row->metrics['response_rate'] . '%'"
-                        :color="$row->metrics['response_rate'] >= 80 ? 'green' : ($row->metrics['response_rate'] >= 50 ? 'yellow' : 'red')"
-                    />
-                @endinteract
-
-                @interact('column_avg_response', $row)
-                    {{ $row->metrics['avg_response_time_hours'] }}{{ __('hour') }} ({{ $row->metrics['avg_response_time_days'] }} {{ __('days') }})
-                @endinteract
-
-                @interact('column_quotes', $row)
-                    {{ $row->metrics['total_quotes_submitted'] }}
-                @endinteract
-
-                @interact('column_win_rate', $row)
-                    <x-badge
-                        :text="$row->metrics['win_rate'] . '%'"
-                        :color="$row->metrics['win_rate'] >= 50 ? 'green' : 'slate'"
-                    />
-                @endinteract
-
-                @interact('column_created_at', $row)
-                    {{ $row->supplier->created_at->format('M d, Y') }}
-                @endinteract
-            </x-table>
-        </x-card>
-    @endif
-
-    @if($reportType === 'rfqs')
-        <x-card>
-            <h2 class="text-lg font-semibold mb-4">{{ __('RFQ Execution Metrics') }}</h2>
-
-            <div class="mb-4 w-full sm:w-48">
-                <x-select.styled
-                    :label="__('Filter by Status')"
-                    wire:model.live="statusFilter"
-                    :options="[
-                        ['label' => __('All Statuses'), 'value' => ''],
-                        ['label' => __('Draft'), 'value' => 'draft'],
-                        ['label' => __('Open'), 'value' => 'open'],
-                        ['label' => __('Closed'), 'value' => 'closed'],
-                        ['label' => __('Awarded'), 'value' => 'awarded'],
-                        ['label' => __('Cancelled'), 'value' => 'cancelled'],
-                    ]"
-                    select="label:label|value:value"
-                />
-            </div>
-
-            <x-table
-                :headers="$rfqHeaders"
-                :$sort
-                :rows="$this->rfqs"
-                paginate
-                :paginator="null"
-                filter
-                loading
-                :quantity="[10, 20, 50, 'all']"
-            >
-                @interact('column_title', $row)
-                    <a href="{{ route('rfq.show', $row->rfq_id) }}" class="text-blue-600 hover:underline">
-                        <x-badge text="{{ $row->rfq_title }}" icon="eye" position="left"/>
-                    </a>
-                @endinteract
-
-                @interact('column_status', $row)
-                    <x-badge :text="ucfirst($row->status)" />
-                @endinteract
-
-                @interact('column_created_at', $row)
-                    <div class="flex flex-col">
-                        <span class="font-semibold">{{ $row->execution_time_days }} {{__('days')}}</span>
-                        <span class="text-xs text-gray-500">{{ $row->execution_time_hours }}{{ __('hour') }}</span>
-                    </div>
-                @endinteract
-
-                @interact('column_first_quote', $row)
-                    @if($row->time_to_first_quote_hours)
-                        {{ round($row->time_to_first_quote_hours, 1) }}{{ __('hour') }}
-                    @else
-                        <span class="text-gray-400">—</span>
-                    @endif
-                @endinteract
-
-                @interact('column_quotes', $row)
-                    <x-badge :text="$row->total_quotes_received" color="slate" />
-                @endinteract
-            </x-table>
-        </x-card>
-    @endif
+        @if($reportType === 'suppliers')
+            <div class="tbl-wrap"><table class="tbl">
+                <thead><tr><th>{{ __('Supplier') }}</th><th class="num">{{ __('Invitations') }}</th><th class="num">{{ __('Response rate') }}</th><th class="num">{{ __('Avg response (h)') }}</th><th class="num">{{ __('Win rate') }}</th></tr></thead>
+                <tbody>@forelse($this->suppliers as $entry)
+                    <tr><td><a class="link t1" href="{{ route('users.show',$entry->supplier) }}">{{ $entry->supplier->company_name ?: $entry->supplier->name }}</a><div class="t2">{{ $entry->supplier->email }}</div></td>
+                        <td class="num mono">{{ data_get($entry->metrics,'total_invitations',0) }}</td>
+                        <td class="num mono">{{ data_get($entry->metrics,'response_rate',0) }}%</td>
+                        <td class="num mono">{{ data_get($entry->metrics,'avg_response_time_hours',0) }}</td>
+                        <td class="num mono">{{ data_get($entry->metrics,'win_rate',0) }}%</td></tr>
+                @empty<tr><td colspan="5"><div class="empty">{{ __('No suppliers found') }}</div></td></tr>@endforelse</tbody>
+            </table></div><div class="dt-foot">{{ $this->suppliers->links() }}</div>
+        @elseif($reportType === 'rfqs')
+            <div class="tbl-wrap"><table class="tbl">
+                <thead><tr><th>{{ __('RFQ') }}</th><th>{{ __('Status') }}</th><th class="num">{{ __('Execution (days)') }}</th><th class="num">{{ __('First quote (h)') }}</th><th class="num">{{ __('Quotations') }}</th></tr></thead>
+                <tbody>@forelse($this->rfqs as $rfq)
+                    <tr><td><a class="link t1" href="{{ route('rfq.show', $rfq->rfq_id) }}">{{ $rfq->rfq_title }}</a></td>
+                        <td><span class="badge">{{ ucfirst($rfq->status) }}</span></td>
+                        <td class="num mono">{{ $rfq->execution_time_days }}</td>
+                        <td class="num mono">{{ $rfq->time_to_first_quote_hours ?? '—' }}</td>
+                        <td class="num mono">{{ $rfq->total_quotes_received }}</td></tr>
+                @empty<tr><td colspan="5"><div class="empty">{{ __('No RFQ data found') }}</div></td></tr>@endforelse</tbody>
+            </table></div><div class="dt-foot">{{ $this->rfqs->links() }}</div>
+        @endif
+    </div></section>
+@endif
 </div>

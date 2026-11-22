@@ -67,3 +67,29 @@ it('does not expose other suppliers quotations from supplier RFQ details', funct
     expect($show)->toContain('where(\'supplier_id\', $user->id)')
         ->not->toContain("'quotes.supplier'", "'quotes.items'");
 });
+
+it('keeps approved-detail screens free of the deprecated gradient interface', function () {
+    $paths = [
+        'products/show.blade.php', 'seller/products/show.blade.php', 'supplier/products/show.blade.php',
+        'markets/show.blade.php', 'seller/markets/show.blade.php', 'supplier/markets/show.blade.php',
+        'orders/show.blade.php', 'seller/orders/show.blade.php', 'supplier/orders/show.blade.php',
+        'monitoring/rfq/index.blade.php', 'supplier/field/rfq/show.blade.php',
+        'logs/index.blade.php', 'buyer/logs/index.blade.php', 'seller/logs/index.blade.php',
+        'supplier/logs/index.blade.php', 'supplier/field/logs/index.blade.php',
+    ];
+    foreach ($paths as $path) {
+        $view = file_get_contents(resource_path('views/livewire/'.$path));
+        expect($view)->not->toBeFalse();
+        expect($view)->not->toContain('bg-gradient-to-br', 'shadow-2xl');
+        expect(
+            str_contains($view, 'class="stack"') ||
+            str_contains($view, '<x-source.')
+        )->toBeTrue();
+    }
+});
+it('guards seller product and market detail ownership', function () {
+    $product = file_get_contents(app_path('Livewire/Seller/Products/Show.php'));
+    $market = file_get_contents(app_path('Livewire/Seller/Markets/Show.php'));
+    expect($product)->toContain("where('user_id', auth()->id())");
+    expect($market)->toContain('abort_unless($market->user_id === auth()->id(), 403);');
+});

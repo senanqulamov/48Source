@@ -76,8 +76,8 @@ it('renders the unified approved layout with a defined role', function () {
 
 it('uses the single approved design shell with role-specific navigation', function () {
     $shell = file_get_contents(resource_path('views/components/layout/source-shell.blade.php'));
-    foreach (['admin', 'buyer', 'seller', 'supplier'] as $role) {
+    foreach (['buyer', 'seller', 'supplier'] as $role) {
         expect($shell)->toContain("'".$role."' =>");
     }
-    expect($shell)->toContain('view_rfqs', 'view_orders');
+    expect($shell)->toContain('default =>', 'view_rfqs', 'view_orders');
 });

@@ -18,6 +18,7 @@ class Show extends Component
 
     public function mount(Market $market): void
     {
+        abort_unless($market->user_id === auth()->id(), 403);
         $this->market = $market;
     }
 

@@ -20,6 +20,7 @@ class Show extends Component
 
     public function mount(Product $product): void
     {
+        abort_unless($product->market()->where('user_id', auth()->id())->exists(), 403);
         $this->product = $product->loadMissing(['market', 'attributes']);
     }
 

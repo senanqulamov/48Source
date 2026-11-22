@@ -1,85 +1,40 @@
-<div class="space-y-6">
-    <x-card>
-        <x-heading-title title="{{ __('Messages') }}" icon="chat-bubble-left-right" padding="p-5" hover="-" />
-
+<div class="stack">
+    <header class="ph">
+        <div><h1 class="ph-t">{{ __('Field worker messages') }}</h1>
+            <p class="ph-d">{{ __('Direct conversation with your parent supplier.') }}</p></div>
+    </header>
+    <section class="card">
+        <div class="card-h"><h2 class="card-t">{{ __('Conversation') }}</h2>
+            <span class="card-s">{{ $supplier?->getDisplayName() ?? __('No supplier linked') }}</span></div>
         @if(! $supplier)
-            <div class="text-center py-12">
-                <x-icon name="exclamation-circle" class="w-10 h-10 text-red-400 mx-auto mb-2" />
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('No parent supplier linked to your account.') }}</p>
-            </div>
+            <div class="card-b"><div class="empty"><h3>{{ __('No parent supplier linked') }}</h3><p>{{ __('Ask your administrator to assign your account to a supplier.') }}</p></div></div>
         @else
-            {{-- Supplier Info --}}
-            <div class="flex items-center gap-3 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 mb-4">
-                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                    {{ strtoupper(substr($supplier->name, 0, 1)) }}
+            <div class="card-b stack">
+                <div class="row"><span class="avatar">{{ strtoupper(substr($supplier->name,0,1)) }}</span>
+                    <div><strong class="sm">{{ $supplier->getDisplayName() }}</strong><div class="muted sm">{{ $supplier->email }}</div></div>
                 </div>
-                <div>
-                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $supplier->getDisplayName() }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $supplier->email }}</p>
+                <div id="messages-container" class="stack" style="max-height:420px;overflow:auto;min-height:160px;padding:12px;background:var(--sunken);border-radius:var(--r)">
+                    @forelse($messages as $message)
+                        @php($mine = $message->sender_id === auth()->id())
+                        <div class="card" style="padding:12px;max-width:80%;align-self:{{ $mine ? 'flex-end' : 'flex-start' }};{{ $mine ? 'border-color:var(--primary);' : '' }}">
+                            @unless($mine)<strong class="sm">{{ $message->sender?->name ?? __('Supplier') }}</strong>@endunless
+                            <p style="white-space:pre-wrap">{{ $message->body }}</p>
+                            @if($message->rfq)<div class="muted sm">{{ __('Regarding') }}: {{ $message->rfq->title }}</div>@endif
+                            <div class="muted xs">{{ $message->created_at?->format('d M, H:i') }}</div>
+                        </div>
+                    @empty
+                        <div class="empty">{{ __('No messages yet. Start the conversation.') }}</div>
+                    @endforelse
                 </div>
-            </div>
-
-            {{-- Message Thread --}}
-            <div class="h-[420px] overflow-y-auto space-y-3 pr-1 mb-4" id="messages-container">
-                @forelse($messages as $msg)
-                    @php $isMine = $msg->sender_id === auth()->id(); @endphp
-                    <div class="flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
-                        <div class="max-w-[75%] {{ $isMine ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-gray-100' }} rounded-2xl px-4 py-2.5 shadow-sm">
-                            @if(! $isMine)
-                                <p class="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{{ $msg->sender->name }}</p>
-                            @endif
-                            <p class="text-sm leading-relaxed">{{ $msg->body }}</p>
-                            @if($msg->rfq)
-                                <p class="text-[10px] mt-1 {{ $isMine ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400' }}">
-                                    {{ __('Re') }}: {{ $msg->rfq->title }}
-                                </p>
-                            @endif
-                            <p class="text-[10px] mt-1 {{ $isMine ? 'text-indigo-200' : 'text-gray-400' }} text-right">
-                                {{ $msg->created_at->format('M d, H:i') }}
-                                @if($msg->read_at && $isMine)
-                                    &bull; {{ __('Read') }}
-                                @endif
-                            </p>
-                        </div>
+                <form wire:submit="sendMessage" class="stack">
+                    <div class="field"><label for="worker-message">{{ __('Message') }}</label>
+                        <textarea id="worker-message" class="textarea" wire:model="newMessage" rows="3" maxlength="2000"
+                            placeholder="{{ __('Write a message to your supplier') }}" required></textarea>
+                        @error('newMessage')<span class="err">{{ $message }}</span>@enderror
                     </div>
-                @empty
-                    <div class="flex items-center justify-center h-full">
-                        <div class="text-center">
-                            <x-icon name="chat-bubble-left-right" class="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto mb-2" />
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('No messages yet. Start the conversation!') }}</p>
-                        </div>
-                    </div>
-                @endforelse
-            </div>
-
-            {{-- Send Message --}}
-            <div class="border-t border-gray-200 dark:border-slate-700 pt-4">
-                <form wire:submit="sendMessage" class="flex gap-3">
-                    <div class="flex-1">
-                        <x-textarea
-                            wire:model="newMessage"
-                            placeholder="{{ __('Type your message to your supplier...') }}"
-                            rows="2"
-                        />
-                    </div>
-                    <div class="flex items-end">
-                        <x-button type="submit" color="indigo" icon="paper-airplane">
-                            {{ __('Send') }}
-                        </x-button>
-                    </div>
+                    <div class="row" style="justify-content:flex-end"><button type="submit" class="btn btn-p" wire:loading.attr="disabled" wire:target="sendMessage">{{ __('Send message') }}</button></div>
                 </form>
             </div>
         @endif
-    </x-card>
+    </section>
 </div>
-
-<script>
-    document.addEventListener('livewire:initialized', () => {
-        const scrollToBottom = () => {
-            const el = document.getElementById('messages-container');
-            if (el) el.scrollTop = el.scrollHeight;
-        };
-        scrollToBottom();
-        Livewire.on('message-sent', scrollToBottom);
-    });
-</script>
