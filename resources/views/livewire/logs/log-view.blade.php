@@ -1,8 +1,11 @@
-<x-modal wire="showDetailModal" size="2xl" blur="xl">
+<div>
+@if($showDetailModal)
+    <div class="scrim source-dialog" wire:key="source-resources-views-livewire-logs-log-view-blade-php-0" wire:keydown.escape="$set('showDetailModal', false)" wire:click.self="$set('showDetailModal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>@lang('Log Details') - #{{ $selectedLog->id }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('showDetailModal', false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
     @if($selectedLog)
-    <x-slot name="title">
-        @lang('Log Details') - #{{ $selectedLog->id }}
-    </x-slot>
+    
 
     <div class="space-y-4">
         {{-- Type and Action --}}
@@ -115,8 +118,12 @@
         </div>
     </div>
 
-    <x-slot name="footer">
-        <x-button text="Close" wire:click="closeDetailModal"/>
-    </x-slot>
+    
     @endif
-</x-modal>
+</div>
+            <div class="ov-f"><x-button text="Close" wire:click="closeDetailModal"/></div>
+        </section>
+    </div>
+@endif
+
+</div>

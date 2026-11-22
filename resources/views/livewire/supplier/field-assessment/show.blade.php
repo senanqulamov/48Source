@@ -1,5 +1,5 @@
 <div>
-    <x-card>
+    <section class="card"><div class="card-b source-legacy-content">
         {{-- Header --}}
         <div class="mb-6">
             <div class="flex items-center justify-between mb-2">
@@ -172,5 +172,5 @@
                 </p>
             </div>
         @endif
-    </x-card>
+    </div></section>
 </div>

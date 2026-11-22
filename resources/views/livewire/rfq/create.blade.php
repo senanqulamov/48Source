@@ -1,7 +1,11 @@
 <div>
     <x-button :text="__('Create New Request')" wire:click="$toggle('modal')" sm />
 
-    <x-modal :title="__('Create New Request')" wire x-on:open="setTimeout(() => $refs.title?.focus(), 250)" size="3xl" blur="xl">
+    @if($modal)
+    <div class="scrim source-dialog" wire:key="resources-views-livewire-rfq-create-blade-php-overlay" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="modal " role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Create New Request') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body"> $refs.title?.focus(), 250)" size="3xl" blur="xl">
         <form id="rfq-create" wire:submit="save" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <x-input
@@ -144,10 +148,12 @@
                 </div>
             </div>
         </form>
-        <x-slot:footer>
-            <x-button type="submit" form="rfq-create">
+        
+    </div>
+            <div class="ov-f"><x-button type="submit" form="rfq-create">
                 @lang('Save')
-            </x-button>
-        </x-slot:footer>
-    </x-modal>
+            </x-button></div>
+        </section>
+    </div>
+@endif
 </div>

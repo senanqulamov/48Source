@@ -1,10 +1,9 @@
 <div>
-    <x-modal
-        :title="__('Update Worker')"
-        wire
-        size="2xl"
-        blur="xl"
-    >
+    @if($modal)
+    <div class="scrim source-dialog" wire:key="resources-views-livewire-seller-workers-update-blade-php-overlay" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Update Worker') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
         <form id="seller-worker-update" wire:submit="save" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <x-input label="{{ __('Full Name') }} *" wire:model="worker.name" required />
@@ -40,8 +39,9 @@
             </div>
         </form>
 
-        <x-slot:footer>
-            <div class="flex items-center justify-between w-full">
+        
+    </div>
+            <div class="ov-f"><div class="flex items-center justify-between w-full">
                 <x-button color="red" wire:click="delete">
                     @lang('Delete')
                 </x-button>
@@ -49,7 +49,8 @@
                 <x-button type="submit" form="seller-worker-update">
                     @lang('Save')
                 </x-button>
-            </div>
-        </x-slot:footer>
-    </x-modal>
+            </div></div>
+        </section>
+    </div>
+@endif
 </div>

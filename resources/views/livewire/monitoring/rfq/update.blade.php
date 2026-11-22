@@ -1,5 +1,9 @@
 <div>
-    <x-slide wire="modal" right size="2xl" blur="md">
+    @if($modal)
+    <div class="scrim source-dialog source-drawer-scrim" wire:key="resources-views-livewire-monitoring-rfq-update-blade-php-drawer" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="drawer source-admin-drawer" role="dialog" aria-modal="true" aria-label="{{ __('Edit details') }}">
+            <div class="ov-h"><h2>{{ __('Edit details') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-drawer-body">
         @if($request)
             <form id="buyer-rfq-update" wire:submit="save" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -122,11 +126,13 @@
                     </div>
                 </div>
             </form>
-            <x-slot:footer>
-                <x-button type="submit" form="buyer-rfq-update">
-                    @lang('Update RFQ')
-                </x-button>
-            </x-slot:footer>
+            
         @endif
-    </x-slide>
+    </div>
+            <div class="ov-f"><x-button type="submit" form="buyer-rfq-update">
+                    @lang('Update RFQ')
+                </x-button></div>
+        </section>
+    </div>
+@endif
 </div>

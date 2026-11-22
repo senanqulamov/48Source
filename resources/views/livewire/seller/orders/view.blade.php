@@ -1,8 +1,11 @@
-<x-modal wire="showDetailModal" size="4xl" blur="xl">
+<div>
+@if($showDetailModal)
+    <div class="scrim source-dialog" wire:key="resources-views-livewire-seller-orders-view-blade-php-overlay" wire:keydown.escape="$set('showDetailModal', false)" wire:click.self="$set('showDetailModal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>@lang('Order Details') - {{ $selectedOrder->order_number }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('showDetailModal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
     @if($selectedOrder)
-        <x-slot name="title">
-            @lang('Order Details') - {{ $selectedOrder->order_number }}
-        </x-slot>
+        
 
         <div class="space-y-4">
             {{-- Order Number and Status --}}
@@ -177,4 +180,10 @@
             <x-button text="Close" wire:click="closeDetailModal"/>
         </x-slot>
     @endif
-</x-modal>
+</div>
+            
+        </section>
+    </div>
+@endif
+
+</div>

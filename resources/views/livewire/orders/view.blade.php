@@ -1,8 +1,11 @@
-<x-modal wire="showDetailModal" size="4xl" blur="xl">
+<div>
+@if($showDetailModal)
+    <div class="scrim source-dialog" wire:key="source-resources-views-livewire-orders-view-blade-php-0" wire:keydown.escape="$set('showDetailModal', false)" wire:click.self="$set('showDetailModal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>@lang('Order Details') - {{ $selectedOrder->order_number }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('showDetailModal', false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
     @if($selectedOrder)
-        <x-slot name="title">
-            @lang('Order Details') - {{ $selectedOrder->order_number }}
-        </x-slot>
+        
 
         <div class="space-y-4">
             {{-- Order Number and Status --}}
@@ -173,9 +176,13 @@
             </div>
         </div>
 
-        <x-slot name="footer">
-            <x-button color="lime" text="Edit" wire:click="closeDetailModal, $dispatch('load::order', { 'order' : '{{ $selectedOrder->id }}'})"/>
-            <x-button text="Close" wire:click="closeDetailModal"/>
-        </x-slot>
+        
     @endif
-</x-modal>
+</div>
+            <div class="ov-f"><x-button color="lime" text="Edit" wire:click="closeDetailModal, $dispatch('load::order', { 'order' : '{{ $selectedOrder->id }}'})"/>
+            <x-button text="Close" wire:click="closeDetailModal"/></div>
+        </section>
+    </div>
+@endif
+
+</div>

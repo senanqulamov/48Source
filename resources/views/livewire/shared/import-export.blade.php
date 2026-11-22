@@ -1,9 +1,9 @@
-<div class="space-y-6">
+<div class="stack">
 
     {{-- Header --}}
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-500 text-white shadow-2xl shadow-purple-500/30">
-        <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-        <div class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
+    <div class="card source-import-hero">
+        <div class="hidden"></div>
+        <div class="hidden"></div>
 
         <div class="relative p-6">
             <div class="flex items-center justify-between gap-4">
@@ -30,8 +30,8 @@
     </div>
 
     {{-- Main Content --}}
-    <div class="relative overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-slate-700/50 shadow-xl">
-        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-indigo-500/5 dark:from-purple-500/10 dark:to-indigo-500/10"></div>
+    <div class="card source-import-body">
+        <div class="hidden"></div>
 
         <div class="relative p-6">
             @if(!$selectedAction)

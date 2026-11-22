@@ -1,10 +1,8 @@
 <div>
-    <x-slide wire="modal" right size="lg" blur="md">
-        @if($request)
-
-            {{-- Header --}}
-            <x-slot:title>
-                <div class="space-y-1">
+    @if($modal)
+    <div class="scrim source-dialog source-drawer-scrim" wire:key="resources-views-livewire-monitoring-rfq-items-blade-php-drawer" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="drawer source-admin-drawer" role="dialog" aria-modal="true" aria-label="{{ __('Edit details') }}">
+            <div class="ov-h"><h2><div class="space-y-1">
                     <h3 class="text-xl font-semibold tracking-tight">
                         {{ __('RFQ Items') }}
                     </h3>
@@ -12,8 +10,12 @@
                         {{ $request->title }}
                         · <span class="font-mono text-xs">#{{ $request->id }}</span>
                     </p>
-                </div>
-            </x-slot:title>
+                </div></h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-drawer-body">
+        @if($request)
+
+            {{-- Header --}}
+            
 
 
             <div class="space-y-5">
@@ -83,13 +85,15 @@
             </div>
 
             {{-- Footer --}}
-            <x-slot:footer>
-                <div class="flex justify-end pt-4">
+            
+        @endif
+    </div>
+            <div class="ov-f"><div class="flex justify-end pt-4">
                     <x-button wire:click="close">
                         {{ __('Close') }}
                     </x-button>
-                </div>
-            </x-slot:footer>
-        @endif
-    </x-slide>
+                </div></div>
+        </section>
+    </div>
+@endif
 </div>

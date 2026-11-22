@@ -1,6 +1,10 @@
 <div>
-    <x-slide wire="modal" bottom size="2xl" blur="md">
-        <x-slot name="title">{{ __('Update Product: #:id', ['id' => $product?->id]) }}</x-slot>
+    @if($modal)
+    <div class="scrim source-dialog source-drawer-scrim" wire:key="resources-views-livewire-products-update-blade-php-drawer" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="drawer source-admin-drawer" role="dialog" aria-modal="true" aria-label="{{ __('Edit details') }}">
+            <div class="ov-h"><h2>{{ __('Update Product: #:id', ['id' => $product?->id]) }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-drawer-body">
+        
         <form id="product-update-{{ $product?->id }}" wire:submit="save" class="space-y-6">
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -102,5 +106,9 @@
                 {{ __('Save Changes') }}
             </x-button>
         </form>
-    </x-slide>
+    </div>
+            
+        </section>
+    </div>
+@endif
 </div>

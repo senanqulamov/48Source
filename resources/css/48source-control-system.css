@@ -283,3 +283,82 @@ body [role=alertdialog]:not(.modal):not(.source-admin-drawer) {
   border:1px solid var(--line,#E3E5E0);
   box-shadow:0 18px 48px rgba(10,18,22,.18);
 }
+
+
+/* Approved visual defaults for legacy inner Livewire form widgets.
+   These selectors cover the remaining TallStackUI input and select wrappers
+   without replacing their validation, dropdown or accessibility behavior. */
+.source-dialog .source-modal-body,
+.source-dialog .source-drawer-body {
+  min-width:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  flex:1 1 auto;
+}
+.source-dialog :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
+  max-width:100%;
+  border-radius:var(--r);
+  border:1px solid var(--line-2);
+  background-color:var(--surface);
+  color:var(--text);
+  box-shadow:none;
+}
+.source-dialog :is(input:not([type=checkbox]):not([type=radio]),select) {min-height:34px}
+.source-dialog label {color:var(--text);font-weight:500}
+.source-dialog :is(input,textarea,select):focus-visible {
+  border-color:var(--primary);
+  outline:2px solid var(--primary);
+  outline-offset:1px;
+  --tw-ring-color:var(--primary);
+}
+.source-dialog :is(input[type=checkbox],input[type=radio]) {
+  accent-color:var(--primary);
+}
+.source-dialog button:not(.btn):not(.icon-btn) {
+  border-radius:var(--r);
+  font-size:13px;
+  font-weight:600;
+}
+.source-dialog button[type=submit]:not(.btn) {
+  color:var(--on-primary);
+  background:var(--primary);
+  border-color:var(--primary);
+  box-shadow:none;
+}
+.source-dialog button[type=submit]:not(.btn):hover {background:var(--primary-h)}
+.source-dialog :is(.ov-b,.ov-f) .grid {min-width:0}
+.source-dialog .ov-b>form {min-width:0}
+.source-dialog .source-drawer-body>form {min-width:0}
+.source-dialog .ov-f {flex-wrap:wrap}
+.source-dialog .ov-f> :is(button,.btn) {flex:0 0 auto}
+.source-ui .dt-tools {min-width:0}
+.source-ui .dt-tools select {width:auto;flex:0 1 auto;max-width:220px}
+.source-ui .tbl-wrap {overflow-x:auto}
+.source-ui .tbl-wrap .tbl {min-width:540px}
+.source-ui .dt-foot {min-width:0}
+body [role=listbox] {
+  border:1px solid var(--line,#E3E5E0);
+  border-radius:var(--r,6px);
+  background:var(--surface,#fff);
+  color:var(--text,#16202B);
+  box-shadow:0 8px 24px rgba(10,18,22,.12);
+}
+body [role=option][aria-selected=true] {
+  background:var(--primary-soft,#E1EEED);
+  color:var(--primary,#0E5A5C);
+}
+@media(max-width:640px){
+  .source-dialog .ov-b {padding:14px}
+  .source-dialog .ov-h {padding:12px 14px}
+  .source-dialog .ov-f {padding:10px 14px}
+  .source-dialog .fgrid,
+  .source-dialog .grid-cols-2,
+  .source-dialog .md\:grid-cols-2 {grid-template-columns:minmax(0,1fr)}
+}
+
+/* Import/export uses the same cards and control tokens as every workspace. */
+.source-ui .source-import-hero,
+.source-ui .source-import-body {background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:var(--sh-card)}
+.source-ui .source-import-hero :is(h1,h2,p),.source-ui .source-import-body :is(h1,h2,p) {color:var(--text)}
+.source-ui .source-import-hero .bg-white\/20 {background:var(--sunken)}
+.source-ui .source-import-hero :is(button,a):focus-visible {outline:2px solid var(--primary);outline-offset:2px}

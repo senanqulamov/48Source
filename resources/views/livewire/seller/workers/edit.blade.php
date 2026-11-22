@@ -1,5 +1,5 @@
 <div>
-    <x-card>
+    <section class="card"><div class="card-b source-legacy-content">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-xl font-semibold">{{ __('Edit Worker') }}</h1>
             <x-button icon="arrow-left" href="{{ route('seller.workers.index') }}">{{ __('Back') }}</x-button>
@@ -33,5 +33,5 @@
                 <x-button color="red" icon="trash" wire:click.prevent="delete">{{ __('Delete') }}</x-button>
             </div>
         </form>
-    </x-card>
+    </div></section>
 </div>

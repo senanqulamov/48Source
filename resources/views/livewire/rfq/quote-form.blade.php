@@ -1,6 +1,6 @@
 <div>
-    <x-card>
-        <x-slot:header>
+    <section class="card"><div class="card-b source-legacy-content">
+        <div class="card-h">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h2 class="text-lg font-semibold text-[var(--color-text-high)]">
@@ -20,7 +20,7 @@
                     </div>
                 </div>
             </div>
-        </x-slot:header>
+        </div>
 
         <form wire:submit.prevent="save" class="space-y-6">
             <!-- RFQ Information -->
@@ -187,5 +187,5 @@
                 </x-button>
             </div>
         </form>
-    </x-card>
+    </div></section>
 </div>

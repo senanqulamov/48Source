@@ -1,6 +1,10 @@
 <div>
-    <x-slide wire="modal" size="xl" blur="xl">
-        <x-slot name="title">{{ __('Update Request: #:id', ['id' => $request?->id]) }}</x-slot>
+    @if($modal)
+    <div class="scrim source-dialog source-drawer-scrim" wire:key="resources-views-livewire-rfq-update-blade-php-drawer" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="drawer source-admin-drawer" role="dialog" aria-modal="true" aria-label="{{ __('Edit details') }}">
+            <div class="ov-h"><h2>{{ __('Update Request: #:id', ['id' => $request?->id]) }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-drawer-body">
+        
         <form id="rfq-update-{{ $request?->id }}" wire:submit="save" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <x-input
@@ -96,10 +100,12 @@
             </div>
         </form>
 
-        <x-slot:footer>
-            <x-button type="submit" form="rfq-update-{{ $request?->id }}">
+        
+    </div>
+            <div class="ov-f"><x-button type="submit" form="rfq-update-{{ $request?->id }}">
                 @lang('Save Changes')
-            </x-button>
-        </x-slot:footer>
-    </x-slide>
+            </x-button></div>
+        </section>
+    </div>
+@endif
 </div>

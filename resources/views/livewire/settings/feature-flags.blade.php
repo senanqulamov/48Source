@@ -1,10 +1,10 @@
 <div>
-    <x-card>
-        <x-slot name="header">
+    <section class="card"><div class="card-b source-legacy-content">
+        <div class="card-h">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold">{{ __('Feature Flags') }}</h3>
             </div>
-        </x-slot>
+        </div>
 
         <div class="divide-y divide-slate-800/50">
             @foreach($flags as $flag)
@@ -20,5 +20,5 @@
                 <div class="p-8 text-center text-slate-400">{{ __('No flags found') }}</div>
             @endif
         </div>
-    </x-card>
+    </div></section>
 </div>

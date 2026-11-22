@@ -1,5 +1,9 @@
 <div>
-    <x-modal wire="showModal" size="6xl" title="{{ __('Workflow Events Timeline') }}" blur>
+    @if($showModal)
+    <div class="scrim source-dialog" wire:key="resources-views-livewire-monitoring-rfq-workflow-events-blade-php-overlay" wire:keydown.escape="$set('showModal', false)" wire:click.self="$set('showModal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Workflow Events Timeline') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('showModal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
         @if($request)
             {{-- Header with RFQ Info --}}
             <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -363,13 +367,15 @@
             </div>
         @endif
 
-        <x-slot:footer>
-            <div class="flex items-center justify-between w-full">
+        
+    </div>
+            <div class="ov-f"><div class="flex items-center justify-between w-full">
                 <div class="text-xs text-gray-500 dark:text-gray-400">
                     {{ __('Total Events') }}: <span class="font-bold">{{ $this->workflowEvents->total() ?? 0 }}</span>
                 </div>
                 <x-button text="{{ __('Close') }}" wire:click="closeModal" flat/>
-            </div>
-        </x-slot:footer>
-    </x-modal>
+            </div></div>
+        </section>
+    </div>
+@endif
 </div>

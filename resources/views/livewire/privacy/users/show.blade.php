@@ -1,5 +1,5 @@
 <div>
-    <x-card>
+    <section class="card"><div class="card-b source-legacy-content">
         <div class="mb-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -29,7 +29,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {{-- User Information --}}
             <div class="lg:col-span-1">
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <h3 class="text-lg font-semibold mb-4">
                         @lang('User Information')
                     </h3>
@@ -63,13 +63,13 @@
                             </div>
                         </div>
                     </div>
-                </x-card>
+                </div></section>
             </div>
 
             {{-- Roles and Permissions --}}
             <div class="lg:col-span-2 space-y-6">
                 {{-- Assigned Roles --}}
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <h3 class="text-lg font-semibold mb-4">
                         @lang('Assigned Roles')
                     </h3>
@@ -102,10 +102,10 @@
                             @lang('No roles assigned')
                         </div>
                     @endif
-                </x-card>
+                </div></section>
 
                 {{-- Effective Permissions --}}
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <h3 class="text-lg font-semibold mb-4">
                         @lang('Effective Permissions')
                     </h3>
@@ -146,10 +146,10 @@
                             @lang('No permissions granted')
                         </div>
                     @endif
-                </x-card>
+                </div></section>
             </div>
         </div>
-    </x-card>
+    </div></section>
 
     <livewire:privacy.user-roles.update @updated="$refresh"/>
 </div>

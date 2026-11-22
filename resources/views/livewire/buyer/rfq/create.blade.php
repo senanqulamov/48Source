@@ -1,5 +1,9 @@
 <div x-data="{step:1}">
-        <x-modal :title="__('Create new RFQ')" wire size="4xl" blur="xl">
+        @if($modal)
+    <div class="scrim source-dialog" wire:key="source-resources-views-livewire-buyer-rfq-create-blade-php-0" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Create new RFQ') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal', false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
             <form id="buyer-rfq-create" wire:submit="save"
                   x-on:keydown.enter="if (step < 4 && $event.target.tagName !== 'TEXTAREA') $event.preventDefault()">
                 <div class="steps" aria-label="{{ __('RFQ creation progress') }}">
@@ -163,8 +167,9 @@
                     @endif
                 </div>
             </form>
-            <x-slot:footer>
-                <div class="row" style="justify-content:space-between;width:100%;gap:10px">
+            
+        </div>
+            <div class="ov-f"><div class="row" style="justify-content:space-between;width:100%;gap:10px">
                     <button type="button" class="btn" x-on:click="step=Math.max(1,step-1)" x-show="step>1">{{ __('Back') }}</button>
                     <span class="sp"></span>
                     <button x-ref="nextStep" type="button" class="btn btn-p" x-show="step<4"
@@ -178,8 +183,9 @@
                         ">{{ __('Continue') }}</button>
                     <button type="submit" form="buyer-rfq-create" class="btn btn-p"
                             x-show="step===4" wire:loading.attr="disabled" wire:target="save">{{ __('Create draft RFQ') }}</button>
-                </div>
-            </x-slot:footer>
-        </x-modal>
+                </div></div>
+        </section>
+    </div>
+@endif
 
 </div>

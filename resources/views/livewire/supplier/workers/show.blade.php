@@ -1,6 +1,6 @@
-<div class="space-y-6">
+<div class="stack">
     {{-- Header --}}
-    <x-card class="bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white">
+    <section class="card"><div class="card-b source-legacy-content">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center text-2xl font-bold">
@@ -30,10 +30,10 @@
                 </a>
             </div>
         </div>
-    </x-card>
+    </div></section>
 
     {{-- Tabs --}}
-    <x-card>
+    <section class="card"><div class="card-b source-legacy-content">
         <div class="border-b border-gray-200 dark:border-slate-700 mb-6">
             <nav class="-mb-px flex gap-1">
                 @foreach([
@@ -467,5 +467,5 @@
                 @endif
             </div>
         @endif
-    </x-card>
+    </div></section>
 </div>

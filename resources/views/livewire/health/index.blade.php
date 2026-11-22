@@ -1,90 +1,48 @@
-<div>
-    <x-card>
-        <x-slot name="header">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-slate-200 mr-3">{{ __('System Health') }}</h3>
-                <div class="flex gap-2">
-                    <x-button wire:click="runChecks" sm>
-                        <x-icon name="arrow-path" class="w-4 h-4 animate-spin-slow"/>
-                        {{ __('Refresh') }}
-                    </x-button>
-                    <x-badge color="primary" dark title="{{ __('Auto-refreshes every 30 seconds') }}" tabindex="0">
-                        <svg class="w-3 h-3 mr-1.5 animate-pulse" fill="currentColor" viewBox="0 0 8 8">
-                            <circle cx="4" cy="4" r="3"/>
-                        </svg>
-                        {{ __('Live') }}
-                    </x-badge>
-                    <x-tooltip text="{{ __('Auto-refreshes every 30 seconds') }}" />
-                </div>
-            </div>
-        </x-slot>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <x-card>
-                <x-slot name="header">
-                    <div class="text-slate-200">{{ __('Application') }}</div>
-                </x-slot>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between items-center"><span>Env</span><span class="font-semibold">{{ $checks['app']['env'] }}</span></div>
-                    <div class="flex justify-between items-center"><span>Debug</span><span class="font-semibold">{{ $checks['app']['debug'] ? 'on' : 'off' }}</span></div>
-                    <div class="flex justify-between items-center"><span>Timezone</span><span class="font-semibold">{{ $checks['app']['timezone'] }}</span></div>
-                </div>
-            </x-card>
-
-            <x-card>
-                <x-slot name="header" class="text-slate-200">
-                    <div class="text-slate-200">{{ __('Database') }}
-                    </div>
-                </x-slot>
-                <div class="space-y-2 text-sm">
-                    <div class="flex items-center justify-between">
-                        <span>{{ __('Connected') }}</span>
-                        <x-badge :color="$checks['database']['connected'] ? 'green' : 'red'" dark title="{{ $checks['database']['connected'] ? __('Driver: :driver; Host: :host', ['driver' => ($checks['database']['driver'] ?? config('database.default')), 'host' => ($checks['database']['host'] ?? 'unknown')]) : __('Unable to connect. Check DB config or logs.') }}" tabindex="0">
-                            <x-icon :name="$checks['database']['connected'] ? 'check-circle' : 'x-circle'" class="w-4 h-4 mr-1"/>
-                            {{ $checks['database']['connected'] ? __('Yes') : __('No') }}
-                        </x-badge>
-                    </div>
-                </div>
-            </x-card>
-
-            <x-card>
-                <x-slot name="header">
-                    <div class="text-slate-200">{{ __('Cache') }}</div>
-                </x-slot>
-                <div class="space-y-2 text-sm">
-                    <div class="flex items-center justify-between">
-                        <span>{{ __('Working') }}</span>
-                        <x-badge :color="$checks['cache']['connected'] ? 'green' : 'red'" dark title="{{ $checks['cache']['connected'] ? __('Driver: :driver', ['driver' => ($checks['cache']['driver'] ?? config('cache.default'))]) : __('Cache connection failed. Check cache config or logs.') }}" tabindex="0">
-                            <x-icon :name="$checks['cache']['connected'] ? 'check-circle' : 'x-circle'" class="w-4 h-4 mr-1"/>
-                            {{ $checks['cache']['connected'] ? __('Yes') : __('No') }}
-                        </x-badge>
-                    </div>
-                </div>
-            </x-card>
-
-            <x-card class="md:col-span-2">
-                <x-slot name="header">
-                    <div class="text-slate-200">{{ __('Queue') }}</div>
-                </x-slot>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between items-center"><span>{{ __('Connection') }}</span><span class="font-semibold">{{ $checks['queue']['connection'] }}</span></div>
-                    <div class="flex justify-between items-center"><span>{{ __('Pending Jobs') }}</span><span class="font-semibold">{{ $checks['queue']['size'] }}</span></div>
-                    <div class="flex justify-between items-center"><span>{{ __('Failed Jobs') }}</span><span class="font-semibold text-red-400">{{ $checks['queue']['failed'] }}</span></div>
-                </div>
-            </x-card>
-
-            <x-card>
-                <x-slot name="header">
-                    <div class="text-slate-200">{{ __('Scheduler') }}</div>
-                </x-slot>
-                <div class="text-sm">
-                    <div class="flex justify-between items-center"><span>{{ __('Last Run') }}</span><span class="font-semibold">{{ $checks['scheduler']['last_run'] }}</span></div>
-                </div>
-            </x-card>
+<div class="stack">
+    <header class="ph">
+        <div><h1 class="ph-t">{{ __('System health') }}</h1>
+            <p class="ph-d">{{ __('Infrastructure and application readiness checks.') }}</p></div>
+        <div class="ph-a"><span class="badge b-info">{{ __('Live checks') }}</span>
+            <button class="btn btn-p" type="button" wire:click="runChecks" wire:loading.attr="disabled" wire:target="runChecks">
+                <x-source.icon name="pulse" :size="15" />{{ __('Refresh') }}
+            </button></div>
+    </header>
+    <div class="grid g-2-1">
+        <div class="stack">
+            <section class="card">
+                <div class="card-h"><h2 class="card-t">{{ __('Application') }}</h2></div>
+                <div class="card-b"><dl class="kv">
+                    <dt>{{ __('Environment') }}</dt><dd>{{ data_get($checks,'app.env','—') }}</dd>
+                    <dt>{{ __('Debug') }}</dt><dd><span class="badge {{ data_get($checks,'app.debug') ? 'b-warn' : 'b-ok' }}">{{ data_get($checks,'app.debug') ? __('Enabled') : __('Disabled') }}</span></dd>
+                    <dt>{{ __('Timezone') }}</dt><dd>{{ data_get($checks,'app.timezone','—') }}</dd>
+                </dl></div>
+            </section>
+            <section class="card">
+                <div class="card-h"><h2 class="card-t">{{ __('Storage and database') }}</h2></div>
+                <div class="card-b"><dl class="kv">
+                    <dt>{{ __('Database connected') }}</dt><dd><span class="badge {{ data_get($checks,'database.connected') ? 'b-ok' : 'b-bad' }}">{{ data_get($checks,'database.connected') ? __('Yes') : __('No') }}</span></dd>
+                    <dt>{{ __('Database driver') }}</dt><dd>{{ data_get($checks,'database.driver','—') }}</dd>
+                    <dt>{{ __('Storage') }}</dt><dd><span class="badge {{ data_get($checks,'storage.writable') ? 'b-ok' : 'b-warn' }}">{{ data_get($checks,'storage.writable') ? __('Writable') : __('Check storage') }}</span></dd>
+                </dl></div>
+            </section>
         </div>
-        <div class="mt-6">
-            <x-alert color="info" icon="information-circle">
-                {{ __('Tip: Hover over each badge for more details. Health checks auto-refresh every 30 seconds.') }}
-            </x-alert>
-        </div>
-    </x-card>
+        <aside class="stack">
+            <section class="card">
+                <div class="card-h"><h2 class="card-t">{{ __('Cache and queue') }}</h2></div>
+                <div class="card-b"><dl class="kv">
+                    <dt>{{ __('Cache connected') }}</dt><dd><span class="badge {{ data_get($checks,'cache.connected') ? 'b-ok' : 'b-bad' }}">{{ data_get($checks,'cache.connected') ? __('Yes') : __('No') }}</span></dd>
+                    <dt>{{ __('Cache driver') }}</dt><dd>{{ data_get($checks,'cache.driver','—') }}</dd>
+                    <dt>{{ __('Queue driver') }}</dt><dd>{{ data_get($checks,'queue.driver','—') }}</dd>
+                    <dt>{{ __('Failed jobs') }}</dt><dd class="mono">{{ data_get($checks,'queue.failed',0) }}</dd>
+                </dl></div>
+            </section>
+            <section class="card">
+                <div class="card-h"><h2 class="card-t">{{ __('Scheduler') }}</h2></div>
+                <div class="card-b"><dl class="kv">
+                    <dt>{{ __('Last run') }}</dt><dd class="mono">{{ data_get($checks,'scheduler.last_run','—') }}</dd>
+                </dl></div>
+            </section>
+            <div class="note">{{ __('Health checks refresh automatically when the server-side polling component is active.') }}</div>
+        </aside>
+    </div>
 </div>

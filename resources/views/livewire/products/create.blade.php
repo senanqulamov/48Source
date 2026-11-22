@@ -1,5 +1,9 @@
 <div>
-    <x-modal :title="__('Create New Product')" wire x-on:open="setTimeout(() => $refs.name.focus(), 250)" size="2xl" blur="xl" x-on:products::create::open.window="show = true">
+    @if($modal)
+    <div class="scrim source-dialog" wire:key="resources-views-livewire-products-create-blade-php-overlay" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="modal " role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Create New Product') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body"> $refs.name.focus(), 250)" size="2xl" blur="xl" x-on:products::create::open.window="show = true">
         <form id="product-create" wire:submit="save" class="space-y-4">
             <div>
                 <x-input label="{{ __('Name') }} *" x-ref="name" wire:model="product.name" required />
@@ -65,10 +69,12 @@
                 @endif
             </div>
         </form>
-        <x-slot:footer>
-            <x-button type="submit" form="product-create">
+        
+    </div>
+            <div class="ov-f"><x-button type="submit" form="product-create">
                 @lang('Save')
-            </x-button>
-        </x-slot:footer>
-    </x-modal>
+            </x-button></div>
+        </section>
+    </div>
+@endif
 </div>

@@ -1,4 +1,9 @@
-<x-modal :title="__('Invite More Suppliers')" wire="showInviteModal" blur="xl" size="2xl">
+<div>
+@if($showInviteModal)
+    <div class="scrim source-dialog" wire:key="source-resources-views-livewire-buyer-rfq-approved-invite-modal-blade-php-0" wire:keydown.escape="$set('showInviteModal', false)" wire:click.self="$set('showInviteModal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Invite More Suppliers') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('showInviteModal', false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
         <div class="space-y-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">
                 @lang('Select suppliers to invite for this RFQ. They will receive a notification.')
@@ -35,8 +40,9 @@
             @endif
         </div>
 
-        <x-slot:footer>
-            <div class="flex gap-3 justify-end">
+        
+    </div>
+            <div class="ov-f"><div class="flex gap-3 justify-end">
                 <x-button color="white" wire:click="closeInviteModal">
                     @lang('Cancel')
                 </x-button>
@@ -45,6 +51,9 @@
                         @lang('Send Invitations')
                     </x-button>
                 @endif
-            </div>
-        </x-slot:footer>
-    </x-modal>
+            </div></div>
+        </section>
+    </div>
+@endif
+
+</div>

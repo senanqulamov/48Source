@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="stack">
     @php
         $roleNames = $user->roles()->pluck('name')->all();
         $isBuyer = in_array('buyer', $roleNames, true) || $user->is_buyer;
@@ -9,8 +9,8 @@
     @endphp
 
     {{-- Header / Hero --}}
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-700/60 shadow-xl">
-        <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+    <div class="card">
+        <div class="hidden"></div>
         <div class="relative p-6">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div class="min-w-0">
@@ -80,7 +80,7 @@
         <div class="lg:col-span-2 space-y-6">
             {{-- Supplier --}}
             @if($isSupplier)
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
                             <x-icon name="cube" class="w-5 h-5" />
@@ -116,12 +116,12 @@
                             </div>
                         </div>
                     @endif
-                </x-card>
+                </div></section>
             @endif
 
             {{-- Seller --}}
             @if($isSeller)
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
                             <x-icon name="building-storefront" class="w-5 h-5" />
@@ -149,12 +149,12 @@
                             @endif
                         </div>
                     </div>
-                </x-card>
+                </div></section>
             @endif
 
             {{-- Buyer --}}
             @if($isBuyer)
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <div class="flex items-center gap-2 mb-4">
                         <x-icon name="shopping-cart" class="w-5 h-5" />
                         <h2 class="text-lg font-semibold">Buyer Overview</h2>
@@ -177,12 +177,12 @@
                         <x-stat label="Avg Order" :value="'$' . number_format($this->metrics['avg_order_value'], 2)" icon="chart-bar" />
                         <x-stat label="Markets" :value="$this->metrics['markets_count']" icon="building-storefront" />
                     </div>
-                </x-card>
+                </div></section>
             @endif
 
             {{-- Worker --}}
             @if($isWorker)
-                <x-card>
+                <section class="card"><div class="card-b source-legacy-content">
                     <div class="flex items-center gap-2 mb-4">
                         <x-icon name="users" class="w-5 h-5" />
                         <h2 class="text-lg font-semibold">Market Worker Assignment</h2>
@@ -205,11 +205,11 @@
                             </div>
                         </div>
                     </div>
-                </x-card>
+                </div></section>
             @endif
 
             {{-- Recent Orders (shared) --}}
-            <x-card>
+            <section class="card"><div class="card-b source-legacy-content">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold">Recent Orders</h2>
                 </div>
@@ -238,12 +238,12 @@
                         {{ $row->created_at->diffForHumans() }}
                     @endinteract
                 </x-table>
-            </x-card>
+            </div></section>
         </div>
 
         {{-- Right column --}}
         <div class="space-y-6">
-            <x-card>
+            <section class="card"><div class="card-b source-legacy-content">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold">Contact</h2>
                     @if($user->hasCompleteAddress())
@@ -272,9 +272,9 @@
                         <div class="text-gray-900 dark:text-gray-100 text-sm">{{ $user->hasCompleteAddress() ? $user->getFullAddress() : '—' }}</div>
                     </div>
                 </div>
-            </x-card>
+            </div></section>
 
-            <x-card>
+            <section class="card"><div class="card-b source-legacy-content">
                 <h2 class="text-lg font-semibold mb-4">Account</h2>
                 <div class="grid grid-cols-2 gap-3">
                     <div class="p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-200/60 dark:border-slate-700/60">
@@ -293,7 +293,7 @@
                         <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $user->notes }}</div>
                     </div>
                 @endif
-            </x-card>
+            </div></section>
         </div>
     </div>
 

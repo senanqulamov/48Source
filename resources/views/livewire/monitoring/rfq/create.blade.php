@@ -1,5 +1,9 @@
 <div>
-    <x-modal :title="__('Create New RFQ')" wire blur="xl" size="3xl">
+    @if($modal)
+    <div class="scrim source-dialog" wire:key="resources-views-livewire-monitoring-rfq-create-blade-php-overlay" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="modal wide" role="dialog" aria-modal="true" aria-label="{{ __('Dialog') }}">
+            <div class="ov-h"><h2>{{ __('Create New RFQ') }}</h2><span class="sp"></span><button type="button" class="icon-btn" wire:click="$set('modal',false)" aria-label="{{ __('Close') }}"><x-source.icon name="x" /></button></div>
+            <div class="ov-b source-modal-body">
         <form id="buyer-rfq-create" wire:submit="save" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <x-input
@@ -147,10 +151,12 @@
                 @endif
             </div>
         </form>
-        <x-slot:footer>
-            <x-button type="submit" form="buyer-rfq-create">
+        
+    </div>
+            <div class="ov-f"><x-button type="submit" form="buyer-rfq-create">
                 @lang('Create RFQ')
-            </x-button>
-        </x-slot:footer>
-    </x-modal>
+            </x-button></div>
+        </section>
+    </div>
+@endif
 </div>
