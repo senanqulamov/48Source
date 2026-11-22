@@ -4,12 +4,10 @@
     'statusProperty' => 'status',
     'searchProperty' => 'search',
     'buyer' => false,
+    'activeStatus' => 'all',
 ])
 
-@php
-    $activeStatus = $statusProperty === 'status' ? ($this->status ?? 'all') : ($this->statusFilter ?? 'all');
-    $activeStatus = $activeStatus ?: 'all';
-@endphp
+
 
 <div class="stack" aria-label="Requests for quotation">
     <header class="ph">
@@ -39,7 +37,7 @@
                 <div class="dt-tools">
                     <div class="seg" role="group" aria-label="{{ __('Filter by status') }}">
                         @foreach(['all'=>__('All'), 'draft'=>__('Draft'), 'open'=>__('Open'), 'closed'=>__('Closed'), 'awarded'=>__('Awarded'), 'cancelled'=>__('Cancelled')] as $status => $label)
-                            <button type="button" class="{{ $activeStatus === $status ? 'on' : '' }}" aria-pressed="{{ $activeStatus === $status ? 'true' : 'false' }}" wire:click="$set('{{ $statusProperty }}', {{ $status === 'all' && $statusProperty !== 'status' ? 'null' : '\'' . $status . '\'' }})">{{ $label }}</button>
+                            <button type="button" class="{{ $activeStatus === $status ? 'on' : '' }}" aria-pressed="{{ $activeStatus === $status ? 'true' : 'false' }}" @if($buyer && $status === 'all') wire:click="clearStatusFilter" @else wire:click="$set('{{ $statusProperty }}', '{{ $status }}')" @endif>{{ $label }}</button>
                         @endforeach
                     </div>
                 </div>
