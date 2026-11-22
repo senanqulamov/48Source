@@ -38,7 +38,7 @@ class Create extends Component
         foreach ($invitation->request->items as $requestItem) {
             $this->items[] = [
                 'request_item_id' => $requestItem->id,
-                'description' => $requestItem->description,
+                'description' => $requestItem->product_name ?: ($requestItem->specifications ?: 'RFQ item #'.$requestItem->id),
                 'quantity' => $requestItem->quantity,
                 'unit_price' => null,
                 'tax_rate' => 0,
@@ -89,6 +89,28 @@ class Create extends Component
 
     public function save(): void
     {
+        // Client-side navigation is not a security boundary. Recheck ownership,
+        // current RFQ lifecycle and previous submissions on every write.
+        $invitation = SupplierInvitation::query()
+            ->with('request')
+            ->whereKey($this->invitation->id)
+            ->where('supplier_id', auth()->id())
+            ->firstOrFail();
+
+        abort_unless(
+            in_array($invitation->status, ['pending', 'accepted'], true)
+                && $invitation->request?->status === 'open'
+                && ($invitation->request->deadline === null || $invitation->request->deadline->isFuture()),
+            403,
+            'This RFQ is not available for quotation.'
+        );
+
+        abort_if(
+            Quote::query()->where('supplier_invitation_id', $invitation->id)->exists(),
+            409,
+            'A quotation already exists for this invitation.'
+        );
+
         $this->validate([
             'items.*.description' => 'required|string|max:500',
             'items.*.quantity' => 'required|numeric|min:0.01',

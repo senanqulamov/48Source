@@ -1,3 +1,7 @@
+<div>
+@if(config('source48.redesign_enabled'))
+    @include('livewire.buyer.approved-dashboard')
+@else
 <div class="space-y-6">
     {{-- Hero / Summary --}}
     <x-card class="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 text-white">
@@ -389,4 +393,7 @@
             </div>
         </x-card>
     @endif
+</div>
+
+@endif
 </div>

@@ -47,3 +47,12 @@ php artisan test
 Set `SOURCE48_REDESIGN=true` on a local copy to inspect the shell, compare to the HTML, and confirm actions/permissions. Set false to revert UI without code rollback.
 
 **Status:** Commits created; local PHP/Node builds and browsers have not been executed by this assistant. Do not merge until CI and manual role review pass.
+
+## PR #4 visual-conversion increment (22 November 2026)
+- The **exact** approved HTML is now committed under `design/reference/48source-redesign.html`; all CSS is preserved under `resources/css/48source-prototype-exact.css`, plus a scoped runtime copy and minimal adapters.
+- Original 54 SVG icon paths are available as `<x-source.icon />`.
+- Implemented first-pass real-data visual views for admin dashboard, RFQ list/detail, buyer RFQ list/detail, quote comparison (read-only), login, supplier dashboard/invitations/quotes, seller dashboard, supplier field-worker dashboard, and seller/supplier marketplace order lists.
+- Protected legacy pages with `SOURCE48_REDESIGN=false`. Every Livewire page is now wrapped with one root element to prevent `MultipleRootElementsDetectedException`.
+- Added Blade compilation and first-party smoke checks for redesigned screens in GitHub Actions.
+- **Not claimed pixel-perfect:** no complete desktop/mobile screenshot-diff suite has been run, and the prototype still contains views not yet converted (RFQ wizard, assessment detail, quote creation form, product/market screens, market-worker Today, reporting, permissions, etc.).
+- **Not yet production-safe to merge:** full test suite and PHPStan still fail in legacy areas. Use CI to distinguish baseline failures from regressions, and review supplier permissions, actual quote award actions, and per-page visuals before rollout.

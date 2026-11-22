@@ -1,3 +1,7 @@
+<div>
+@if(config('source48.redesign_enabled'))
+    <x-source.order-table :rows="$this->rows"  />
+@else
 <div class="space-y-6">
 
     {{-- Modern Header Card --}}
@@ -100,4 +104,7 @@
             </x-table>
         </div>
     </div>
+</div>
+
+@endif
 </div>

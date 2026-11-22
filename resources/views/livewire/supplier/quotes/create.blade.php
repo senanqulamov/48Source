@@ -1,4 +1,8 @@
 <div>
+@if(config('source48.redesign_enabled'))
+    @include('livewire.supplier.quotes.approved-create')
+@else
+<div>
     <x-card>
         <x-alert color="blue" icon="document-plus">
             @lang('Submit Quote for RFQ #:id - :title', ['id' => $invitation->request_id, 'title' => $invitation->request->title])
@@ -167,4 +171,7 @@
             </div>
         </form>
     </x-card>
+</div>
+
+@endif
 </div>

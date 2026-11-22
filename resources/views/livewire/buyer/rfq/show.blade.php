@@ -1,3 +1,9 @@
+<div>
+@if(config('source48.redesign_enabled'))
+    <x-source.rfq-detail :request="$request" :buyer="true" />
+    @include('livewire.buyer.rfq.approved-invite-modal')
+    <livewire:buyer.rfq.update @updated="$refresh" />
+@else
 <div class="space-y-6">
 
     {{-- Modern Header Card --}}
@@ -452,4 +458,8 @@
     </x-modal>
 
     <livewire:buyer.rfq.update @updated="$refresh"/>
+</div>
+
+@endif
+
 </div>

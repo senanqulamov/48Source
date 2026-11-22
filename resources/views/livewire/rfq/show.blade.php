@@ -1,4 +1,9 @@
 <div>
+@if(config('source48.redesign_enabled'))
+    <x-source.rfq-detail :request="$request" />
+    <livewire:rfq.update @updated="$refresh" />
+@else
+<div>
     <x-card>
         {{-- Header / Title + Actions --}}
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -796,4 +801,8 @@
     </x-card>
 
     <livewire:rfq.update @updated="$refresh"/>
+</div>
+
+@endif
+
 </div>
