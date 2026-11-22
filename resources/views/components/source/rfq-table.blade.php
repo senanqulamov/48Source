@@ -11,10 +11,15 @@
     'searchValue' => null,
     'typeFilterValue' => 'all',
     'buyerFilterValue' => 'all',
+    'selectedRfqIds' => [],
 ])
 
 @php
     // The same server-driven table powers both buyer and administrator.
+    $selectedIds = array_map('intval', $selectedRfqIds);
+    $pageIds = $rows->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all();
+    $selectedOnPage = count(array_intersect($pageIds, $selectedIds));
+    $allOnPage = $pageIds !== [] && $selectedOnPage === count($pageIds);
     $counts = $statusCounts;
     $totalCount = array_sum($counts);
     $active = $activeStatus ?: 'all';
@@ -118,6 +123,7 @@
             <div class="tbl-wrap">
                 <table class="tbl source-rfq-grid">
                     <thead><tr>
+                        <th scope="col" class="source-bulk-select"><button type="button" class="source-select-box" wire:click="togglePageRfqSelection" aria-label="{{ __('Select all RFQs on this page') }}" aria-checked="{{ $allOnPage ? 'true' : ($selectedOnPage ? 'mixed' : 'false') }}" role="checkbox">{{ $allOnPage ? '✓' : ($selectedOnPage ? '−' : '') }}</button></th>
                         @foreach(['id'=>'Reference','title'=>'Title','buyer'=>'Buyer','request_type'=>'Type','status'=>'Status','deadline'=>'Deadline','items'=>'Items','quotes'=>'Quotes','created_at'=>'Created'] as $key => $label)
                             <th scope="col" @if(in_array($key,['buyer','request_type','items','quotes','created_at'])) x-show="columns.{{ $key }}" @endif
                                 @if(in_array($key,['id','title','request_type','status','deadline','created_at']))
@@ -142,7 +148,8 @@
                                 'open'=>'b-info','awarded'=>'b-ok','closed'=>'b-warn','cancelled'=>'b-bad',default=>'',
                             };
                         @endphp
-                        <tr wire:key="source-rfq-{{ $rfq->id }}">
+                        <tr wire:key="source-rfq-{{ $rfq->id }}" class="{{ in_array((int) $rfq->id, $selectedIds, true) ? 'is-selected' : '' }}">
+                            <td class="source-bulk-select"><button class="source-select-box" type="button" role="checkbox" aria-checked="{{ in_array((int) $rfq->id, $selectedIds, true) ? 'true' : 'false' }}" aria-label="{{ __('Select RFQ') }} #{{ $rfq->id }}" wire:click="toggleRfqSelection({{ $rfq->id }})">{{ in_array((int) $rfq->id, $selectedIds, true) ? '✓' : '' }}</button></td>
                             <td class="mono"><a href="{{ route($detailRoute, $rfq) }}" wire:navigate>#{{ $rfq->id }}</a></td>
                             <td><a class="t1 link" href="{{ route($detailRoute, $rfq) }}" wire:navigate>{{ $rfq->title }}</a><div class="t2">{{ $rfq->description ? \Illuminate\Support\Str::limit($rfq->description, 86) : '' }}</div></td>
                             <td x-show="columns.buyer" class="sm">{{ $rfq->buyer?->name ?? '—' }}</td>
@@ -155,7 +162,7 @@
                             <td><a class="btn btn-sm" href="{{ route($detailRoute, $rfq) }}" wire:navigate>{{ __('Open') }}</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="10">
+                        <tr><td colspan="11">
                             <div class="empty">
                                 <span class="ei"><x-source.icon name="search" :size="22" /></span>
                                 <h3>{{ __('No matching RFQs') }}</h3>
@@ -167,6 +174,14 @@
                     </tbody>
                 </table>
             </div>
+            @if(count($selectedIds) > 0)
+                <div class="source-rfq-bulk-bar" role="group" aria-label="{{ __('Selected RFQ actions') }}">
+                    <span class="source-rfq-selected-count">{{ count($selectedIds) }}</span>
+                    <span>{{ __('selected') }}</span>
+                    <button class="btn btn-sm" type="button" wire:click="exportSelectedRfqsCsv" wire:loading.attr="disabled" wire:target="exportSelectedRfqsCsv"><x-source.icon name="download" :size="14" />{{ __('Export CSV') }}</button>
+                    <button class="btn btn-sm btn-g" type="button" wire:click="clearRfqSelection">{{ __('Clear selection') }}</button>
+                </div>
+            @endif
             <div class="dt-foot">{{ $rows->links() }}</div>
         </div>
     </section>
