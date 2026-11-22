@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/** @property-read \Illuminate\Database\Eloquent\Collection<int, QuoteItem> $items */
 class Quote extends Model
 {
     use HasFactory;
@@ -70,7 +72,7 @@ class Quote extends Model
     /**
      * Get the quote items.
      */
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(QuoteItem::class);
     }

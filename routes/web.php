@@ -119,6 +119,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rfq/{request}', RfqShow::class)->name('rfq.show')->middleware('can:view_rfqs');
     Route::get('/rfq/{request}/quote', RfqQuoteForm::class)->name('rfq.quote')->middleware('can:submit_quotes');
 
+    // Procurement POs are separate from marketplace orders.
+    Route::get('/procurement/orders', \App\Livewire\Procurement\PurchaseOrders\Index::class)->name('procurement.orders.index');
+    Route::get('/procurement/orders/{purchaseOrder}', \App\Livewire\Procurement\PurchaseOrders\Show::class)->name('procurement.orders.show');
+
     // Admin enhancements
     Route::get('/health', HealthIndex::class)->name('health.index')->middleware('can:view_health');
     Route::get('/notifications', NotificationsIndex::class)->name('notifications.index')->middleware('can:view_notifications');

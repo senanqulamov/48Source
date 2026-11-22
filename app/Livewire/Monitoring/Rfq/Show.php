@@ -103,6 +103,12 @@ class Show extends Component
 
     public function updatedStatusValue($value): void
     {
+        if ($value === 'awarded') {
+            $this->error(__('Use the audited award decision to create the purchase order.'));
+            $this->statusValue = $this->request->status;
+            return;
+        }
+
         if (!$value || !array_key_exists($value, $this->availableStatuses)) {
             $this->error(__('Invalid status selected.'));
             $this->statusValue = $this->request->status; // Reset to current status
@@ -345,114 +351,16 @@ class Show extends Component
 
     public function acceptQuote($params): void
     {
-        $quoteId = is_array($params) && isset($params['quoteId']) ? (int)$params['quoteId'] : (int)$params;
-        $quote = Quote::where('id', $quoteId)
-            ->where('request_id', $this->request->id)
-            ->first();
+        $quoteId = is_array($params) && isset($params['quoteId'])
+            ? (int) $params['quoteId'] : (int) $params;
 
-        if (!$quote) {
-            $this->error(__('Quote not found.'));
-            return;
-        }
-
-        $oldStatus = $quote->status;
-
-        // Update quote status to accepted
-        $quote->status = 'accepted';
-        $quote->save();
-
-        // Optionally, reject all other quotes for this RFQ
-        Quote::where('request_id', $this->request->id)
-            ->where('id', '!=', $quoteId)
-            ->where('status', '!=', 'rejected')
-            ->update(['status' => 'rejected']);
-
-        // Update RFQ status to awarded
-        $this->request->status = 'awarded';
-        $this->request->save();
-        $this->statusValue = 'awarded';
-
-        // Send notification to supplier
-        if ($quote->supplier) {
-            $quote->supplier->notify(new QuoteStatusChanged($quote, $oldStatus, 'accepted'));
-        }
-
-        // Notify other suppliers their quotes were rejected
-        $otherQuotes = Quote::where('request_id', $this->request->id)
-            ->where('id', '!=', $quoteId)
-            ->with('supplier')
-            ->get();
-
-        foreach ($otherQuotes as $otherQuote) {
-            if ($otherQuote->supplier) {
-                $otherQuote->supplier->notify(new QuoteStatusChanged($otherQuote, $otherQuote->status, 'rejected'));
-            }
-        }
-
-        $this->logUpdate(
-            Quote::class,
-            $quote->id,
-            [
-                'status' => [
-                    'old' => $oldStatus,
-                    'new' => 'accepted',
-                ],
-                'action' => 'Quote accepted by buyer',
-            ]
-        );
-
-        // Record workflow event for admin accepting quote
-        $admin = Auth::user();
         try {
-            WorkflowEvent::create([
-                'eventable_type' => get_class($this->request),
-                'eventable_id' => $this->request->id,
-                'user_id' => $admin?->id,
-                'event_type' => 'quote_accepted',
-                'from_state' => null,
-                'to_state' => null,
-                'description' => 'Admin ' . ($admin?->name ?? 'system') . ' accepted quote #' . $quote->id . ' from supplier ' . ($quote->supplier?->name ?? 'unknown'),
-                'occurred_at' => now(),
-                'metadata' => [
-                    'admin_id' => $admin?->id,
-                    'admin_name' => $admin?->name,
-                    'quote_id' => $quote->id,
-                    'quote_total' => $quote->total_price ?? null,
-                    'supplier_id' => $quote->supplier?->id ?? null,
-                ],
-            ]);
-
-            // Also record workflow events for each rejected quote
-            foreach ($otherQuotes as $otherQuote) {
-                WorkflowEvent::create([
-                    'eventable_type' => get_class($this->request),
-                    'eventable_id' => $this->request->id,
-                    'user_id' => $admin?->id,
-                    'event_type' => 'quote_rejected',
-                    'from_state' => null,
-                    'to_state' => null,
-                    'description' => 'Admin ' . ($admin?->name ?? 'system') . ' rejected quote #' . $otherQuote->id . ' from supplier ' . ($otherQuote->supplier?->name ?? 'unknown'),
-                    'occurred_at' => now(),
-                    'metadata' => [
-                        'admin_id' => $admin?->id,
-                        'admin_name' => $admin?->name,
-                        'quote_id' => $otherQuote->id,
-                        'supplier_id' => $otherQuote->supplier?->id ?? null,
-                    ],
-                ]);
-            }
-        } catch (\Throwable $e) {
-            $this->logException($e);
+            $order = app(\App\Services\Procurement\AwardAndPurchaseOrderService::class)
+                ->award($this->request, $quoteId, Auth::user());
+            $this->redirectRoute('procurement.orders.show', ['purchaseOrder' => $order->id]);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->error(collect($exception->errors())->flatten()->first() ?: __('Award could not be completed.'));
         }
-
-        // Refresh the request
-        $this->request->refresh()->load([
-            'items.product',
-            'quotes.supplier',
-            'quotes.items.requestItem.product',
-        ]);
-
-        $this->success(__('Quote accepted successfully. Other quotes have been rejected.'));
     }
 
     #[Renderless]

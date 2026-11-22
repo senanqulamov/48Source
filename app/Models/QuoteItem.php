@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $request_item_id
+ * @property float $unit_price
+ * @property float $tax_rate
+ */
 class QuoteItem extends Model
 {
     use HasFactory;

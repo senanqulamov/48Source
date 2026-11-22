@@ -4,7 +4,7 @@
     // Current routes, never prototype hash routes. Permissions are enforced by Laravel as well.
     $groups = match ($role) {
         'buyer' => [
-            'Workspace' => [['Dashboard','buyer.dashboard','view_dashboard'],['My RFQs','buyer.rfq.index','view_rfqs']],
+            'Workspace' => [['Dashboard','buyer.dashboard','view_dashboard'],['My RFQs','buyer.rfq.index','view_rfqs'],['Purchase orders','procurement.orders.index',null]],
             'Sourcing' => [['Products','buyer.products.index','view_products'],['Markets','buyer.markets.index','view_markets'],['Import / Export','buyer.import-export','view_dashboard']],
         ],
         'seller' => [
@@ -15,7 +15,7 @@
         'supplier' => [
             'Workspace' => [['Dashboard','supplier.dashboard','view_dashboard']],
             'Sourcing' => [['Invitations','supplier.invitations.index','manage_supplier_invitations'],['Quotations','supplier.quotes.index','view_quotes'],['RFQs','supplier.rfq.index','view_rfqs']],
-            'Operations' => [['Orders','supplier.orders.index','view_orders'],['Field workers','supplier.workers.index','view_dashboard'],['Messages','supplier.messages.index',null]],
+            'Operations' => [['Orders','supplier.orders.index','view_orders'],['Procurement POs','procurement.orders.index',null],['Field workers','supplier.workers.index','view_dashboard'],['Messages','supplier.messages.index',null]],
         ],
         'supplier_worker' => [
             'Workspace' => [['Dashboard','supplier.field.dashboard',null],['Assigned RFQs','supplier.field.rfq.index',null],['Messages','supplier.field.messages.index',null]],
@@ -23,7 +23,7 @@
         'market_worker' => ['My account' => [['Profile','user.profile',null]]],
         default => [
             'Workspace' => [['Dashboard','dashboard','view_dashboard'],['Monitoring & SLA','monitoring.rfq.index','view_monitoring']],
-            'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Marketplace orders','orders.index','view_orders'],['Products','products.index','view_products'],['Markets','markets.index','view_markets']],
+            'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Marketplace orders','orders.index','view_orders'],['Procurement POs','procurement.orders.index',null],['Products','products.index','view_products'],['Markets','markets.index','view_markets']],
             'Network' => [['Users','users.index','view_users'],['Categories','categories.index','view_categories']],
             'Insights' => [['KPI reports','reports.kpi','view_reports'],['SLA tracker','sla.index','manage_sla']],
             'Administration' => [['Roles & permissions','privacy.index','manage_roles'],['Settings','settings.index','view_settings'],['System health','health.index','view_health']],
@@ -37,7 +37,7 @@
         'monitoring.rfq.index'=>'pulse', 'rfq.index'=>'file', 'buyer.rfq.index'=>'file', 'supplier.rfq.index'=>'file',
         'products.index'=>'box', 'buyer.products.index'=>'box', 'seller.products.index'=>'box',
         'markets.index'=>'store', 'buyer.markets.index'=>'store', 'seller.markets.index'=>'store',
-        'orders.index'=>'box', 'seller.orders.index'=>'truck', 'supplier.orders.index'=>'box',
+        'procurement.orders.index'=>'file', 'orders.index'=>'box', 'seller.orders.index'=>'truck', 'supplier.orders.index'=>'box',
         'users.index'=>'users', 'categories.index'=>'box', 'reports.kpi'=>'chart',
         'supplier.invitations.index'=>'inbox', 'supplier.quotes.index'=>'file',
         'supplier.workers.index'=>'users', 'seller.workers.index'=>'users',

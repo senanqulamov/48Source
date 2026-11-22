@@ -58,7 +58,7 @@
     </section>
     <section class="card"><div class="card-h"><h2 class="card-t">{{ __('Quote review') }}</h2></div>
         <div class="card-b stack">
-            <div class="note warn">{{ __('The required audited award decision and purchase-order generation are not active. Award controls are deliberately not exposed until those operations are implemented.') }}</div>
+            <livewire:procurement.award-decision :request="$request" :key="'award-monitor-'.$request->id" />
             @foreach($request->quotes as $quote)
                 <div class="row wrap" style="justify-content:space-between">
                     <span class="t1">{{ $quote->supplier?->company_name ?: $quote->supplier?->name ?: __('Supplier') }} · #{{ $quote->id }}</span>
