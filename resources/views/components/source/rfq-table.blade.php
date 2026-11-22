@@ -57,7 +57,7 @@
                         @foreach(['all'=>'All','draft'=>'Draft','open'=>'Open','closed'=>'Closed','awarded'=>'Awarded','cancelled'=>'Cancelled'] as $status => $label)
                             <button type="button" class="{{ $active === $status ? 'on' : '' }}"
                                 aria-pressed="{{ $active === $status ? 'true' : 'false' }}"
-                                @if($buyer && $status === 'all') wire:click="clearStatusFilter"
+                                @if($buyer && $status === 'all') wire:click="$set('statusFilter', null)"
                                 @else wire:click="$set('{{ $statusProperty }}', '{{ $status }}')" @endif>
                                 {{ __($label) }}<span class="n">{{ $status === 'all' ? $totalCount : ($counts[$status] ?? 0) }}</span>
                             </button>
@@ -111,6 +111,7 @@
                     @if(filled($searchValue))<span class="fchip">{{ __('Search') }}: {{ $searchValue }}</span>@endif
                     @if($active !== 'all')<span class="fchip">{{ __('Status') }}: {{ ucfirst($active) }}</span>@endif
                     @if($typeFilterValue !== 'all')<span class="fchip">{{ __('Type') }}: {{ ucfirst($typeFilterValue) }}</span>@endif
+                    @if(!$buyer && $buyerFilterValue !== 'all')<span class="fchip">{{ __('Buyer') }}: {{ $buyerOptions[$buyerFilterValue] ?? $buyerFilterValue }}</span>@endif
                     <button type="button" class="btn btn-sm btn-g" wire:click="clearTableFilters">{{ __('Clear all') }}</button>
                 </div>
             @endif
