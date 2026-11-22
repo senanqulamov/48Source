@@ -1,3 +1,4 @@
+<div>
 @if(config('source48.redesign_enabled'))
     <x-source.rfq-detail :request="$request" :buyer="true" />
     @include('livewire.buyer.rfq.approved-invite-modal')
@@ -460,3 +461,5 @@
 </div>
 
 @endif
+
+</div>
