@@ -1,76 +1,27 @@
-<div>
-    <x-card>
-        <x-heading-title title="{{__('Field Workers')}}" icon="users" padding="p-5" hover="-"/>
-
-        <div class="mb-4 mt-4 flex items-center justify-between">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ __('Manage field evaluators and worker suppliers assigned to your account.') }}
-            </p>
-            <livewire:supplier.workers.create @created="$refresh" />
-        </div>
-
-        <div class="overflow-x-auto">
-            <x-table
-                :headers="[
-                    ['index' => 'id',         'label' => '#'],
-                    ['index' => 'name',       'label' => __('Name')],
-                    ['index' => 'email',      'label' => __('Email')],
-                    ['index' => 'status',     'label' => __('Status'),   'sortable' => false],
-                    ['index' => 'rfqs',       'label' => __('RFQs'),     'sortable' => false],
-                    ['index' => 'created_at', 'label' => __('Created')],
-                    ['index' => 'action',     'label' => '',             'sortable' => false],
-                ]"
-                :rows="$workers"
-                paginate
-                :paginator="null"
-            >
-                @interact('column_id', $row)
-                    <span class="text-sm text-gray-900 dark:text-gray-100">#{{ $row->id }}</span>
-                @endinteract
-
-                @interact('column_name', $row)
-                    <div class="font-medium text-gray-900 dark:text-gray-100">{{ $row->name }}</div>
-                @endinteract
-
-                @interact('column_email', $row)
-                    <div class="text-gray-600 dark:text-gray-300">{{ $row->email }}</div>
-                @endinteract
-
-                @interact('column_status', $row)
-                    @if($row->is_active)
-                        <x-badge text="{{ __('Active') }}" color="green" sm />
-                    @else
-                        <x-badge text="{{ __('Inactive') }}" color="red" sm />
-                    @endif
-                @endinteract
-
-                @interact('column_rfqs', $row)
-                    @php $assignedCount = \App\Models\RfqWorkerAssignment::where('worker_id', $row->id)->count(); @endphp
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                        {{ $assignedCount }}
-                    </span>
-                @endinteract
-
-                @interact('column_created_at', $row)
-                    <span class="text-sm text-gray-500">{{ optional($row->created_at)->diffForHumans() }}</span>
-                @endinteract
-
-                @interact('column_action', $row)
-                    <div class="flex gap-1">
-                        <x-button
-                            href="{{ route('supplier.workers.show', $row) }}"
-                            size="sm"
-                            color="purple"
-                            icon="eye"
-                        >
-                            {{ __('Manage') }}
-                        </x-button>
-                        <x-button.circle icon="pencil" wire:click="$dispatch('supplier::workers::load', { 'worker' : '{{ $row->id }}'})" />
-                    </div>
-                @endinteract
-            </x-table>
-        </div>
-    </x-card>
-
+<div class="stack">
+    <header class="ph"><div><h1 class="ph-t">{{ __('Field workers') }}</h1><p class="ph-d">{{ __('Manage evaluators assigned to your supplier account.') }}</p></div>
+        <div class="ph-a"><livewire:supplier.workers.create @created="$refresh" /></div></header>
+    <section class="card"><div class="dt"><div class="dt-top">
+        <span class="sm muted">{{ $workers->total() }} {{ __('workers') }}</span>
+        <div class="dt-tools"><label for="worker-pagesize" class="sr">{{ __('Rows') }}</label><select id="worker-pagesize" class="select" wire:model.live="perPage"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>{{ __('Worker') }}</th><th>{{ __('Status') }}</th><th class="num">{{ __('Assigned RFQs') }}</th><th>{{ __('Created') }}</th><th>{{ __('Actions') }}</th></tr></thead>
+        <tbody>
+        @forelse($workers as $worker)
+            <tr wire:key="supplier-worker-{{ $worker->id }}">
+                <td><a class="t1 link" href="{{ route('supplier.workers.show', $worker) }}">{{ $worker->name }}</a><div class="t2">{{ $worker->email }}</div></td>
+                <td><span class="badge {{ $worker->is_active ? 'b-ok' : 'b-bad' }}">{{ $worker->is_active ? __('Active') : __('Inactive') }}</span></td>
+                <td class="num mono">{{ $worker->assignedRfqs()->count() }}</td>
+                <td class="mono sm">{{ $worker->created_at?->format('d M Y') ?? '—' }}</td>
+                <td><div class="row"><a href="{{ route('supplier.workers.show', $worker) }}" class="btn btn-sm">{{ __('Manage') }}</a>
+                    <button type="button" class="btn btn-sm" wire:click="$dispatch('supplier::workers::load', { worker: '{{ $worker->id }}' })">{{ __('Edit') }}</button></div></td>
+            </tr>
+        @empty
+            <tr><td colspan="5"><div class="empty">{{ __('No field workers found') }}</div></td></tr>
+        @endforelse
+        </tbody>
+    </table></div><div class="dt-foot">{{ $workers->links() }}</div>
+    </div></section>
     <livewire:supplier.workers.update @updated="$refresh" @deleted="$refresh" />
 </div>

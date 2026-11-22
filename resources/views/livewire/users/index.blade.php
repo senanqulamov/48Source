@@ -1,106 +1,56 @@
-<div>
-    <x-card>
-        <x-heading-title title="{{__('Users')}}" icon="user-group" padding="p-5" hover="-"/>
-
-        <div class="mb-2 mt-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div class="flex gap-2">
-                <livewire:users.create @created="$refresh"/>
-
-                @can('view_users')
-                    <x-button
-                        icon="table-cells"
-                        color="secondary"
-                        href="{{ route('export.suppliers.excel') }}"
-                    >
-                        {{ __('Export Suppliers') }}
-                    </x-button>
-                @endcan
-            </div>
-
-            <div class="w-full sm:w-64">
-                <x-select.styled
-                    :label="__('Filter by Role')"
-                    wire:model.live="roleFilter"
-                    :options="[
-                        ['label' => 'All Roles', 'value' => 'all'],
-                        ['label' => 'Buyer', 'value' => 'buyer'],
-                        ['label' => 'Seller', 'value' => 'seller'],
-                        ['label' => 'Supplier', 'value' => 'supplier'],
-                        ['label' => 'Admin', 'value' => 'admin'],
-                    ]"
-                    select="label:label|value:value"
-                />
+<div class="stack">
+    <header class="ph"><div><h1 class="ph-t">{{ __('Users and organizations') }}</h1><p class="ph-d">{{ __('Manage account roles, supplier status and access permissions.') }}</p></div>
+        <div class="ph-a"><livewire:users.create @created="$refresh" /></div>
+    </header>
+    <section class="card"><div class="dt">
+        <div class="dt-top">
+            <label class="dt-search"><x-source.icon name="search" :size="16" /><span class="sr">{{ __('Search users') }}</span><input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Name or email') }}"></label>
+            <div class="dt-tools">
+                <label for="users-role" class="sr">{{ __('Role') }}</label>
+                <select id="users-role" class="select" wire:model.live="roleFilter">
+                    <option value="all">{{ __('All roles') }}</option><option value="admin">{{ __('Admin') }}</option>
+                    <option value="buyer">{{ __('Buyer') }}</option><option value="seller">{{ __('Seller') }}</option>
+                    <option value="supplier">{{ __('Supplier') }}</option>
+                </select>
+                <label for="users-rows" class="sr">{{ __('Rows') }}</label>
+                <select id="users-rows" class="select" wire:model.live="quantity">
+                    <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+                </select>
+                @if(\Illuminate\Support\Facades\Route::has('export.suppliers.excel'))
+                    <a href="{{ route('export.suppliers.excel') }}" class="btn btn-sm">{{ __('Export suppliers') }}</a>
+                @endif
             </div>
         </div>
-
-        <x-table :$headers :$sort :rows="$this->rows" paginate :paginator="null" filter loading :quantity="[5, 10, 20, 'all']">
-            @interact('column_name', $row)
-            <a href="{{ route('users.show', $row) }}" class="text-blue-600 hover:underline">
-                <x-badge text="{{ $row->name }}" icon="eye" position="left"/>
-            </a>
-            @endinteract
-
-            @interact('column_email', $row)
-            {{ $row->email }}
-            @endinteract
-
-            @interact('column_company_name', $row)
-            {{ $row->company_name ?? '-' }}
-            @endinteract
-
-            @interact('column_roles', $row)
-            @php
-                $roleNames = $row->roles?->pluck('name')->all() ?? [];
-            @endphp
-            <div class="flex gap-1 flex-wrap">
-                @if(in_array('buyer', $roleNames, true) || $row->is_buyer)
-                    <x-badge color="blue" text="Buyer" icon="shopping-cart" position="left" sm />
-                @endif
-
-                @if(in_array('seller', $roleNames, true) || $row->is_seller)
-                    <x-badge color="green" text="{{ $row->verified_seller ? 'Verified Seller' : 'Seller' }}" icon="building-storefront" position="left" sm />
-                @endif
-
-                @if(in_array('supplier', $roleNames, true) || $row->is_supplier)
-                    @if($row->supplier_status === 'active')
-                        <x-badge color="purple" text="Active Supplier" icon="cube" position="left" sm />
-                    @elseif($row->supplier_status === 'pending')
-                        <x-badge color="yellow" text="Pending Supplier" icon="clock" position="left" sm />
-                    @elseif($row->supplier_status === 'blocked')
-                        <x-badge color="red" text="Blocked Supplier" icon="shield-exclamation" position="left" sm />
-                    @elseif($row->supplier_status === 'inactive')
-                        <x-badge color="slate" text="Inactive Supplier" icon="x-circle" position="left" sm />
-                    @else
-                        <x-badge color="slate" text="Supplier ({{ $row->supplier_status }})" icon="cube" position="left" sm />
-                    @endif
-                @endif
-
-                @if(in_array('admin', $roleNames, true) || $row->is_admin)
-                    <x-badge color="slate" text="Admin" icon="shield-check" position="left" sm />
-                @endif
-
-                @if(in_array('market_worker', $roleNames, true))
-                    <x-badge color="slate" text="Worker" icon="users" position="left" sm />
-                @endif
-            </div>
-            @endinteract
-
-            @interact('column_created_at', $row)
-            {{ $row->created_at->diffForHumans() }}
-            @endinteract
-
-            @interact('column_action', $row)
-            <div class="flex gap-1">
-                @can('edit_users')
-                    <x-button.circle icon="pencil" wire:click="$dispatch('load::user', { 'user' : '{{ $row->id }}'})"/>
-                @endcan
-                @can('delete_users')
-                    <livewire:users.delete :user="$row" :key="uniqid('', true)" @deleted="$refresh"/>
-                @endcan
-            </div>
-            @endinteract
-        </x-table>
-    </x-card>
-
-    <livewire:users.update @updated="$refresh"/>
+        <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>{{ __('User') }}</th><th>{{ __('Company') }}</th><th>{{ __('Roles') }}</th><th>{{ __('Status') }}</th><th>{{ __('Created') }}</th><th>{{ __('Actions') }}</th></tr></thead>
+            <tbody>
+            @forelse($this->rows as $person)
+                <tr wire:key="user-{{ $person->id }}">
+                    <td><a href="{{ route('users.show', $person) }}" class="t1 link">{{ $person->name }}</a><div class="t2">{{ $person->email }}</div></td>
+                    <td class="sm">{{ $person->company_name ?: '—' }}</td>
+                    <td><div class="row wrap">
+                        @foreach($person->roles as $role)
+                            <span class="badge">{{ $role->display_name ?: ucfirst($role->name) }}</span>
+                        @endforeach
+                    </div></td>
+                    <td><span class="badge {{ $person->is_active ? 'b-ok' : 'b-bad' }}">{{ $person->is_active ? __('Active') : __('Inactive') }}</span>
+                        @if($person->isSupplier())<div class="t2">{{ ucfirst($person->supplier_status ?: 'pending') }} {{ __('supplier') }}</div>@endif</td>
+                    <td class="sm mono">{{ $person->created_at?->format('d M Y') ?? '—' }}</td>
+                    <td><div class="row">
+                        @can('edit_users')
+                            <button type="button" class="btn btn-sm" wire:click="$dispatch('load::user', { user: '{{ $person->id }}' })">{{ __('Edit') }}</button>
+                        @endcan
+                        @can('delete_users')
+                            <livewire:users.delete :user="$person" :key="'users-delete-'.$person->id" @deleted="$refresh" />
+                        @endcan
+                    </div></td>
+                </tr>
+            @empty
+                <tr><td colspan="6"><div class="empty"><h3>{{ __('No users match these filters') }}</h3></div></td></tr>
+            @endforelse
+            </tbody>
+        </table></div>
+        <div class="dt-foot">{{ $this->rows->links() }}</div>
+    </div></section>
+    <livewire:users.update @updated="$refresh" />
 </div>
