@@ -56,7 +56,7 @@
                             <td class="sm">{{ $product->market?->name ?? '—' }}</td>
                             <td class="num mono">{{ number_format((float) $product->price, 2) }}</td>
                             <td class="num"><span class="badge {{ $product->stock > 10 ? 'b-ok' : ($product->stock > 0 ? 'b-warn' : 'b-bad') }}">{{ $product->stock }}</span></td>
-                            <td><a class="btn btn-sm" href="{{ route($role === 'seller' ? 'seller.products.show' : ($role === 'supplier' ? 'supplier.products.show' : ($role === 'admin' ? 'products.show' : 'buyer.products.show')), $product) }}">{{ __('View') }}</a></td>
+                            <td>@if($role !== 'buyer')<a class="btn btn-sm" href="{{ route($role === 'seller' ? 'seller.products.show' : ($role === 'supplier' ? 'supplier.products.show' : 'products.show'), $product) }}">{{ __('View') }}</a>@else<span class="muted sm">{{ __('Browse only') }}</span>@endif</td>
                         </tr>
                     @empty
                         <tr><td colspan="7"><div class="empty"><h3>{{ __('No products found') }}</h3><p>{{ __('Adjust your filters or search term.') }}</p></div></td></tr>

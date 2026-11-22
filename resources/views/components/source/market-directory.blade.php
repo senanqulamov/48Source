@@ -24,7 +24,7 @@
                         <td class="t1">{{ $market->name }}</td><td class="sm">{{ $market->location ?: '—' }}</td>
                         <td class="sm">{{ $market->seller?->company_name ?: $market->seller?->name ?: '—' }}</td>
                         <td class="num mono">{{ $market->products_count ?? 0 }}</td>
-                        <td><a class="btn btn-sm" href="{{ route($role === 'seller' ? 'seller.markets.show' : ($role === 'supplier' ? 'supplier.markets.show' : ($role === 'admin' ? 'markets.show' : 'buyer.markets.show')), $market) }}">{{ __('View') }}</a></td>
+                        <td>@if($role !== 'buyer')<a class="btn btn-sm" href="{{ route($role === 'seller' ? 'seller.markets.show' : ($role === 'supplier' ? 'supplier.markets.show' : 'markets.show'), $market) }}">{{ __('View') }}</a>@else<span class="muted sm">{{ __('Browse only') }}</span>@endif</td>
                     </tr>
                 @empty
                     <tr><td colspan="5"><div class="empty"><h3>{{ __('No markets found') }}</h3></div></td></tr>
