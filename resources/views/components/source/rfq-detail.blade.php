@@ -108,7 +108,11 @@
     </section>
 
     <section x-show="tab==='suppliers'" x-cloak aria-label="Supplier invitations">
-        <div class="card"><div class="card-h"><h2 class="card-t">{{ __('Invited suppliers') }}</h2></div>
+        <div class="card"><div class="card-h"><h2 class="card-t">{{ __('Invited suppliers') }}</h2><span class="sp"></span>
+            @if($buyer)
+                <button type="button" class="btn btn-sm btn-p" wire:click="openInviteModal">{{ __('Invite suppliers') }}</button>
+            @endif
+        </div>
             <div class="tbl-wrap"><table class="tbl">
                 <thead><tr><th>{{ __('Supplier') }}</th><th>{{ __('Status') }}</th><th>{{ __('Invited') }}</th><th>{{ __('Responded') }}</th></tr></thead>
                 <tbody>
