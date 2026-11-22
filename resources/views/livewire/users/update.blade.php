@@ -1,6 +1,13 @@
 <div>
-    <x-slide wire="modal" right size="6xl" blur="md">
-        <x-slot name="title">{{ __('Update User: :name (#:id)', ['name' => $user?->name, 'id' => $user?->id]) }}</x-slot>
+    @if($modal)
+    <div class="scrim source-dialog source-drawer-scrim" wire:key="edit-user-drawer" wire:keydown.escape="$set('modal', false)" wire:click.self="$set('modal', false)">
+        <section class="drawer source-admin-drawer" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
+            <div class="ov-h">
+                <h2 id="edit-user-title">{{ __('Edit user: :name', ['name' => $user?->name]) }}</h2>
+                <span class="sp"></span>
+                <button type="button" class="icon-btn" aria-label="{{ __('Close') }}" wire:click="$set('modal', false)"><x-source.icon name="x" /></button>
+            </div>
+            <div class="ov-b">
 
         <form id="user-update-{{ $user?->id }}" wire:submit="save">
             @php
@@ -359,20 +366,14 @@
                 </x-tab.items>
             </x-tab>
         </form>
-
-        <x-slot:footer>
-            <div class="flex justify-between items-center w-full">
-                <x-button flat label="{{ __('Cancel') }}" wire:click="$toggle('modal')" />
-                <x-button
-                    type="submit"
-                    form="user-update-{{ $user?->id }}"
-                    color="primary"
-                    icon="check"
-                    loading="save"
-                >
-                    {{ __('Save Changes') }}
-                </x-button>
             </div>
-        </x-slot:footer>
-    </x-slide>
+            <div class="ov-f">
+            <div class="flex justify-between items-center w-full">
+                <button type="button" class="btn" wire:click="$set('modal', false)">{{ __('Cancel') }}</button>
+                <button type="submit" form="user-update-{{ $user?->id }}" class="btn btn-p" wire:loading.attr="disabled" wire:target="save"><x-source.icon name="check" :size="15" />{{ __('Save Changes') }}</button>
+            </div>
+            </div>
+        </section>
+    </div>
+    @endif
 </div>

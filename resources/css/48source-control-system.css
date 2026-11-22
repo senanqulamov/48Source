@@ -1,0 +1,285 @@
+/*
+ * Shared approved-design interaction layer.
+ * All four role workspaces use the same tokens and controls.
+ * Keep TallStackUI/Livewire behaviors, replace their visual chrome.
+ */
+.source-ui .dt-top {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:12px;
+}
+.source-ui .dt-top .dt-search {
+  flex:1 1 240px;
+  width:min(340px,100%);
+  max-width:340px;
+}
+.source-ui .dt-top .dt-tools {
+  margin-left:auto;
+  flex:0 1 auto;
+  min-width:0;
+  max-width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+}
+.source-ui .dt-tools select.select,
+.source-ui .dt-tools input.input {
+  flex:0 1 auto;
+  width:auto;
+  min-width:115px;
+  max-width:210px;
+  height:34px;
+}
+.source-ui .dt-top .dt-tools label.sr,
+.source-ui .dt-top .dt-search .sr {
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+.source-ui .dt-top select,
+.source-ui .field select,
+.source-dialog select {
+  appearance:none;
+  padding:0 31px 0 11px;
+  color:var(--text);
+  background-color:var(--surface);
+  border:1px solid var(--line-2);
+  border-radius:var(--r);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23525D68' stroke-width='2'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+  background-position:right 10px center;
+  background-repeat:no-repeat;
+  background-size:14px 14px;
+}
+.source-ui .dt-tools select:focus-visible,
+.source-ui .field select:focus-visible,
+.source-dialog select:focus-visible,
+.source-ui .dt-search input:focus-visible {
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+  border-color:var(--primary);
+}
+.source-ui button,
+.source-ui [role=button],
+.source-dialog button {cursor:pointer}
+.source-ui .btn, .source-dialog .btn {
+  font-family:var(--font);
+  font-size:13px;
+  font-weight:600;
+  line-height:1;
+  border-radius:var(--r);
+  box-shadow:none;
+  text-decoration:none;
+  transition:background-color .15s,border-color .15s,transform .12s;
+}
+.source-ui .btn-p, .source-dialog .btn-p {
+  color:var(--on-primary);
+  border-color:var(--primary);
+  background:var(--primary);
+}
+.source-ui .btn-p:hover, .source-dialog .btn-p:hover {
+  background:var(--primary-h);
+  border-color:var(--primary-h);
+}
+.source-ui .btn-d.solid, .source-dialog .btn-d.solid {
+  background:var(--bad); border-color:var(--bad); color:#fff;
+}
+.source-ui .card, .source-ui .tbl-wrap {
+  min-width:0;
+}
+.source-ui .tbl {
+  border-collapse:collapse;
+  table-layout:auto;
+  width:100%;
+}
+.source-ui .tbl thead th {
+  color:var(--text-2);
+  background:var(--surface-2);
+  font-weight:600;
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+.source-ui .tbl tbody tr:hover td {
+  background:var(--surface-2);
+}
+.source-ui .tbl td {
+  border-bottom:1px solid var(--line);
+}
+.source-ui .tbl td:last-child .row {
+  gap:6px;
+  justify-content:flex-end;
+}
+.source-ui .chk, .source-dialog .chk {
+  appearance:none;
+  flex:0 0 auto;
+  width:16px;
+  height:16px;
+  border:1px solid var(--line-2);
+  border-radius:4px;
+  background:var(--surface);
+  cursor:pointer;
+}
+.source-ui .chk:checked, .source-dialog .chk:checked {
+  background:var(--primary);
+  border-color:var(--primary);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E");
+  background-position:center;
+  background-repeat:no-repeat;
+}
+/* Approved reference: .scrim + .modal/.drawer + .ov-h/.ov-b/.ov-f */
+.source-dialog.scrim {
+  position:fixed;
+  inset:0;
+  z-index:3000;
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  background:rgba(10,18,22,.48);
+  -webkit-backdrop-filter:blur(2px);
+  backdrop-filter:blur(2px);
+}
+.source-dialog .modal {
+  margin:auto;
+  width:min(520px,calc(100vw - 32px));
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  max-height:calc(100dvh - 32px);
+  box-shadow:var(--sh-pop);
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.source-dialog .modal.wide {width:min(720px,calc(100vw - 32px))}
+.source-dialog .ov-h,
+.source-dialog .ov-f {flex-shrink:0}
+.source-dialog .ov-h h2 {font-size:15px;font-weight:700}
+.source-dialog .ov-b {
+  overflow:auto;
+  overscroll-behavior:contain;
+  min-height:0;
+  flex:1 1 auto;
+  padding:18px;
+}
+.source-dialog .source-dialog-form {display:flex;flex:1 1 auto;min-height:0;flex-direction:column}
+.source-dialog .source-dialog-form .ov-b {flex:1 1 auto}
+.source-dialog .ov-f {
+  background:var(--surface-2);
+  border-top:1px solid var(--line);
+  padding:12px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+}
+.source-dialog .source-admin-drawer {
+  margin:0 0 0 auto;
+  width:min(760px,100vw);
+  height:100dvh;
+  max-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  border-left:1px solid var(--line);
+  border-radius:0;
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:var(--sh-pop);
+}
+.source-dialog .source-admin-drawer .ov-b {flex:1 1 auto;overflow:auto}
+.source-dialog .source-admin-drawer .ov-f {flex:0 0 auto}
+.source-dialog .source-admin-drawer form {min-width:0}
+.source-dialog .source-admin-drawer .ov-f .flex {gap:8px}
+.source-dialog .field label, .source-dialog .field>label {font-size:12.5px;font-weight:600}
+.source-dialog input.input, .source-dialog textarea.textarea {
+  width:100%;
+  background:var(--surface);
+  color:var(--text);
+  border:1px solid var(--line-2);
+  border-radius:var(--r);
+}
+.source-dialog .err {font-size:12px;color:var(--bad)}
+.source-dialog .note.bad {border-color:var(--bad-soft);color:var(--bad)}
+.source-ui :is(input,button,textarea,select):disabled,
+.source-dialog :is(input,button,textarea,select):disabled {opacity:.55;cursor:not-allowed}
+@media(max-width:720px) {
+  .source-ui .dt-top .dt-search {max-width:none;flex-basis:100%}
+  .source-ui .dt-top .dt-tools {margin-left:0;width:100%;flex:1 1 100%;justify-content:flex-start}
+  .source-ui .dt-tools select.select {max-width:none;flex:1 1 125px}
+  .source-dialog .modal.wide {width:calc(100vw - 18px)}
+  .source-dialog .source-admin-drawer {width:100vw}
+  .source-dialog .fgrid {grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce) {
+  .source-ui .btn, .source-dialog .btn {transition:none}
+}
+
+/* Legacy form widgets retained inside the approved editor drawer. */
+.source-admin-drawer :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
+  max-width:100%;
+  background-color:var(--surface);
+  color:var(--text);
+  border-color:var(--line-2);
+  border-radius:var(--r);
+  box-shadow:none;
+}
+.source-admin-drawer :is(input,textarea,select):focus-visible {
+  outline:2px solid var(--primary);
+  outline-offset:1px;
+  --tw-ring-color:var(--primary);
+  border-color:var(--primary);
+}
+.source-admin-drawer :is(input[type=checkbox],input[type=radio]) {accent-color:var(--primary)}
+.source-admin-drawer [role=tablist],
+.source-ui [role=tablist] {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex-wrap:wrap;
+  padding:4px;
+  background:var(--sunken);
+  border-radius:var(--r);
+  border:1px solid var(--line);
+}
+.source-admin-drawer [role=tab],
+.source-ui [role=tab] {
+  padding:7px 12px;
+  border:0;
+  border-radius:var(--r);
+  background:transparent;
+  color:var(--text-2);
+  font-size:13px;
+  font-weight:600;
+}
+.source-admin-drawer [role=tab][aria-selected=true],
+.source-ui [role=tab][aria-selected=true] {
+  color:var(--text);
+  background:var(--surface);
+  box-shadow:0 1px 3px rgba(12,22,26,.08);
+}
+.source-admin-drawer [role=tabpanel] {padding-top:16px}
+.source-admin-drawer .ov-f button[type=submit] {
+  color:var(--on-primary);
+  border-color:var(--primary);
+  background:var(--primary);
+}
+.source-admin-drawer .ov-f button[type=submit]:hover {background:var(--primary-h)}
+.source-dialog :is(button,input,textarea,select):focus-visible {
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+}
+/* Teleported library confirmations still being migrated. */
+body [role=alertdialog]:not(.modal):not(.source-admin-drawer) {
+  border-radius:10px;
+  background:var(--surface,#fff);
+  color:var(--text,#16202B);
+  border:1px solid var(--line,#E3E5E0);
+  box-shadow:0 18px 48px rgba(10,18,22,.18);
+}

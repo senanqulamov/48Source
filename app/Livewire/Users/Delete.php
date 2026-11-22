@@ -6,7 +6,7 @@ use App\Livewire\Traits\Alert;
 use App\Livewire\Traits\WithLogging;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Renderless;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class Delete extends Component
@@ -15,16 +15,13 @@ class Delete extends Component
 
     public User $user;
 
-    public function render(): string
+    public bool $confirming = false;
+
+    public function render(): View
     {
-        return <<<'HTML'
-        <div>
-            <x-button.circle icon="trash" color="red" wire:click="confirm" />
-        </div>
-        HTML;
+        return view('livewire.users.delete');
     }
 
-    #[Renderless]
     public function confirm(): void
     {
         // Check permission
@@ -33,14 +30,12 @@ class Delete extends Component
             return;
         }
 
-        $this->question()
-            ->confirm(method: 'delete')
-            ->cancel()
-            ->send();
+        $this->confirming = true;
     }
 
     public function delete(): void
     {
+        abort_unless($this->confirming, 403);
         // Check permission
         if (!Auth::check() || !Auth::user()->hasPermission('delete_users')) {
             $this->error('You do not have permission to delete users.');
@@ -59,6 +54,7 @@ class Delete extends Component
         $this->logDelete(User::class, $userId, $userData);
 
 
+        $this->confirming = false;
         $this->dispatch('deleted');
 
         $this->success();
