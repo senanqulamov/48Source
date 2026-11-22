@@ -1,3 +1,7 @@
+<div>
+@if(config('source48.redesign_enabled'))
+    @include('livewire.supplier.quotes.approved-index')
+@else
 <div class="space-y-6">
 
     {{-- Modern Header Card --}}
@@ -138,4 +142,7 @@
             </x-table>
         </div>
     </div>
+</div>
+
+@endif
 </div>
