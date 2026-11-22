@@ -27,6 +27,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('📋 Step 1: Creating roles and permissions...');
         $this->call(RolesAndPermissionsSeeder::class);
 
+        // Always include the documented local test accounts in the default demo data.
+        // This keeps `php artisan db:seed` and TestUserSeeder credentials consistent.
+        $this->call(TestUserSeeder::class);
+
         // STEP 2: Create users with proper distribution
         // 50 suppliers, 40 buyers, 10 sellers, 2 workers, and 1 admin.
         $this->command->info('👥 Step 2: Creating users...');
@@ -228,7 +232,7 @@ class DatabaseSeeder extends Seeder
             $this->command->info("  • All users have proper role assignments ✓");
         }
 
-        if ($nonAdminUsers !== 102) {
+        if ($nonAdminUsers !== 106) {
             $this->command->warn("⚠️  Expected 102 non-admin users, got {$nonAdminUsers}");
         }
 
@@ -239,7 +243,7 @@ class DatabaseSeeder extends Seeder
                 throw new \RuntimeException("Demo user {$demoUser->email} does not have the expected local password.");
             }
         }
-        if ($usersWithoutRoles > 0 || $nonAdminUsers !== 102) {
+        if ($usersWithoutRoles > 0 || $nonAdminUsers !== 106) {
             throw new \RuntimeException('Demo user seeding did not create the expected accounts and role assignments.');
         }
 
