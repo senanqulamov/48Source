@@ -31,6 +31,21 @@
     };
     $roleLabel = ['admin'=>'Administrator','buyer'=>'Buyer','seller'=>'Seller','supplier'=>'Supplier','supplier_worker'=>'Field worker','market_worker'=>'Market worker'][$role] ?? ucfirst($role);
     $user = auth()->user();
+    $routeIcons = [
+        'dashboard'=>'dash', 'buyer.dashboard'=>'dash', 'seller.dashboard'=>'dash',
+        'supplier.dashboard'=>'dash', 'supplier.field.dashboard'=>'dash',
+        'monitoring.rfq.index'=>'pulse', 'rfq.index'=>'file', 'buyer.rfq.index'=>'file', 'supplier.rfq.index'=>'file',
+        'products.index'=>'box', 'buyer.products.index'=>'box', 'seller.products.index'=>'box',
+        'markets.index'=>'store', 'buyer.markets.index'=>'store', 'seller.markets.index'=>'store',
+        'orders.index'=>'box', 'seller.orders.index'=>'truck', 'supplier.orders.index'=>'box',
+        'users.index'=>'users', 'categories.index'=>'box', 'reports.kpi'=>'chart',
+        'supplier.invitations.index'=>'inbox', 'supplier.quotes.index'=>'file',
+        'supplier.workers.index'=>'users', 'seller.workers.index'=>'users',
+        'supplier.messages.index'=>'mail', 'supplier.field.messages.index'=>'mail',
+        'supplier.field.rfq.index'=>'file', 'privacy.index'=>'shield',
+        'settings.index'=>'sliders', 'health.index'=>'pulse', 'sla.index'=>'clock',
+        'buyer.import-export'=>'download', 'user.profile'=>'user',
+    ];
 @endphp
 
 <div class="source-ui app" :class="{ navopen: mobileOpen }" x-data="{ mobileOpen:false, menuOpen:false, dark: localStorage.getItem('48source-theme') === 'dark' }" :data-theme="dark ? 'dark' : 'light'">
@@ -48,7 +63,7 @@
                     @foreach($items as [$label,$routeName,$permission])
                         @if(\Illuminate\Support\Facades\Route::has($routeName) && ($permission === null || $user->can($permission)))
                             <a class="sb-item {{ request()->routeIs($routeName) ? 'on' : '' }}" href="{{ route($routeName) }}" @if(request()->routeIs($routeName)) aria-current="page" @endif>
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                                <x-source.icon :name="$routeIcons[$routeName] ?? 'dash'" />
                                 <span>{{ $label }}</span>
                             </a>
                         @endif
@@ -58,7 +73,7 @@
         </div>
         <div class="sb-foot">
             <a class="sb-item {{ request()->routeIs('user.profile') ? 'on' : '' }}" href="{{ route('user.profile') }}">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                <x-source.icon name="user" />
                 <span>Profile & settings</span>
             </a>
             <div class="role-sw">
