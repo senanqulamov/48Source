@@ -75,16 +75,31 @@ html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
 .source-ui .source-rfq-grid th button svg {color:var(--primary)}
 .source-ui .source-rfq-loading {opacity:.55;transition:opacity .15s}
 @media(max-width:900px) {
- .source-ui .source-rfq-grid th:nth-child(3),.source-ui .source-rfq-grid td:nth-child(3),
  .source-ui .source-rfq-grid th:nth-child(4),.source-ui .source-rfq-grid td:nth-child(4),
- .source-ui .source-rfq-grid th:nth-child(7),.source-ui .source-rfq-grid td:nth-child(7),
- .source-ui .source-rfq-grid th:nth-child(9),.source-ui .source-rfq-grid td:nth-child(9) {display:none}
+ .source-ui .source-rfq-grid th:nth-child(5),.source-ui .source-rfq-grid td:nth-child(5),
+ .source-ui .source-rfq-grid th:nth-child(8),.source-ui .source-rfq-grid td:nth-child(8),
+ .source-ui .source-rfq-grid th:nth-child(10),.source-ui .source-rfq-grid td:nth-child(10) {display:none}
 }
 @media(max-width:640px){
- .source-ui .source-rfq-grid th:nth-child(1),.source-ui .source-rfq-grid td:nth-child(1),
- .source-ui .source-rfq-grid th:nth-child(8),.source-ui .source-rfq-grid td:nth-child(8) {display:none}
+ .source-ui .source-rfq-grid th:nth-child(2),.source-ui .source-rfq-grid td:nth-child(2),
+ .source-ui .source-rfq-grid th:nth-child(9),.source-ui .source-rfq-grid td:nth-child(9),
+ .source-ui .source-rfq-grid .source-bulk-select {display:none}
  .source-ui .source-rfq-table .dt-tools {justify-content:flex-start}
 }
+.source-ui .source-rfq-grid .source-bulk-select {width:42px;text-align:center}
+.source-ui .source-select-box {height:18px;width:18px;display:inline-grid;place-items:center;border:1.5px solid var(--line-2);border-radius:6px;background:var(--surface);color:transparent;font-size:12px;line-height:1;cursor:pointer}
+.source-ui .source-select-box[aria-checked=true],
+.source-ui .source-select-box[aria-checked=mixed] {background:var(--ink);color:var(--brand);border-color:var(--ink)}
+html[data-theme=dark] .source-ui .source-select-box[aria-checked=true],
+html[data-theme=dark] .source-ui .source-select-box[aria-checked=mixed] {background:var(--brand);color:#12151C;border-color:var(--brand)}
+.source-ui .source-select-box:focus-visible {outline:2px solid var(--primary);outline-offset:3px}
+.source-ui .source-rfq-grid tr.is-selected td {background:var(--primary-soft)}
+.source-ui .source-rfq-grid tr.is-selected td:first-child {box-shadow:inset 3px 0 0 var(--primary)}
+.source-ui .source-rfq-bulk-bar {position:sticky;bottom:18px;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:10px;width:max-content;max-width:calc(100% - 20px);margin:12px auto;padding:7px 12px;background:#12151C;color:white;border-radius:999px;box-shadow:0 14px 34px rgba(18,21,28,.28)}
+.source-ui .source-rfq-selected-count {display:grid;place-items:center;min-width:25px;height:25px;padding:0 6px;border-radius:999px;background:var(--brand);color:#12151C;font-weight:700}
+.source-ui .source-rfq-bulk-bar .btn {background:rgba(255,255,255,.10);color:white;border:0}
+.source-ui .source-rfq-bulk-bar .btn:hover {background:rgba(255,255,255,.20)}
+@media(max-width:640px){.source-ui .source-rfq-bulk-bar{border-radius:16px;justify-content:center}}
 
 
 /* Approved comparison matrix: fixed line-name column, scrolling vendor columns. */
