@@ -76,6 +76,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/seller/orders/{order}', SellerOrderShow::class)->name('seller.orders.show')->middleware(['seller', 'can:view_orders']);
     Route::get('/seller/logs', SellerLogsIndex::class)->name('seller.logs.index')->middleware(['seller', 'can:view_logs']);
 
+    // Owner-controlled market task assignments and a real worker 'Today' page.
+    Route::get('/seller/tasks', \App\Livewire\Seller\Tasks\Index::class)->name('seller.tasks.index')->middleware('seller');
+    Route::get('/market-work/today', \App\Livewire\MarketWork\Today::class)->name('market-work.today');
+
     // Seller Workers
     Route::get('/seller/workers', SellerWorkersIndex::class)->name('seller.workers.index')->middleware(['seller', 'can:view_dashboard']);
 

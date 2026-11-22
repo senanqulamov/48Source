@@ -10,7 +10,7 @@
         'seller' => [
             'Workspace' => [['Dashboard','seller.dashboard','view_dashboard']],
             'Catalog' => [['Products','seller.products.index','view_products'],['Markets','seller.markets.index','view_markets']],
-            'Operations' => [['Orders','seller.orders.index','view_orders'],['Workers','seller.workers.index','view_dashboard']],
+            'Operations' => [['Orders','seller.orders.index','view_orders'],['Workers','seller.workers.index','view_dashboard'],['Assign tasks','seller.tasks.index',null]],
         ],
         'supplier' => [
             'Workspace' => [['Dashboard','supplier.dashboard','view_dashboard']],
@@ -20,7 +20,7 @@
         'supplier_worker' => [
             'Workspace' => [['Dashboard','supplier.field.dashboard',null],['Assigned RFQs','supplier.field.rfq.index',null],['Messages','supplier.field.messages.index',null]],
         ],
-        'market_worker' => ['My account' => [['Profile','user.profile',null]]],
+        'market_worker' => ['Workspace' => [['Today','market-work.today',null]], 'My account' => [['Profile','user.profile',null]]],
         default => [
             'Workspace' => [['Dashboard','dashboard','view_dashboard']],
             'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Compare quotations','procurement.compare.index','view_rfqs'],['Purchase orders','procurement.orders.index',null]],
@@ -41,7 +41,7 @@
         'procurement.compare.index'=>'cols', 'procurement.orders.index'=>'file', 'orders.index'=>'box', 'seller.orders.index'=>'truck', 'supplier.orders.index'=>'box',
         'users.index'=>'users', 'categories.index'=>'box', 'reports.kpi'=>'chart',
         'supplier.invitations.index'=>'inbox', 'supplier.quotes.index'=>'file',
-        'supplier.workers.index'=>'users', 'seller.workers.index'=>'users',
+        'supplier.workers.index'=>'users', 'seller.workers.index'=>'users', 'seller.tasks.index'=>'clip', 'market-work.today'=>'check',
         'supplier.messages.index'=>'mail', 'supplier.field.messages.index'=>'mail',
         'supplier.field.rfq.index'=>'file', 'privacy.index'=>'shield',
         'settings.index'=>'sliders', 'health.index'=>'pulse', 'sla.index'=>'clock',

@@ -14,7 +14,6 @@ it('shows market details and metrics', function () {
     $product = Product::factory()->create(['market_id' => $market->id, 'price' => 10]);
 
     $order = Order::factory()->create([
-        'market_id' => $market->id,
         'user_id' => $user->id,
         'total' => 10,
     ]);
@@ -22,6 +21,7 @@ it('shows market details and metrics', function () {
     OrderItem::factory()->create([
         'order_id' => $order->id,
         'product_id' => $product->id,
+        'market_id' => $market->id,
         'quantity' => 1,
         'unit_price' => 10,
         'subtotal' => 10,

@@ -119,3 +119,23 @@ html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
  .source-ui .source-quotation-form .source-quotation-lines{min-width:650px}
  .source-ui .source-quotation-form .ph{align-items:flex-start;flex-direction:column;gap:12px}
 }
+
+/* Approved worker 'Today' mobile-first task controls. */
+.source-ui .source-worker-task{width:100%;min-height:68px;padding:12px;display:flex;align-items:center;gap:12px;border-radius:12px;border:1px solid var(--line);text-align:left;background:var(--surface);color:var(--text)}
+.source-ui .source-worker-task:hover{background:var(--surface-2);border-color:var(--primary)}
+.source-ui .source-worker-task:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.source-ui .source-task-check{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border:1.5px solid var(--line-2);border-radius:6px;color:transparent}
+.source-ui .source-worker-task.is-done{opacity:.6}
+.source-ui .source-worker-task.is-done .source-task-check{background:var(--brand);color:#12151C;border-color:var(--brand-edge)}
+.source-ui .source-worker-task.is-done .source-task-text strong{text-decoration:line-through}
+.source-ui .source-task-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.source-ui .source-task-text strong{font-size:14px}
+.source-ui .source-task-text small{color:var(--text-2);font-size:12px}
+
+/* Field-worker checklist, matching approved pass/fail control geometry. */
+.source-ui .source-checklist-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid var(--line)}
+.source-ui .source-checklist-row:last-child{border-bottom:0}
+.source-ui .source-note{border-left:3px solid var(--line-2);padding:5px 0 5px 12px}
+.source-ui .source-note p{white-space:pre-wrap}
+.source-ui .source-note time{display:block;margin-top:4px}
+@media(max-width:640px){.source-ui .source-checklist-row{align-items:flex-start;flex-direction:column}}

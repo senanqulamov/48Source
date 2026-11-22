@@ -167,6 +167,14 @@ class QuoteForm extends Component
             ->where('supplier_id', $user->id)
             ->first();
 
+        $quote = \Illuminate\Support\Facades\DB::transaction(function () use ($requested, $user, $invitation, $totalAmount) {
+            // Serialized on the RFQ row: prevents duplicate cross-entry submissions.
+            $rfq = Request::query()->lockForUpdate()->findOrFail($this->request->id);
+            abort_unless($rfq->status === 'open'
+                && ($rfq->getAttribute('deadline') === null || $rfq->deadline->isFuture()), 403);
+            abort_if(Quote::query()->where('request_id', $rfq->id)
+                ->where('supplier_id', $user->id)->exists(), 409);
+
         // Create the quote
         $quote = Quote::create([
             'request_id' => $this->request->id,
@@ -203,6 +211,9 @@ class QuoteForm extends Component
                 'responded_at' => now(),
             ]);
         }
+
+            return $quote;
+        });
 
         event(new QuoteSubmitted($quote, $user));
 

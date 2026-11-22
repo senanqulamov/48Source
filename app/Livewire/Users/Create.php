@@ -61,7 +61,7 @@ class Create extends Component
 
     public function save(): void
     {
-        if (!Auth::user()->hasPermission('create_users')) {
+        if (!Auth::user()?->hasPermission('create_users')) {
             $this->error('You do not have permission to create users.');
             return;
         }

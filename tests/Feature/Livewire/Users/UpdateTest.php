@@ -5,6 +5,7 @@ use App\Models\User;
 use Livewire\Livewire;
 
 beforeEach(function () {
+    $this->actingAs(User::factory()->create(['role' => 'admin']));
     $this->original = User::factory()->create([
         'name' => 'Original Name',
         'email' => 'original@example.com'

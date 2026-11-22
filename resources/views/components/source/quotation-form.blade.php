@@ -1,5 +1,6 @@
 @props([
     'request',
+    'items',
     'mode' => 'create',
     'currencyCode' => 'USD',
     'canChooseCurrency' => false,
@@ -34,7 +35,7 @@
                 Object.values(this.lines || {}).every(line => this.positive(line.quantity)
                     && this.positive(line.unit_price)
                     && Number(line.tax_rate || 0) >= 0 && Number(line.tax_rate || 0) <= 100) &&
-                Boolean(this.validUntil) && this.grandTotal() > 0;
+                Boolean(this.validUntil) && this.grandTotal() > 0 && ['AZN','USD','EUR','GBP','TRY','JPY','CNY'].includes(String(this.currency));
         },
         advance() {
             if (!this.ready()) { this.$refs.quoteForm.reportValidity(); return; }

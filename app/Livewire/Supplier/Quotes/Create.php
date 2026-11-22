@@ -143,6 +143,16 @@ class Create extends Component
             }
         }
 
+        $quote = \Illuminate\Support\Facades\DB::transaction(function () use ($requested, $invitation, $rfq) {
+            // Lock the invitation so repeated submissions cannot both create a quote.
+            $lockedInvitation = SupplierInvitation::query()->whereKey($invitation->id)
+                ->where('supplier_id', auth()->id())->lockForUpdate()->firstOrFail();
+            abort_unless(in_array($lockedInvitation->status, ['pending', 'accepted'], true)
+                && $rfq->fresh()?->status === 'open'
+                && ($rfq->getAttribute('deadline') === null || $rfq->deadline->isFuture()), 403);
+            abort_if(Quote::query()->where('request_id', $rfq->id)
+                ->where('supplier_id', auth()->id())->exists(), 409);
+
         // Create the quote
         $quote = Quote::create([
             'request_id' => $this->invitation->request_id,
@@ -171,9 +181,12 @@ class Create extends Component
         }
 
         // Update invitation status
-        $this->invitation->update([
+        $lockedInvitation->update([
             'status' => 'quoted',
         ]);
+
+            return $quote;
+        });
 
         // Fire event
         event(new QuoteSubmitted($quote, auth()->user()));

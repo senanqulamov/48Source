@@ -148,8 +148,17 @@ class Edit extends Component
             return;
         }
 
+        \Illuminate\Support\Facades\DB::transaction(function () use ($requested, $totalAmount) {
+            $lockedQuote = Quote::query()->with('request')->whereKey($this->quote->id)
+                ->where('supplier_id', Auth::id())->lockForUpdate()->firstOrFail();
+            /** @var \App\Models\Request $lockedRfq */
+            $lockedRfq = $lockedQuote->request;
+            abort_unless(in_array($lockedQuote->status, ['draft', 'submitted'], true)
+                && $lockedRfq->status === 'open'
+                && ($lockedRfq->getAttribute('deadline') === null || $lockedRfq->deadline->isFuture()), 403);
+
         // Update the quote
-        $this->quote->update([
+        $lockedQuote->update([
             'total_amount' => $totalAmount,
             'currency' => $this->currency,
             'valid_until' => $this->valid_until,
@@ -160,7 +169,7 @@ class Edit extends Component
         ]);
 
         // Delete existing quote items
-        $this->quote->items()->delete();
+        $lockedQuote->items()->delete();
 
         // Save updated quote items
         foreach ($this->items as $requestItemId => $item) {
@@ -179,6 +188,8 @@ class Edit extends Component
                 'notes' => $item['notes'],
             ]);
         }
+
+        });
 
         $this->logUpdate(
             model: Quote::class,

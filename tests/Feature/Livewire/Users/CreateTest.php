@@ -6,7 +6,10 @@ use Livewire\Livewire;
 
 use function Pest\Laravel\assertDatabaseHas;
 
-beforeEach(fn () => User::query()->delete());
+beforeEach(function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $this->actingAs($admin);
+});
 
 it('renders the create user component', function () {
     Livewire::test(Create::class)
@@ -16,15 +19,16 @@ it('renders the create user component', function () {
 
 it('initializes with a new user', function () {
     Livewire::test(Create::class)
-        ->assertSet('user', fn ($user) => $user instanceof User)
+        ->assertSet('name', '')
+        ->assertSet('email', '')
         ->assertSet('password', null)
         ->assertSet('password_confirmation', null);
 });
 
 it('validates user creation with valid data', function () {
     $data = [
-        'user.name' => 'John Doe',
-        'user.email' => 'john@example.com',
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
         'password' => 'password123',
         'password_confirmation' => 'password123'
     ];
@@ -42,12 +46,12 @@ it('validates user creation with valid data', function () {
 
 it('requires name', function () {
     Livewire::test(Create::class)
-        ->set('user.name', '')
-        ->set('user.email', 'john@example.com')
+        ->set('name', '')
+        ->set('email', 'john@example.com')
         ->set('password', 'password123')
         ->set('password_confirmation', 'password123')
         ->call('save')
-        ->assertHasErrors(['user.name' => 'required']);
+        ->assertHasErrors(['name' => 'required']);
 });
 
 it('requires unique email', function () {
@@ -58,28 +62,28 @@ it('requires unique email', function () {
     ]);
 
     Livewire::test(Create::class)
-        ->set('user.name', 'John Doe')
-        ->set('user.email', 'existing@example.com')
+        ->set('name', 'John Doe')
+        ->set('email', 'existing@example.com')
         ->set('password', 'password123')
         ->set('password_confirmation', 'password123')
         ->call('save')
-        ->assertHasErrors(['user.email' => 'unique']);
+        ->assertHasErrors(['email' => 'unique']);
 });
 
 it('validates email format', function () {
     Livewire::test(Create::class)
-        ->set('user.name', 'John Doe')
-        ->set('user.email', 'invalid-email')
+        ->set('name', 'John Doe')
+        ->set('email', 'invalid-email')
         ->set('password', 'password123')
         ->set('password_confirmation', 'password123')
         ->call('save')
-        ->assertHasErrors(['user.email' => 'email']);
+        ->assertHasErrors(['email' => 'email']);
 });
 
 it('requires password confirmation', function () {
     Livewire::test(Create::class)
-        ->set('user.name', 'John Doe')
-        ->set('user.email', 'john@example.com')
+        ->set('name', 'John Doe')
+        ->set('email', 'john@example.com')
         ->set('password', 'password123')
         ->set('password_confirmation', 'different-password')
         ->call('save')
@@ -88,8 +92,8 @@ it('requires password confirmation', function () {
 
 it('requires minimum password length', function () {
     Livewire::test(Create::class)
-        ->set('user.name', 'John Doe')
-        ->set('user.email', 'john@example.com')
+        ->set('name', 'John Doe')
+        ->set('email', 'john@example.com')
         ->set('password', 'short')
         ->set('password_confirmation', 'short')
         ->call('save')
@@ -98,8 +102,8 @@ it('requires minimum password length', function () {
 
 it('sets email verified at when creating user', function () {
     $data = [
-        'user.name' => 'John Doe',
-        'user.email' => 'john@example.com',
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
         'password' => 'password123',
         'password_confirmation' => 'password123'
     ];
@@ -115,8 +119,8 @@ it('sets email verified at when creating user', function () {
 
 it('resets form after successful creation', function () {
     $data = [
-        'user.name' => 'John Doe',
-        'user.email' => 'john@example.com',
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
         'password' => 'password123',
         'password_confirmation' => 'password123'
     ];
@@ -124,15 +128,16 @@ it('resets form after successful creation', function () {
     Livewire::test(Create::class)
         ->set($data)
         ->call('save')
-        ->assertSet('user', fn ($user) => $user instanceof User && $user->name === null)
+        ->assertSet('name', '')
+        ->assertSet('email', '')
         ->assertSet('password', null)
         ->assertSet('password_confirmation', null);
 });
 
 it('dispatches created event', function () {
     $data = [
-        'user.name' => 'John Doe',
-        'user.email' => 'john@example.com',
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
         'password' => 'password123',
         'password_confirmation' => 'password123'
     ];

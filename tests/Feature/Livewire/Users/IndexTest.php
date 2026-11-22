@@ -23,7 +23,7 @@ it('renders the users index component', function () {
 
 it('initializes with default settings', function () {
     Livewire::test(Index::class)
-        ->assertSet('quantity', 5)
+        ->assertSet('quantity', 10)
         ->assertSet('search', null)
         ->assertSet('sort', [
             'column' => 'created_at',
@@ -35,11 +35,11 @@ it('verifies component headers', function () {
     $component = Livewire::test(Index::class);
 
     $headers = [
-        ['index' => 'id', 'label' => '#'],
-        ['index' => 'name', 'label' => 'Name'],
-        ['index' => 'email', 'label' => 'E-mail'],
-        ['index' => 'created_at', 'label' => 'Created'],
-        ['index' => 'action', 'sortable' => false],
+        ['index' => 'id', 'label' => '#', 'sortable' => true],
+        ['index' => 'name', 'label' => 'Name', 'sortable' => true],
+        ['index' => 'email', 'label' => 'E-mail', 'sortable' => true],
+        ['index' => 'created_at', 'label' => 'Created', 'sortable' => true],
+        ['index' => 'action', 'label' => '', 'sortable' => false],
     ];
 
     $component->assertSet('headers', $headers);
