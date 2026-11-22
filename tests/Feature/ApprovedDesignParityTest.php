@@ -34,3 +34,33 @@ it('loads the actual approved grid and sidebar stylesheet without CSS scope', fu
     expect($appCss)->not->toContain('48source-exact-scoped.css');
     expect($referenceCss)->toContain('.app{display:grid;grid-template-columns:var(--sbw) minmax(0,1fr)', '.sb{background:var(--sb)', '.topbar{height:var(--tbh)');
 });
+
+it('uses the approved interface for the primary role-specific catalog and sourcing screens', function () {
+    $paths = [
+        'supplier/rfq/index.blade.php',
+        'supplier/rfq/show.blade.php',
+        'supplier/rfq/quote-form.blade.php',
+        'supplier/field/rfq/index.blade.php',
+        'supplier/products/index.blade.php',
+        'supplier/markets/index.blade.php',
+        'seller/products/index.blade.php',
+        'seller/markets/index.blade.php',
+        'buyer/products/index.blade.php',
+        'buyer/markets/index.blade.php',
+        'products/index.blade.php',
+        'markets/index.blade.php',
+    ];
+
+    foreach ($paths as $path) {
+        $content = file_get_contents(resource_path('views/livewire/'.$path));
+        expect($content)->not->toBeFalse()
+            ->and($content)->toContain('class="stack"', '<x-source.');
+        expect($content)->not->toContain('bg-gradient-to', 'shadow-2xl');
+    }
+});
+
+it('does not expose other suppliers quotations from supplier RFQ details', function () {
+    $show = file_get_contents(app_path('Livewire/Supplier/Rfq/Show.php'));
+    expect($show)->toContain("where('supplier_id', $user->id)")
+        ->not->toContain("'quotes.supplier'", "'quotes.items'");
+});
