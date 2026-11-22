@@ -48,7 +48,7 @@
             $currentRole = auth()->user()->role ?? 'admin';
         }
     }
-@endph
+@endphp
     <x-layout.source-shell :role="$currentRole">{{ $slot }}</x-layout.source-shell>
     @auth
         @livewire('search.global-search')

@@ -23,7 +23,7 @@
         'market_worker' => ['My account' => [['Profile','user.profile',null]]],
         default => [
             'Workspace' => [['Dashboard','dashboard','view_dashboard'],['Monitoring & SLA','monitoring.rfq.index','view_monitoring']],
-            'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Purchase orders','orders.index','view_orders'],['Products','products.index','view_products'],['Markets','markets.index','view_markets']],
+            'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Marketplace orders','orders.index','view_orders'],['Products','products.index','view_products'],['Markets','markets.index','view_markets']],
             'Network' => [['Users','users.index','view_users'],['Categories','categories.index','view_categories']],
             'Insights' => [['KPI reports','reports.kpi','view_reports'],['SLA tracker','sla.index','manage_sla']],
             'Administration' => [['Roles & permissions','privacy.index','manage_roles'],['Settings','settings.index','view_settings'],['System health','health.index','view_health']],
@@ -99,8 +99,10 @@
                 </button>
             </div>
             <div class="tb-actions">
-                @if(in_array($role, ['buyer','admin'], true) && $user->can('create_rfqs') && \Illuminate\Support\Facades\Route::has('rfq.create'))
-                    <a class="btn btn-p btn-sm" href="{{ route('rfq.create') }}">+ <span>New RFQ</span></a>
+                @if($role === 'buyer' && $user->can('create_rfqs') && \Illuminate\Support\Facades\Route::has('buyer.rfq.index'))
+                    <a class="btn btn-p btn-sm" href="{{ route('buyer.rfq.index') }}">+ <span>{{ __('New RFQ') }}</span></a>
+                @elseif($role === 'admin' && $user->can('create_rfqs') && \Illuminate\Support\Facades\Route::has('rfq.create'))
+                    <a class="btn btn-p btn-sm" href="{{ route('rfq.create') }}">+ <span>{{ __('New RFQ') }}</span></a>
                 @endif
                 <div class="source-exact-account" x-data="{ language:false }" x-on:click.outside="language=false">
                     <button type="button" class="icon-btn lang-btn" x-on:click="language=!language" aria-label="Language" :aria-expanded="language.toString()">
