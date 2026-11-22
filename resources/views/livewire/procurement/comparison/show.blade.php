@@ -73,7 +73,7 @@
                     <button class="chip" type="button" wire:key="visible-{{ $quote['id'] }}" data-comparison-supplier
                         x-on:click="toggle({{ $quote['id'] }})"
                         :aria-pressed="isVisible({{ $quote['id'] }}).toString()"
-                        :aria-label="(isVisible({{ $quote['id'] }}) ? '{{ __('Hide supplier') }}: ' : '{{ __('Show supplier') }}: ') + @js($quote['supplier'])">
+                        :aria-label="'{{ __('Toggle supplier visibility') }}: ' + @js($quote['supplier'])">
                         <x-source.icon name="check" :size="12" />{{ $quote['supplier'] }}
                     </button>
                 @endforeach
