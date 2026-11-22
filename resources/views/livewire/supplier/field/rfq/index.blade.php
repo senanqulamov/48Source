@@ -1,81 +1,32 @@
-<div class="space-y-6">
-    <x-card>
-        <x-heading-title title="{{ __('My Assigned RFQs') }}" icon="clipboard-document-list" padding="p-5" hover="-" />
-
-        <div class="flex flex-col sm:flex-row gap-3 mt-4 mb-4">
-            <div class="flex-1">
-                <x-input
-                    wire:model.live.debounce.300ms="search"
-                    placeholder="{{ __('Search by title...') }}"
-                    icon="magnifying-glass"
-                />
-            </div>
-            <div>
-                <select
-                    wire:model.live="statusFilter"
-                    class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm px-3 py-2 text-gray-700 dark:text-gray-200"
-                >
-                    <option value="">{{ __('All Statuses') }}</option>
-                    <option value="pending">{{ __('Pending') }}</option>
-                    <option value="in_progress">{{ __('In Progress') }}</option>
-                    <option value="done">{{ __('Done') }}</option>
+<div class="stack">
+    <header class="ph"><div><h1 class="ph-t">{{ __('Assigned RFQs') }}</h1><p class="ph-d">{{ __('Your supplier-assigned field work and assessment progress.') }}</p></div></header>
+    <section class="card"><div class="dt">
+        <div class="dt-top">
+            <label class="dt-search"><x-source.icon name="search" :size="16" /><span class="sr">{{ __('Search assignments') }}</span>
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search RFQ title') }}"></label>
+            <div class="dt-tools"><label class="sr" for="assignment-filter">{{ __('Status') }}</label>
+                <select class="select" id="assignment-filter" wire:model.live="statusFilter">
+                    <option value="">{{ __('All statuses') }}</option><option value="pending">{{ __('Pending') }}</option>
+                    <option value="in_progress">{{ __('In progress') }}</option><option value="done">{{ __('Completed') }}</option>
                 </select>
             </div>
         </div>
-
-        @if($assignments->isEmpty())
-            <div class="text-center py-12 border border-dashed border-gray-300 dark:border-slate-600 rounded-xl">
-                <x-icon name="clipboard-document-list" class="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __('No assigned RFQs found.') }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ __('Your parent supplier will assign RFQs to you.') }}</p>
-            </div>
-        @else
-            <div class="space-y-3">
-                @foreach($assignments as $assignment)
-                    @php
-                        $statusColor = match($assignment->status) {
-                            'pending'     => 'yellow',
-                            'in_progress' => 'blue',
-                            'done'        => 'green',
-                            default       => 'gray',
-                        };
-                    @endphp
-                    <div class="border border-gray-200 dark:border-slate-700 rounded-xl p-4 hover:border-indigo-300 dark:hover:border-indigo-600 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap mb-1">
-                                    <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate">
-                                        {{ $assignment->request->title }}
-                                    </h3>
-                                    <x-badge :text="ucfirst(str_replace('_', ' ', $assignment->status))" :color="$statusColor" sm />
-                                </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    #{{ $assignment->request->id }}
-                                    &bull; {{ __('Buyer') }}: {{ $assignment->request->buyer->name ?? 'N/A' }}
-                                    @if($assignment->request->deadline)
-                                        &bull; {{ __('Deadline') }}: {{ $assignment->request->deadline->format('M d, Y') }}
-                                    @endif
-                                </p>
-                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                    {{ __('Assigned by') }}: {{ $assignment->assignedBy->name ?? 'N/A' }}
-                                    &bull; {{ $assignment->assigned_at?->diffForHumans() ?? $assignment->created_at->diffForHumans() }}
-                                </p>
-                            </div>
-                            <a
-                                href="{{ route('supplier.field.rfq.show', $assignment->request) }}"
-                                class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition"
-                            >
-                                <x-icon name="eye" class="w-3.5 h-3.5" />
-                                {{ __('View') }}
-                            </a>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="mt-4">
-                {{ $assignments->links() }}
-            </div>
-        @endif
-    </x-card>
+        <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>{{ __('RFQ') }}</th><th>{{ __('Buyer') }}</th><th>{{ __('Assigned by') }}</th><th>{{ __('Deadline') }}</th><th>{{ __('Progress') }}</th><th>{{ __('Action') }}</th></tr></thead>
+            <tbody>
+            @forelse($assignments as $assignment)
+                <tr wire:key="field-assignment-{{ $assignment->id }}">
+                    <td><div class="t1">{{ $assignment->request?->title ?? __('Unavailable request') }}</div><div class="t2 mono">#{{ $assignment->request_id }}</div></td>
+                    <td class="sm">{{ $assignment->request?->buyer?->name ?? '—' }}</td>
+                    <td class="sm">{{ $assignment->assignedBy?->name ?? '—' }}</td>
+                    <td class="mono sm">{{ $assignment->request?->deadline?->format('d M Y') ?? '—' }}</td>
+                    <td><span class="badge {{ $assignment->status === 'done' ? 'b-ok' : ($assignment->status === 'in_progress' ? 'b-info' : 'b-warn') }}">{{ ucfirst(str_replace('_',' ',$assignment->status)) }}</span></td>
+                    <td><a class="btn btn-sm" href="{{ route('supplier.field.rfq.show', $assignment->request) }}">{{ __('Open') }}</a></td>
+                </tr>
+            @empty
+                <tr><td colspan="6"><div class="empty"><h3>{{ __('No assigned RFQs') }}</h3><p>{{ __('Your supplier account can assign field work to you.') }}</p></div></td></tr>
+            @endforelse
+            </tbody>
+        </table></div><div class="dt-foot">{{ $assignments->links() }}</div>
+    </div></section>
 </div>
