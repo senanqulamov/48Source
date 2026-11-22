@@ -12,6 +12,8 @@
         <div class="fact"><span>{{ __('Products listed') }}</span><b class="mono">{{ $market->products()->count() }}</b></div>
         <div class="fact"><span>{{ __('Location') }}</span><b>{{ $market->location ?: '—' }}</b></div>
         <div class="fact"><span>{{ __('Owner') }}</span><b>{{ $market->seller?->company_name ?: $market->seller?->name ?: '—' }}</b></div>
+        <div class="fact"><span>{{ __('Orders') }}</span><b class="mono">{{ $market->orderItems()->distinct()->count('order_id') }}</b></div>
+        <div class="fact"><span>{{ __('Revenue') }}</span><b class="mono">{{ number_format((float) $market->orderItems()->sum('subtotal'), 2) }}</b></div>
     </div>
     <section class="card">
         <div class="card-h"><h2 class="card-t">{{ __('Products in this market') }}</h2><span class="card-s">{{ __('Current inventory') }}</span></div>

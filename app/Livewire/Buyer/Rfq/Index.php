@@ -19,6 +19,10 @@ class Index extends Component
 
     public ?string $search = null;
 
+    public string $typeFilter = 'all';
+
+    public string $buyerFilter = 'all';
+
     public ?string $statusFilter = null;
 
     public array $sort = [
@@ -48,44 +52,99 @@ class Index extends Component
         return view('livewire.buyer.rfq.index');
     }
 
-    #[Computed]
-    public function rows(): LengthAwarePaginator
+    public function changeSort(string $column): void
     {
-        $user = auth()->user();
-
-        if ($this->quantity == 'all') {
-            $this->quantity = Request::where('buyer_id', $user->id)->count();
+        $allowed = ['id', 'title', 'deadline', 'request_type', 'status', 'created_at'];
+        if (!in_array($column, $allowed, true)) {
+            return;
         }
 
-        return Request::query()
-            ->where('buyer_id', $user->id)
-            ->withCount(['items', 'quotes'])
-            ->when($this->search !== null, fn (Builder $query) => $query->whereAny(['title', 'description'], 'like', '%'.trim($this->search).'%'))
-            ->when($this->statusFilter !== null, fn (Builder $query) => $query->where('status', $this->statusFilter))
-            ->orderBy(...array_values($this->sort))
-            ->paginate($this->quantity)
-            ->withQueryString();
+        if (($this->sort['column'] ?? '') !== $column) {
+            $this->sort = ['column' => $column, 'direction' => 'asc'];
+        } elseif (($this->sort['direction'] ?? '') === 'asc') {
+            $this->sort = ['column' => $column, 'direction' => 'desc'];
+        } else {
+            $this->sort = ['column' => 'created_at', 'direction' => 'desc'];
+        }
+
+        $this->resetPage();
     }
 
-    #[Computed]
-    public function statuses(): array
+    public function clearTableFilters(): void
     {
-        return Request::query()
-            ->where('buyer_id', auth()->id())
-            ->select('status')
-            ->distinct()
-            ->pluck('status')
-            ->toArray();
-    }
-
-    public function clearStatusFilter(): void
-    {
+        $this->search = null;
+        $this->typeFilter = 'all';
+        $this->buyerFilter = 'all';
         $this->statusFilter = null;
         $this->resetPage();
     }
 
-    public function updatedStatusFilter(): void
+    public function updatedTypeFilter(): void
     {
         $this->resetPage();
+    }
+
+    public function updatedBuyerFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function statusCounts(): array
+    {
+        $base = Request::query();
+        $base->where('buyer_id', auth()->id());
+        return $base->select('status')
+            ->selectRaw('COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+    }
+
+    #[Computed]
+    public function buyers(): array
+    {
+        return [];
+    }
+
+    #[Computed]
+    public function rows(): LengthAwarePaginator
+    {
+        $query = Request::query()
+            ->where('buyer_id', auth()->id())
+            ->with(['buyer:id,name'])
+            ->withCount(['items', 'quotes', 'supplierInvitations']);
+
+        if ($this->statusFilter !== null && $this->statusFilter !== 'all') { $query->where('status', $this->statusFilter); }
+
+        if ($this->typeFilter !== 'all' && in_array($this->typeFilter, ['public', 'internal'], true)) {
+            $query->where('request_type', $this->typeFilter);
+        }
+
+        
+
+        if (filled(trim((string) $this->search))) {
+            $search = trim((string) $this->search);
+            $query->where(function (Builder $builder) use ($search) {
+                $builder->where('title', 'like', '%'.$search.'%')
+                    ->orWhere('description', 'like', '%'.$search.'%')
+                    ->orWhereHas('buyer', fn (Builder $buyer) => $buyer->where('name', 'like', '%'.$search.'%'));
+                if (ctype_digit(ltrim($search, '#'))) {
+                    $builder->orWhere('id', (int) ltrim($search, '#'));
+                }
+            });
+        }
+
+        $column = $this->sort['column'] ?? 'created_at';
+        $allowed = ['id', 'title', 'deadline', 'request_type', 'status', 'created_at'];
+        if (!in_array($column, $allowed, true)) {
+            $column = 'created_at';
+        }
+        $direction = ($this->sort['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $pageSize = in_array((int) $this->quantity, [10, 25, 50], true) ? (int) $this->quantity : 10;
+
+        return $query->orderBy($column, $direction)
+            ->paginate($pageSize)
+            ->withQueryString();
     }
 }

@@ -121,6 +121,14 @@ class QuoteForm extends Component
 
     public function save(): void
     {
+        $actor = Auth::user();
+        abort_unless($actor && $this->request->status === 'open'
+            && ($this->request->getAttribute('deadline') === null || $this->request->deadline->isFuture())
+            && $actor->id !== $this->request->buyer_id, 403, 'RFQ is not open for quotation.');
+        abort_if(Quote::query()->where('request_id', $this->request->id)
+            ->where('supplier_id', $actor->id)->exists(), 409,
+            'A quotation already exists for this supplier and RFQ.');
+
         $this->validate();
 
         $user = Auth::user();
@@ -128,6 +136,23 @@ class QuoteForm extends Component
         if (! $user) {
             $this->error(__('You must be logged in to submit a quote.'));
             return;
+        }
+
+        // The RFQ fixes requested line IDs and quantities. Never trust editable Livewire state.
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\RequestItem> $requested */
+        $requested = $this->request->items()->get()->keyBy('id');
+        $provided = collect($this->items);
+        $ids = $provided->map(fn (array $line, $key) => (int) ($line['request_item_id'] ?? $key));
+        if ($requested->count() !== $provided->count() || $ids->unique()->count() !== $requested->count()
+            || $ids->diff($requested->keys())->isNotEmpty()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'Every requested RFQ line must be quoted exactly once.']);
+        }
+        foreach ($provided as $key => $line) {
+            $id = (int) ($line['request_item_id'] ?? $key);
+            $actual = $requested->get($id);
+            if (! $actual || abs((float) ($line['quantity'] ?? 0) - (float) $actual->quantity) > 0.001) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'RFQ quantities cannot be changed by the supplier.']);
+            }
         }
 
         $totalAmount = $this->calculateTotal();
@@ -141,6 +166,14 @@ class QuoteForm extends Component
         $invitation = SupplierInvitation::where('request_id', $this->request->id)
             ->where('supplier_id', $user->id)
             ->first();
+
+        $quote = \Illuminate\Support\Facades\DB::transaction(function () use ($requested, $user, $invitation, $totalAmount) {
+            // Serialized on the RFQ row: prevents duplicate cross-entry submissions.
+            $rfq = Request::query()->lockForUpdate()->findOrFail($this->request->id);
+            abort_unless($rfq->status === 'open'
+                && ($rfq->getAttribute('deadline') === null || $rfq->deadline->isFuture()), 403);
+            abort_if(Quote::query()->where('request_id', $rfq->id)
+                ->where('supplier_id', $user->id)->exists(), 409);
 
         // Create the quote
         $quote = Quote::create([
@@ -164,7 +197,7 @@ class QuoteForm extends Component
                 'quote_id' => $quote->id,
                 'request_item_id' => $requestItemId,
                 'description' => $item['description'],
-                'quantity' => $item['quantity'],
+                'quantity' => $requested->get((int) $requestItemId)->quantity,
                 'unit_price' => $item['unit_price'],
                 'tax_rate' => $item['tax_rate'] ?? 0,
                 'notes' => $item['notes'],
@@ -178,6 +211,9 @@ class QuoteForm extends Component
                 'responded_at' => now(),
             ]);
         }
+
+            return $quote;
+        });
 
         event(new QuoteSubmitted($quote, $user));
 

@@ -102,7 +102,7 @@ class Update extends Component
             'user.is_seller' => ['boolean'],
             'user.is_supplier' => ['boolean'],
             'user.is_active' => ['boolean'],
-            'user.is_public_tender_eligible' => ['boolean'],
+            'user.is_public_tender_eligible' => ['nullable', 'boolean'],
 
             // Buyer (Business Information)
             'user.company_name' => ['nullable', 'string', 'max:255'],
@@ -133,7 +133,7 @@ class Update extends Component
 
             // Seller Fields
             'user.commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'user.verified_seller' => ['boolean'],
+            'user.verified_seller' => ['nullable', 'boolean'],
 
             // Password
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
@@ -145,7 +145,7 @@ class Update extends Component
 
     public function save(): void
     {
-        if (!Auth::user()->hasPermission('edit_users')) {
+        if (!Auth::user()?->hasPermission('edit_users')) {
             $this->error('You do not have permission to edit users.');
             return;
         }
@@ -190,6 +190,13 @@ class Update extends Component
         // Assign worker owner (or clear if not worker)
         $this->user->seller_id = $isMarketWorker ? $this->sellerOwnerId : null;
 
+        // Legacy account rows may not have values for later-added supplier flags.
+        // Keep NOT NULL database columns valid when a Livewire model is hydrated.
+        $this->user->currency = $this->user->currency ?: 'AZN';
+        $this->user->supplier_status = $this->user->supplier_status ?:
+            (in_array('supplier', $roleNamesSelected, true) ? 'pending' : 'inactive');
+        $this->user->verified_seller = (bool) $this->user->verified_seller;
+        $this->user->is_public_tender_eligible = (bool) $this->user->is_public_tender_eligible;
         $this->user->save();
 
         // Pivot roles

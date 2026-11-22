@@ -4,64 +4,49 @@ use App\Livewire\Users\Delete;
 use App\Models\User;
 use Livewire\Livewire;
 
-use function Pest\Laravel\assertDatabaseMissing;
-use function Pest\Laravel\assertModelExists;
-use function Pest\Laravel\assertModelMissing;
+beforeEach(function () {
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->actingAs($this->admin);
+    $this->user = User::factory()->create();
+});
 
-beforeEach(fn () => $this->user = User::factory()->create());
-
-it('renders the delete component', function () {
+it('renders the approved confirmation control', function () {
     Livewire::test(Delete::class, ['user' => $this->user])
         ->assertOk()
-        ->assertSee('svg')
         ->assertSeeHtml('wire:click="confirm"');
 });
 
-it('calls confirm method', function () {
+it('opens the custom confirmation without deleting a user', function () {
     Livewire::test(Delete::class, ['user' => $this->user])
         ->call('confirm')
-        ->assertDispatched('tallstackui:dialog');
+        ->assertSet('confirming', true)
+        ->assertSee('Delete user?');
+
+    expect(User::find($this->user->id))->not->toBeNull();
 });
 
-it('deletes user successfully', function () {
-    $component = Livewire::test(Delete::class, ['user' => $this->user]);
-
-    $component->call('delete');
-
-    assertDatabaseMissing('users', ['id' => $this->user->id]);
-
-    $component->assertDispatched('deleted');
-});
-
-it('handles deleting non-existent user', function () {
-    $user = User::factory()->create();
-    $user->delete();
-
-    $component = Livewire::test(Delete::class, ['user' => $user]);
-
-    $component->call('delete');
-
-    assertDatabaseMissing('users', ['id' => $user->id]);
-});
-
-it('dispatches success after deletion', function () {
+it('requires explicit confirmation before executing a deletion', function () {
     Livewire::test(Delete::class, ['user' => $this->user])
+        ->call('delete')->assertForbidden();
+
+    expect(User::find($this->user->id))->not->toBeNull();
+});
+
+it('deletes an explicitly confirmed user and emits a refresh event', function () {
+    Livewire::test(Delete::class, ['user' => $this->user])
+        ->call('confirm')
         ->call('delete')
-        ->assertDispatched('tallstackui:dialog');
+        ->assertDispatched('deleted')
+        ->assertSet('confirming', false);
 
-    assertModelMissing($this->user);
+    expect(User::find($this->user->id))->toBeNull();
 });
 
-it('confirms before deletion via question method', function () {
+it('rejects unauthenticated deletion attempts', function () {
+    auth()->logout();
+
     Livewire::test(Delete::class, ['user' => $this->user])
-        ->call('confirm')
-        ->assertDispatched('tallstackui:dialog');
+        ->call('confirm')->assertSet('confirming', false);
 
-    assertModelExists($this->user);
-});
-
-it('passes correct user to delete method', function () {
-    Livewire::test(Delete::class, ['user' => $this->user])->call('delete');
-
-    assertDatabaseMissing('users', ['id' => $this->user->id]);
+    expect(User::find($this->user->id))->not->toBeNull();
 });

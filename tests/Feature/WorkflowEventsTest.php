@@ -27,6 +27,11 @@ beforeEach(function () {
         'status' => 'open',
     ]);
 
+    // Request observers legitimately emit lifecycle events. Clear that setup event
+    // so tests can assert the deliberate three-event fixture deterministically.
+    WorkflowEvent::query()->where('eventable_type', Request::class)
+        ->where('eventable_id', $this->rfq->id)->delete();
+
     // Create some workflow events
     WorkflowEvent::factory()->create([
         'eventable_type' => Request::class,
@@ -211,6 +216,9 @@ test('workflow events show empty state when no events exist', function () {
         'buyer_id' => $this->buyer->id,
         'title' => 'Empty RFQ',
     ]);
+
+    WorkflowEvent::query()->where('eventable_type', Request::class)
+        ->where('eventable_id', $emptyRfq->id)->delete();
 
     Livewire::test(WorkflowEvents::class)
         ->dispatch('monitoring::load::workflow_events', rfq: $emptyRfq->id)

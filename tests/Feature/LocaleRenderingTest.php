@@ -12,7 +12,7 @@ class LocaleRenderingTest extends TestCase
 
     public function test_users_label_renders_in_spanish_after_switch(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         // Switch locale to Spanish
         $this->get('/lang/es');
@@ -24,6 +24,6 @@ class LocaleRenderingTest extends TestCase
 
         // Sidebar items
         $response->assertSee('Panel'); // Dashboard translated
-        $response->assertSee('Usuarios'); // Users translated
+        $response->assertSee('Usuarios y roles'); // Updated approved navigation label translated
     }
 }

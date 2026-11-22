@@ -1,31 +1,23 @@
-// Theme initializer and helper
-// Runs early to prevent FOUC and exposes `setAppTheme`
+// Single theme source for both Blade and Alpine components.
 (function () {
-    const key = 'theme';
-    const doc = document.documentElement;
-
-    function applyTheme(theme) {
-        doc.classList.toggle('light', theme === 'light');
-        doc.classList.toggle('dark', theme === 'dark');
-        // color-scheme helps browser render native controls correctly
-        try { doc.style.colorScheme = theme; } catch (e) { /* ignore */ }
+    const key = '48source-theme';
+    function apply(theme) {
+        const value = theme === 'dark' ? 'dark' : 'light';
+        const root = document.documentElement;
+        root.dataset.theme = value;
+        root.classList.toggle('dark', value === 'dark');
+        root.style.colorScheme = value;
+        window.dispatchEvent(new CustomEvent('app:theme-changed', {detail:{theme:value}}));
     }
-
-    // Initial resolution: saved > prefers-color-scheme > default 'dark'
-    const saved = localStorage.getItem(key);
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = saved || (prefersDark ? 'dark' : 'light');
-
-    applyTheme(initial);
-
-    window.setAppTheme = function (t) {
-        try { localStorage.setItem(key, t); } catch (e) { /* ignore */ }
-        applyTheme(t);
-        // Optional event for other scripts/components to react
-        window.dispatchEvent(new CustomEvent('app:theme-changed', { detail: { theme: t } }));
+    window.setAppTheme = function (theme) {
+        try { localStorage.setItem(key, theme === 'dark' ? 'dark' : 'light'); } catch (_) {}
+        apply(theme);
     };
-
-    window.getAppTheme = function () {
-        return localStorage.getItem(key) || (prefersDark ? 'dark' : 'light');
-    };
+    window.getAppTheme = function () { return document.documentElement.dataset.theme || 'light'; };
+    // This is a Livewire SPA: apply the same theme after every navigation.
+    document.addEventListener('livewire:navigated', function () {
+        let theme = 'light';
+        try { theme = localStorage.getItem(key) === 'dark' ? 'dark' : 'light'; } catch (_) {}
+        apply(theme);
+    });
 })();

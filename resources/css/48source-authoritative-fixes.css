@@ -1,0 +1,141 @@
+/* Approved HTML design tokens are authoritative. The legacy Tailwind/TallStack
+   layers remain available for business controls, but must not replace the
+   prototype's semantic palette, typography or primary CTA. */
+html[data-theme=light] .source-ui {color-scheme:light}
+html[data-theme=dark] .source-ui {color-scheme:dark}
+.source-ui { background:var(--bg); color:var(--text); font-family:var(--font) }
+.source-ui .main {background:var(--sheet);color:var(--text)}
+.source-ui .ph-t,.source-ui .card-t,.source-ui .ov-h h2,
+.source-ui .card-h,.source-ui .hb,.source-ui .tbl td,
+.source-ui .tbl td .t1 { color:var(--text) }
+.source-ui .ph-d,.source-ui .card-s,.source-ui .muted,.source-ui .t2 {color:var(--text-2)}
+.source-ui .btn-p,.source-dialog .btn-p {
+  background:var(--brand);border:1px solid var(--brand-edge);
+  color:#12151C;border-radius:999px;font-weight:600;
+}
+.source-ui .btn-p:hover,.source-dialog .btn-p:hover {
+  background:var(--brand-h);border-color:var(--brand-edge);
+  color:#12151C;box-shadow:0 4px 14px rgba(159,210,21,.35)
+}
+.source-ui .btn,.source-dialog .btn {border-radius:999px}
+.source-ui .card {background:var(--surface);border-color:var(--line);border-radius:16px}
+.source-ui .tbl th {background:transparent;color:var(--text-3);font-size:12.5px;font-weight:500}
+.source-ui .tbl tbody td {border-color:var(--line);background:transparent}
+.source-ui .tbl tbody tr:hover td {background:var(--surface-2)}
+.source-ui .tb-search .source-exact-search {background:var(--surface);color:var(--text-2)}
+.source-ui .sb-item.on {background:var(--ink);color:#fff}
+.source-ui .sb-item.on svg {color:var(--brand)}
+html[data-theme=dark] .source-ui .sb-item.on {background:var(--brand);color:#12151C}
+html[data-theme=dark] .source-ui .sb-item.on svg {color:#12151C}
+.source-ui .strip {background:var(--ink)}
+.source-ui .strip-v {color:#fff}
+.source-ui .strip-l,.source-ui .strip-s {color:var(--ink-2)}
+.source-ui .tab.on {background:var(--ink);color:#fff}
+html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
+.source-ui .page a:not(.btn):not(.sc):not(.strip-i):not(.sb-item) {text-underline-offset:3px}
+.source-ui .source-dashboard-actions {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.source-ui .source-dashboard-actions .sc {min-width:0}
+.source-ui .source-dashboard-chart {width:100%;height:auto;display:block}
+.source-ui .source-dashboard-chart text {font-family:var(--font);font-size:10.5px;fill:var(--text-3)}
+.source-ui .source-dashboard-chart .gridline {stroke:var(--line);stroke-width:1}
+.source-ui .source-dashboard-chart .published {fill:var(--primary)}
+.source-ui .source-dashboard-chart .quoted {fill:var(--line-2)}
+.source-ui .source-attention-table td {vertical-align:top}
+@media(max-width:1180px){.source-ui .source-dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.source-ui .source-dashboard-actions{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.source-ui *, .source-ui *::before,.source-ui *::after {animation:none!important;transition:none!important}}
+
+/* Global search: approved modal and popover rows, no legacy slate palette. */
+.source-search-dialog .ov-h {border-bottom:1px solid var(--line);padding:16px 20px}
+.source-search-input-wrap {padding:14px 20px;border-bottom:1px solid var(--line)}
+.source-search-input-wrap .input {border-radius:999px;background:var(--surface-2);height:42px}
+.source-search-results {max-height:58vh;overflow:auto;padding:8px}
+.source-search-group .pop-h {padding:8px 12px;color:var(--text-3)}
+.source-search-result {text-decoration:none;color:var(--text);display:flex;gap:10px;padding:8px 12px;border-radius:9px;min-height:54px;align-items:center}
+.source-search-result.on,.source-search-result:hover {background:var(--primary-soft)}
+.source-search-result-icon {height:32px;width:32px;border-radius:9px;display:grid;place-items:center;background:var(--sunken);color:var(--primary)}
+.source-search-result-text {flex:1;min-width:0}
+.source-search-result-text strong {font-size:14px;font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-search-result-text small {font-size:12px;color:var(--text-2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-search-footer {font-size:11.5px;color:var(--text-3)}
+@media(max-width:640px){.source-search-footer {gap:12px;font-size:10.5px}}
+
+/* Shared RFQ index: reference table controls, reused for admin and buyer. */
+.source-ui .source-rfq-table .dt-tools {justify-content:flex-end;flex-wrap:wrap}
+.source-ui .source-rfq-table .seg {max-width:100%;overflow-x:auto}
+.source-ui .source-rfq-table .source-filter {min-width:0}
+.source-ui .source-rfq-table select.fbtn {appearance:none;padding:0 28px 0 12px;background-color:var(--surface);border:1px dashed var(--line-2);color:var(--text-2);min-width:115px}
+.source-ui .source-rfq-table .source-page-size {width:70px;min-width:70px}
+.source-ui .source-column-chooser {position:relative}
+.source-ui .source-columns-pop {position:absolute;top:calc(100% + 8px);right:0;min-width:220px;z-index:55}
+.source-ui .source-columns-pop .pop-i {cursor:pointer}
+.source-ui .source-columns-pop .pop-i:has(input:disabled) {opacity:.75}
+.source-ui .source-rfq-grid .num {text-align:right}
+.source-ui .source-rfq-grid .t2 {max-width:36ch}
+.source-ui .source-rfq-grid th button svg {color:var(--primary)}
+.source-ui .source-rfq-loading {opacity:.55;transition:opacity .15s}
+@media(max-width:900px) {
+ .source-ui .source-rfq-grid th:nth-child(3),.source-ui .source-rfq-grid td:nth-child(3),
+ .source-ui .source-rfq-grid th:nth-child(4),.source-ui .source-rfq-grid td:nth-child(4),
+ .source-ui .source-rfq-grid th:nth-child(7),.source-ui .source-rfq-grid td:nth-child(7),
+ .source-ui .source-rfq-grid th:nth-child(9),.source-ui .source-rfq-grid td:nth-child(9) {display:none}
+}
+@media(max-width:640px){
+ .source-ui .source-rfq-grid th:nth-child(1),.source-ui .source-rfq-grid td:nth-child(1),
+ .source-ui .source-rfq-grid th:nth-child(8),.source-ui .source-rfq-grid td:nth-child(8) {display:none}
+ .source-ui .source-rfq-table .dt-tools {justify-content:flex-start}
+}
+
+
+/* Approved comparison matrix: fixed line-name column, scrolling vendor columns. */
+.source-ui .source-comparison-card .card-b{padding:12px 18px}
+.source-ui .source-matrix-scroll{overflow-x:auto;overscroll-behavior-x:contain}
+.source-ui .source-comparison-matrix{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}
+.source-ui .source-comparison-matrix th:first-child,.source-ui .source-comparison-matrix td:first-child{
+  min-width:225px;max-width:260px;position:sticky;left:0;z-index:2;
+  background:var(--surface);border-right:1px solid var(--line)
+}
+.source-ui .source-comparison-matrix thead th:first-child{z-index:4}
+.source-ui .source-comparison-matrix thead th{position:sticky;top:0;z-index:3;background:var(--surface)}
+.source-ui .source-comparison-matrix th:not(:first-child),.source-ui .source-comparison-matrix td:not(:first-child){min-width:215px;max-width:290px;padding:13px 16px;vertical-align:top}
+.source-ui .source-comparison-matrix .badge{margin-top:7px}
+.source-ui .source-comparison-card .chip{border:1px solid var(--line-2);border-radius:999px;min-height:28px;display:inline-flex;align-items:center;gap:7px;padding:3px 12px;background:var(--surface);color:var(--text)}
+.source-ui .source-comparison-card .chip[aria-pressed=false]{opacity:.55;text-decoration:line-through}
+.source-ui .source-comparison-card .chip[aria-pressed=true]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.source-ui .source-comparison-card .chip:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:640px){.source-ui .source-comparison-matrix th:first-child,.source-ui .source-comparison-matrix td:first-child{min-width:150px;max-width:175px}}
+
+/* Approved quotation price entry, shared across invitation, edit and RFQ quote flows. */
+.source-ui .source-quotation-form .source-quotation-lines th:first-child{min-width:190px}
+.source-ui .source-quotation-form .source-quotation-lines input.input{min-width:105px;text-align:right;font-variant-numeric:tabular-nums}
+.source-ui .source-quotation-form .source-quotation-lines td{vertical-align:middle}
+.source-ui .source-quotation-form .source-quotation-lines td:last-child{white-space:nowrap}
+.source-ui .source-quotation-form .source-currency-readonly{display:flex;align-items:center;min-height:38px;color:var(--text)}
+.source-ui .source-quotation-form .ph-a .seg button{padding:8px 14px}
+.source-ui .source-quotation-form .card-b.fgrid{gap:16px}
+.source-ui .source-quotation-form .field .textarea{min-height:94px;resize:vertical}
+.source-ui .source-quotation-form .btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:800px){
+ .source-ui .source-quotation-form .source-quotation-lines{min-width:650px}
+ .source-ui .source-quotation-form .ph{align-items:flex-start;flex-direction:column;gap:12px}
+}
+
+/* Approved worker 'Today' mobile-first task controls. */
+.source-ui .source-worker-task{width:100%;min-height:68px;padding:12px;display:flex;align-items:center;gap:12px;border-radius:12px;border:1px solid var(--line);text-align:left;background:var(--surface);color:var(--text)}
+.source-ui .source-worker-task:hover{background:var(--surface-2);border-color:var(--primary)}
+.source-ui .source-worker-task:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.source-ui .source-task-check{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border:1.5px solid var(--line-2);border-radius:6px;color:transparent}
+.source-ui .source-worker-task.is-done{opacity:.6}
+.source-ui .source-worker-task.is-done .source-task-check{background:var(--brand);color:#12151C;border-color:var(--brand-edge)}
+.source-ui .source-worker-task.is-done .source-task-text strong{text-decoration:line-through}
+.source-ui .source-task-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.source-ui .source-task-text strong{font-size:14px}
+.source-ui .source-task-text small{color:var(--text-2);font-size:12px}
+
+/* Field-worker checklist, matching approved pass/fail control geometry. */
+.source-ui .source-checklist-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid var(--line)}
+.source-ui .source-checklist-row:last-child{border-bottom:0}
+.source-ui .source-note{border-left:3px solid var(--line-2);padding:5px 0 5px 12px}
+.source-ui .source-note p{white-space:pre-wrap}
+.source-ui .source-note time{display:block;margin-top:4px}
+@media(max-width:640px){.source-ui .source-checklist-row{align-items:flex-start;flex-direction:column}}

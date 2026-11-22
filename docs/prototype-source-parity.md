@@ -1,0 +1,57 @@
+# Approved redesign: source-to-code parity
+
+**Sources**
+- User-approved `48source-redesign(1).html` (static interactive reference)
+- `Pasted text(2).txt` (implementation specification)
+
+These uploaded files are authoritative. The prototype uses invented RFQs, suppliers, people, counts and a frozen date, none of which should enter application tables or runtime metrics.
+
+## Baseline failures identified
+
+1. Theme state was split across `localStorage.theme`, `48source-theme`, html `.dark`, and a nested `data-theme` on the app div. This caused unreadable dark-mode combinations.
+2. `48source-control-system.css` overrode the actual reference lime button with cobalt. An authoritative scoped style layer restores lime for actions and cobalt for focus/links.
+3. Dashboard rendered a different information architecture from §9.2: no quick-action tiles, no eight-week activity bars, no deadline table, and no recent activity timeline.
+4. Admin dashboard Livewire mounted unrelated order charts and system-health queries; the approved overview now queries its own data once per visit.
+5. Internal navigation did not opt into `wire:navigate`, so link navigation forced full document reloads.
+
+## This focused foundation batch
+
+- Unified theme using `html[data-theme]` plus `.dark` for legacy Tailwind compatibility; one persisted key, default light
+- Light/dark token control fix for content, buttons, text and panels
+- SPA navigation for role menu, role home and header navigation links, without rewriting Laravel/Livewire into the demo's JS SPA
+- Approved admin dashboard hierarchy with live RFQ/deadline queries, actual supplier participation and recent workflow events, and eight-week grouped SVG bars from real dates
+- Reduced admin dashboard mount work by omitting unrelated overview/chart/log/product data
+
+## Remaining acceptance gates (unfinished)
+
+The full app still needs page-by-page parity at 1440/1280/768/390 in both themes, correct verified APIs and controls, real browser input/modal/drawer behavior, access-control tests for all roles, and measurement of actual Livewire request latency/JS main-thread responsiveness. `wire:navigate` removes full document reloads on selected links but cannot by itself fix slow PHP/SQL queries or third-party scripts.
+
+Do not merge this batch as evidence of pixel-perfect completion.
+
+- Replaced slate-coloured global search overlay with approved modal, keyboard navigation, source-aligned result rows, and `wire:navigate` links
+- Removed Alpine `window.addEventListener` and `document.addEventListener` handlers from search initialization to prevent listener accumulation during SPA navigation
+- Added prototype-matching sidebar collapse toggle with local device preference
+
+## Appendix C implementation: shared RFQ lists (new batch)
+
+- Both administrator and buyer lists use the same table component and now display request reference, title, buyer, type, status, deadline, item count, submitted quotation/invitation count, created date and action.
+- Server-side status/type/buyer filtering, restricted sortable columns, search including reference and buyer, 10/25/50 pagination, filter reset; buyer records stay restricted to `buyer_id = auth()->id()`.
+- Column show/hide is a display-only preference; core columns remain locked.
+- Deferred from this batch: bulk selection/actions, export formats, independent category association (the Request model has no category column), tooltip keyboard regression, and pixel-by-pixel visual tests.
+- Source mapping: Appendix B.7 and Appendix C of `Pasted text(3).txt`.
+
+## Quotation comparison and awards (this batch)
+
+- Adds real `/compare` and `/compare/{request}` Livewire pages for administrators and authorized owners, connected from the navigation and administrator shortcut.
+- Displays actual quote line-unit prices, requested quantities, tax-inclusive line totals, lowest unit prices within each currency and explicit partial-line gaps. Currency mismatch prevents award selection and ranking.
+- Uses the existing auditable award service to create a separate procurement draft PO. This service requires a complete quote and non-cheapest justification.
+- Important incomplete dependency: the current quote schema lacks reliable delivery lead-time, assurance and performance scores; this page deliberately shows them as unavailable rather than inventing a “best value” score or fastest supplier.
+- Still required: capture valid quotation delivery/assurance/performance inputs, wire real weighted scorer, notifications of unsuccessful bidders, supplier hide/compare presets, and side-by-side browser pixel comparison.
+
+## Unified supplier quotation flow
+
+- A single `source.quotation-form` renders invitation-based supplier quoting, supplier quotation editing, and the standalone RFQ quotation form. It uses the approved two-step Prices & Terms → Review & Submit hierarchy and the common card, table and field tokens.
+- Alpine entangles item prices, tax, notes, currency and validity with Livewire; prices and totals update immediately on the client without per-keystroke network requests. Livewire still owns database writes and validation.
+- All three save handlers now verify actual RFQ item identities and requested quantities before persistence. Supplier edits recheck ownership and lifecycle at write time; the standalone form rejects expired/closed or duplicate RFQ submissions at save time.
+- Current quotation workflow remains **complete-item only**. Partial submission, server-persisted drafts, historical unit-price warnings, delivery lead-time and suitability scoring have not yet been implemented and must not be represented as live features.
+- The complete design has not received desktop/mobile pixel-diff testing, so this batch is not a claim of pixel perfection.

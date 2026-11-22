@@ -76,6 +76,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/seller/orders/{order}', SellerOrderShow::class)->name('seller.orders.show')->middleware(['seller', 'can:view_orders']);
     Route::get('/seller/logs', SellerLogsIndex::class)->name('seller.logs.index')->middleware(['seller', 'can:view_logs']);
 
+    // Owner-controlled market task assignments and a real worker 'Today' page.
+    Route::get('/seller/tasks', \App\Livewire\Seller\Tasks\Index::class)->name('seller.tasks.index')->middleware('seller');
+    Route::get('/market-work/today', \App\Livewire\MarketWork\Today::class)->name('market-work.today');
+
     // Seller Workers
     Route::get('/seller/workers', SellerWorkersIndex::class)->name('seller.workers.index')->middleware(['seller', 'can:view_dashboard']);
 
@@ -118,6 +122,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rfq/create', RfqCreate::class)->name('rfq.create')->middleware('can:create_rfqs');
     Route::get('/rfq/{request}', RfqShow::class)->name('rfq.show')->middleware('can:view_rfqs');
     Route::get('/rfq/{request}/quote', RfqQuoteForm::class)->name('rfq.quote')->middleware('can:submit_quotes');
+
+    // Real, buyer-scoped quotation comparisons (separate from marketplace orders).
+    Route::get('/compare', \App\Livewire\Procurement\Comparison\Index::class)->name('procurement.compare.index')->middleware('can:view_rfqs');
+    Route::get('/compare/{request}', \App\Livewire\Procurement\Comparison\Show::class)->name('procurement.compare.show')->middleware('can:view_rfqs');
 
     // Procurement POs are separate from marketplace orders.
     Route::get('/procurement/orders', \App\Livewire\Procurement\PurchaseOrders\Index::class)->name('procurement.orders.index');

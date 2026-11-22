@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Market extends Model
 {
@@ -17,32 +21,32 @@ class Market extends Model
     ];
 
     // The seller/owner of this market
-    public function seller()
+    public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
     // Alias for seller
-    public function owner()
+    public function owner(): BelongsTo
     {
         return $this->seller();
     }
 
     // Direct order items for this market
-    public function orderItems()
+    public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
     // Get all orders that include products from this market
-    public function orders()
+    public function orders(): HasManyThrough
     {
         return $this->hasManyThrough(Order::class, OrderItem::class, 'market_id', 'id', 'id', 'order_id')
             ->distinct();
     }
 
     // Direct products belonging to this market
-    public function products()
+    public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }
@@ -50,7 +54,7 @@ class Market extends Model
     /**
      * Worker users assigned to this market.
      */
-    public function workers()
+    public function workers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'market_users')
             ->withTimestamps();

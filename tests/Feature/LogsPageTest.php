@@ -17,7 +17,7 @@ class LogsPageTest extends TestCase
         $response = $this->actingAs($user)->get('/logs');
 
         $response->assertStatus(200);
-        $response->assertSeeLivewire('logs.index');
+        $response->assertSee('System activity');
     }
 
     public function test_logs_page_requires_authentication(): void
