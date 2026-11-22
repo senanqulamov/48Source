@@ -25,6 +25,28 @@ class Index extends Component
 
     public ?string $statusFilter = null;
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'typeFilter' => ['except' => 'all'],
+        'statusFilter' => ['except' => null],
+        'quantity' => ['except' => 10],
+    ];
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingQuantity(): void
+    {
+        $this->resetPage();
+    }
+
     public array $sort = [
         'column' => 'created_at',
         'direction' => 'desc',
@@ -115,7 +137,9 @@ class Index extends Component
             ->with(['buyer:id,name'])
             ->withCount(['items', 'quotes', 'supplierInvitations']);
 
-        if ($this->statusFilter !== null && $this->statusFilter !== 'all') { $query->where('status', $this->statusFilter); }
+        if (in_array($this->statusFilter, ['draft', 'open', 'closed', 'awarded', 'cancelled'], true)) {
+            $query->where('status', $this->statusFilter);
+        }
 
         if ($this->typeFilter !== 'all' && in_array($this->typeFilter, ['public', 'internal'], true)) {
             $query->where('request_type', $this->typeFilter);
@@ -144,6 +168,7 @@ class Index extends Component
         $pageSize = in_array((int) $this->quantity, [10, 25, 50], true) ? (int) $this->quantity : 10;
 
         return $query->orderBy($column, $direction)
+            ->orderBy('id', 'desc')
             ->paginate($pageSize)
             ->withQueryString();
     }
