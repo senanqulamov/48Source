@@ -21,20 +21,20 @@
                             <div class="field">
                                 <label for="rfq-w-title">{{ __('Request title') }} *</label>
                                 <input id="rfq-w-title" class="input" type="text" maxlength="255"
-                                       wire:model="request.title" autocomplete="off" required
+                                       wire:model.live="request.title" autocomplete="off" required
                                        placeholder="{{ __('e.g. Reinforcement steel for North Site') }}">
                                 @error('request.title')<p class="err">{{ $message }}</p>@enderror
                             </div>
                             <div class="field">
                                 <label for="rfq-w-deadline">{{ __('Quotation deadline') }} *</label>
-                                <input id="rfq-w-deadline" class="input" type="date" wire:model="request.deadline"
+                                <input id="rfq-w-deadline" class="input" type="date" wire:model.live="request.deadline"
                                        min="{{ now()->addDay()->toDateString() }}" required>
                                 @error('request.deadline')<p class="err">{{ $message }}</p>@enderror
                             </div>
                             <div class="field" style="grid-column:1/-1">
                                 <label for="rfq-w-description">{{ __('Scope and requirements') }}</label>
                                 <textarea id="rfq-w-description" class="textarea" rows="4"
-                                          wire:model="request.description"
+                                          wire:model.live="request.description"
                                           placeholder="{{ __('Explain what is being purchased and any important requirements.') }}"></textarea>
                                 @error('request.description')<p class="err">{{ $message }}</p>@enderror
                             </div>
@@ -94,13 +94,13 @@
                                             <div class="field">
                                                 <label for="rfq-item-qty-{{ $index }}">{{ __('Quantity') }} *</label>
                                                 <input id="rfq-item-qty-{{ $index }}" class="input mono" type="number"
-                                                       min="1" step="1" wire:model="items.{{ $index }}.quantity" required>
+                                                       min="1" step="1" wire:model.live="items.{{ $index }}.quantity" required>
                                                 @error("items.$index.quantity")<p class="err">{{ $message }}</p>@enderror
                                             </div>
                                             <div class="field" style="grid-column:1/-1">
                                                 <label for="rfq-item-spec-{{ $index }}">{{ __('Specifications and notes') }}</label>
                                                 <textarea id="rfq-item-spec-{{ $index }}" class="textarea" rows="2"
-                                                          wire:model="items.{{ $index }}.specifications"></textarea>
+                                                          wire:model.live="items.{{ $index }}.specifications"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -118,7 +118,7 @@
                             <label class="sm muted">{{ __('Choose suppliers') }}</label>
                             @forelse($suppliers as $supplier)
                                 <label class="row" style="gap:12px;cursor:pointer">
-                                    <input class="chk" type="checkbox" value="{{ $supplier->id }}" wire:model="selectedSuppliers">
+                                    <input class="chk" type="checkbox" value="{{ $supplier->id }}" wire:model.live="selectedSuppliers">
                                     <span><strong class="sm">{{ $supplier->company_name ?: $supplier->name }}</strong>
                                     <span class="muted sm">{{ $supplier->city ? ' · '.$supplier->city : '' }}</span></span>
                                 </label>
@@ -183,25 +183,159 @@
             </x-slot:footer>
         </x-modal>
     @else
-        <x-modal :title="__('Create New RFQ')" wire blur="xl" size="3xl">
-            <form id="buyer-rfq-create" wire:submit="save" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <x-input label="{{ __('Title') }} *" wire:model.defer="request.title" required />
-                    <x-date label="{{ __('Deadline') }} *" wire:model.defer="request.deadline" required />
+<x-modal :title="__('Create New RFQ')" wire blur="xl" size="3xl">
+        <form id="buyer-rfq-create" wire:submit="save" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <x-input
+                    label="{{ __('Title') }} *"
+                    wire:model.defer="request.title"
+                    required
+                />
+
+                <x-date
+                    label="{{ __('Deadline') }} *"
+                    wire:model.defer="request.deadline"
+                    required
+                />
+            </div>
+
+            <div>
+                <x-textarea
+                    label="{{ __('Description') }}"
+                    wire:model.defer="request.description"
+                    rows="4"
+                />
+            </div>
+
+            <div class="border-t pt-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-md font-semibold text-gray-900 dark:text-gray-100">
+                        @lang('Items') *
+                    </h3>
+                    <x-button
+                        type="button"
+                        wire:click="addItem"
+                        text="{{ __('Add Item') }}"
+                        icon="plus"
+                        sm
+                    />
                 </div>
-                <x-textarea label="{{ __('Description') }}" wire:model.defer="request.description" rows="4" />
-                @foreach($items as $index => $item)
-                    <div class="border rounded-lg p-4" wire:key="legacy-buyer-rfq-{{ $index }}">
-                        <x-select.styled label="{{ __('Category') }}" wire:model.live="items.{{ $index }}.category_id" :options="$categories" select="label:name|value:id" searchable />
-                        <x-input label="{{ __('Product Name') }}" wire:model="items.{{ $index }}.product_name" required />
-                        <x-number label="{{ __('Quantity') }}" wire:model="items.{{ $index }}.quantity" min="1" required />
-                        <x-input label="{{ __('Specifications') }}" wire:model="items.{{ $index }}.specifications" />
+
+                <div class="space-y-4">
+                    @foreach($items as $index => $item)
+                        <div
+                            class="border border-gray-300 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
+                            wire:key="buyer-rfq-item-{{ $index }}-{{ $item['category_id'] ?? 'new' }}">
+
+                            {{-- Category and Product Selection --}}
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end mb-4">
+                                <div class="md:col-span-6">
+                                    <x-select.styled
+                                        label="{{ __('Category') }} *"
+                                        wire:model.live="items.{{ $index }}.category_id"
+                                        :options="$categories"
+                                        select="label:name|value:id"
+                                        searchable
+                                        required
+                                        placeholder="{{ __('Select category...') }}"
+                                    />
+                                </div>
+
+                                <div class="md:col-span-6">
+                                    <x-select.styled
+                                        wire:key="product-select-{{ $index }}-{{ $item['category_id'] ?? 'none' }}"
+                                        label="{{ __('Select Product') }}"
+                                        wire:model.live="items.{{ $index }}.product_id"
+                                        :options="$this->getProductsForCategory($item['category_id'] ?? null)"
+                                        select="label:name|value:id"
+                                        searchable
+                                        placeholder="{{ __('Select from category...') }}"
+                                    />
+                                </div>
+                            </div>
+
+                            {{-- Manual Product Name Entry --}}
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end mb-4">
+                                <div class="md:col-span-12">
+                                    <x-input
+                                        label="{{ __('Product Name') }} *"
+                                        wire:model.live="items.{{ $index }}.product_name"
+                                        placeholder="{{ __('Enter product name or select from dropdown above') }}"
+                                        required
+                                    />
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        {{ __('Select from category dropdown or type custom product name') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {{-- Quantity and Specifications --}}
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end mb-4">
+                                <div class="md:col-span-6">
+                                    <x-number
+                                        label="{{ __('Quantity') }} *"
+                                        wire:model="items.{{ $index }}.quantity"
+                                        min="1"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="md:col-span-6">
+                                    <x-input
+                                        label="{{ __('Specifications / Notes') }}"
+                                        wire:model="items.{{ $index }}.specifications"
+                                    />
+                                </div>
+                            </div>
+
+                            {{-- Remove Button --}}
+                            <div class="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
+                                @if(count($items) > 1)
+                                    <x-button.circle
+                                        type="button"
+                                        wire:click="removeItem({{ $index }})"
+                                        icon="trash"
+                                        color="red"
+                                        xs
+                                    />
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="border-t pt-4">
+                <h3 class="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    @lang('Invite Suppliers') ({{ __('Optional') }})
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    @lang('Select suppliers to invite for this RFQ. They will receive a notification.')
+                </p>
+
+                <div>
+                    <x-select.styled
+                        label="{{ __('Select Suppliers') }}"
+                        wire:model="selectedSuppliers"
+                        :options="$suppliers"
+                        select="label:name|value:id"
+                        searchable
+                        multiple
+                    />
+                </div>
+
+                @if(!empty($selectedSuppliers))
+                    <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                        <strong>{{ count($selectedSuppliers) }}</strong> {{ __('supplier(s) selected') }}
                     </div>
-                @endforeach
-                <x-button type="button" wire:click="addItem">{{ __('Add item') }}</x-button>
-                <x-select.styled label="{{ __('Suppliers') }}" wire:model="selectedSuppliers" :options="$suppliers" select="label:name|value:id" searchable multiple />
-            </form>
-            <x-slot:footer><x-button type="submit" form="buyer-rfq-create">{{ __('Create RFQ') }}</x-button></x-slot:footer>
-        </x-modal>
+                @endif
+            </div>
+        </form>
+        <x-slot:footer>
+            <x-button type="submit" form="buyer-rfq-create">
+                @lang('Create RFQ')
+            </x-button>
+        </x-slot:footer>
+    </x-modal>
     @endif
 </div>
