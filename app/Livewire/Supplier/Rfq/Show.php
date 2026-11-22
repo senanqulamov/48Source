@@ -38,7 +38,7 @@ class Show extends Component
             || FieldAssessment::query()
                 ->where('request_id', $request->id)
                 ->where('supplier_id', $user->id)
-                ->where('status', 'completed')
+                ->whereIn('status', ['completed', 'submitted', 'approved'])
                 ->exists();
 
         $this->canQuote = $request->status === 'open'

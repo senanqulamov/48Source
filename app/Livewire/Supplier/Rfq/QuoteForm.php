@@ -10,6 +10,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Request;
 use App\Models\SupplierInvitation;
+use App\Models\FieldAssessment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -42,6 +43,24 @@ class QuoteForm extends Component
         if (! $user) {
             abort(403, 'You must be logged in to submit a quote.');
         }
+
+        abort_unless($user->isSupplier(), 403, 'Supplier access required.');
+        abort_unless(
+            $this->request->request_type === 'public'
+                || $this->request->supplierInvitations()->where('supplier_id', $user->id)->exists(),
+            403,
+            'This RFQ is not available to your company.'
+        );
+        abort_if(
+            $this->request->requires_field_assessment
+                && ! FieldAssessment::query()
+                    ->where('request_id', $request->id)
+                    ->where('supplier_id', $user->id)
+                    ->whereIn('status', ['completed', 'submitted', 'approved'])
+                    ->exists(),
+            403,
+            'A completed field assessment is required before quotation.'
+        );
 
         if ($user->id === $this->request->buyer_id) {
             abort(403, 'Suppliers cannot quote on RFQs they created.');
@@ -121,6 +140,19 @@ class QuoteForm extends Component
 
     public function save(): void
     {
+        $user = Auth::user();
+        abort_unless($user && $user->isSupplier(), 403);
+        $current = Request::query()->findOrFail($this->request->id);
+        abort_unless($current->status === 'open'
+            && (! $current->deadline || $current->deadline->isFuture())
+            && ($current->request_type === 'public'
+                || $current->supplierInvitations()->where('supplier_id', $user->id)->exists()), 403);
+        abort_if(Quote::query()->where('request_id', $current->id)->where('supplier_id', $user->id)->exists(), 409);
+        abort_if($current->requires_field_assessment
+            && ! FieldAssessment::query()->where('request_id', $current->id)
+                ->where('supplier_id', $user->id)
+                ->whereIn('status', ['completed', 'submitted', 'approved'])->exists(), 403);
+
         $this->validate();
 
         $user = Auth::user();
