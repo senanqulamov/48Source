@@ -1,8 +1,8 @@
-<div>
+<div x-data="{step:1}">
     @if(config('source48.redesign_enabled'))
         <x-modal :title="__('Create new RFQ')" wire size="4xl" blur="xl">
-            <form id="buyer-rfq-create" wire:submit="save" x-data="{step:1}"
-                  x-on:keydown.enter="if (step < 4 && $event.target.tagName !== 'TEXTAREA') { $event.preventDefault(); $refs.nextStep?.click(); }">
+            <form id="buyer-rfq-create" wire:submit="save"
+                  x-on:keydown.enter="if (step < 4 && $event.target.tagName !== 'TEXTAREA') $event.preventDefault()">
                 <div class="steps" aria-label="{{ __('RFQ creation progress') }}">
                     @foreach([1=>__('Details'),2=>__('Items'),3=>__('Suppliers'),4=>__('Review')] as $number => $label)
                         <button type="button" class="step" :class="{on:step==={{ $number }},done:step>{{ $number }}}"
@@ -13,7 +13,7 @@
                     @endforeach
                 </div>
 
-                <div class="stack" x-show="step===1">
+                <div class="stack" data-wizard-step="1" x-show="step===1">
                     <div class="note">{{ __('Step 1 of 4 — Give the request a clear title and a deadline. Only saved requests appear in the application.') }}</div>
                     <div class="card">
                         <div class="card-h"><h3 class="card-t">{{ __('RFQ information') }}</h3></div>
@@ -42,7 +42,7 @@
                     </div>
                 </div>
 
-                <div class="stack" x-show="step===2" x-cloak>
+                <div class="stack" data-wizard-step="2" x-show="step===2" x-cloak>
                     <div class="note">{{ __('Step 2 of 4 — Add the requested products and quantities. At least one valid item is required.') }}</div>
                     <div class="card">
                         <div class="card-h">
@@ -110,7 +110,7 @@
                     </div>
                 </div>
 
-                <div class="stack" x-show="step===3" x-cloak>
+                <div class="stack" data-wizard-step="3" x-show="step===3" x-cloak>
                     <div class="note">{{ __('Step 3 of 4 — Optionally invite eligible active suppliers. Invitations are only sent after you create the RFQ.') }}</div>
                     <div class="card">
                         <div class="card-h"><h3 class="card-t">{{ __('Supplier invitations') }}</h3><span class="card-s">{{ count($selectedSuppliers) }} {{ __('selected') }}</span></div>
@@ -130,7 +130,7 @@
                     </div>
                 </div>
 
-                <div class="stack" x-show="step===4" x-cloak>
+                <div class="stack" data-wizard-step="4" x-show="step===4" x-cloak>
                     <div class="note">{{ __('Step 4 of 4 — Review all information. This action creates a draft RFQ using the current backend workflow.') }}</div>
                     <div class="card">
                         <div class="card-h"><h3 class="card-t">{{ __('Review request') }}</h3></div>
@@ -171,7 +171,7 @@
                     <button x-ref="nextStep" type="button" class="btn btn-p" x-show="step<4"
                         x-on:click="
                             let area=$el.closest('[role=dialog]') || $el.closest('.modal') || document;
-                            let section=area.querySelector('[x-show=\'step===\'+step+\'\']');
+                            let section=area.querySelector('[data-wizard-step=&quot;'+step+'&quot;]');
                             let fields=section ? Array.from(section.querySelectorAll('input[required],select[required]')) : [];
                             let invalid=fields.find(el => !el.checkValidity());
                             if(invalid){invalid.reportValidity();return;}
