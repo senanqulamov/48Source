@@ -1,3 +1,6 @@
+@if(config('source48.redesign_enabled'))
+    @include('livewire.dashboard.approved-index')
+@else
 <div class="space-y-6">
     @php
         $stats = $stats ?? [];
@@ -424,3 +427,5 @@
         })();
     </script>
 @endpush
+
+@endif
