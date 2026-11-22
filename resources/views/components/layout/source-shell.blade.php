@@ -33,7 +33,7 @@
     $user = auth()->user();
 @endphp
 
-<div class="source-ui app" x-data="{ mobileOpen:false, menuOpen:false, dark: localStorage.getItem('48source-theme') === 'dark' }" :data-theme="dark ? 'dark' : 'light'">
+<div class="source-ui app" :class="{ navopen: mobileOpen }" x-data="{ mobileOpen:false, menuOpen:false, dark: localStorage.getItem('48source-theme') === 'dark' }" :data-theme="dark ? 'dark' : 'light'">
     <button type="button" class="source-exact-backdrop" x-show="mobileOpen" x-cloak x-on:click="mobileOpen=false" aria-label="Close navigation"></button>
     <nav class="sb" aria-label="Primary">
         <div class="sb-top">
