@@ -1,0 +1,61 @@
+/* Approved HTML design tokens are authoritative. The legacy Tailwind/TallStack
+   layers remain available for business controls, but must not replace the
+   prototype's semantic palette, typography or primary CTA. */
+html[data-theme=light] .source-ui {color-scheme:light}
+html[data-theme=dark] .source-ui {color-scheme:dark}
+.source-ui { background:var(--bg); color:var(--text); font-family:var(--font) }
+.source-ui .main {background:var(--sheet);color:var(--text)}
+.source-ui .ph-t,.source-ui .card-t,.source-ui .ov-h h2,
+.source-ui .card-h,.source-ui .hb,.source-ui .tbl td,
+.source-ui .tbl td .t1 { color:var(--text) }
+.source-ui .ph-d,.source-ui .card-s,.source-ui .muted,.source-ui .t2 {color:var(--text-2)}
+.source-ui .btn-p,.source-dialog .btn-p {
+  background:var(--brand);border:1px solid var(--brand-edge);
+  color:#12151C;border-radius:999px;font-weight:600;
+}
+.source-ui .btn-p:hover,.source-dialog .btn-p:hover {
+  background:var(--brand-h);border-color:var(--brand-edge);
+  color:#12151C;box-shadow:0 4px 14px rgba(159,210,21,.35)
+}
+.source-ui .btn,.source-dialog .btn {border-radius:999px}
+.source-ui .card {background:var(--surface);border-color:var(--line);border-radius:16px}
+.source-ui .tbl th {background:transparent;color:var(--text-3);font-size:12.5px;font-weight:500}
+.source-ui .tbl tbody td {border-color:var(--line);background:transparent}
+.source-ui .tbl tbody tr:hover td {background:var(--surface-2)}
+.source-ui .tb-search .source-exact-search {background:var(--surface);color:var(--text-2)}
+.source-ui .sb-item.on {background:var(--ink);color:#fff}
+.source-ui .sb-item.on svg {color:var(--brand)}
+html[data-theme=dark] .source-ui .sb-item.on {background:var(--brand);color:#12151C}
+html[data-theme=dark] .source-ui .sb-item.on svg {color:#12151C}
+.source-ui .strip {background:var(--ink)}
+.source-ui .strip-v {color:#fff}
+.source-ui .strip-l,.source-ui .strip-s {color:var(--ink-2)}
+.source-ui .tab.on {background:var(--ink);color:#fff}
+html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
+.source-ui .page a:not(.btn):not(.sc):not(.strip-i):not(.sb-item) {text-underline-offset:3px}
+.source-ui .source-dashboard-actions {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.source-ui .source-dashboard-actions .sc {min-width:0}
+.source-ui .source-dashboard-chart {width:100%;height:auto;display:block}
+.source-ui .source-dashboard-chart text {font-family:var(--font);font-size:10.5px;fill:var(--text-3)}
+.source-ui .source-dashboard-chart .gridline {stroke:var(--line);stroke-width:1}
+.source-ui .source-dashboard-chart .published {fill:var(--primary)}
+.source-ui .source-dashboard-chart .quoted {fill:var(--line-2)}
+.source-ui .source-attention-table td {vertical-align:top}
+@media(max-width:1180px){.source-ui .source-dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.source-ui .source-dashboard-actions{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.source-ui *, .source-ui *::before,.source-ui *::after {animation:none!important;transition:none!important}}
+
+/* Global search: approved modal and popover rows, no legacy slate palette. */
+.source-search-dialog .ov-h {border-bottom:1px solid var(--line);padding:16px 20px}
+.source-search-input-wrap {padding:14px 20px;border-bottom:1px solid var(--line)}
+.source-search-input-wrap .input {border-radius:999px;background:var(--surface-2);height:42px}
+.source-search-results {max-height:58vh;overflow:auto;padding:8px}
+.source-search-group .pop-h {padding:8px 12px;color:var(--text-3)}
+.source-search-result {text-decoration:none;color:var(--text);display:flex;gap:10px;padding:8px 12px;border-radius:9px;min-height:54px;align-items:center}
+.source-search-result.on,.source-search-result:hover {background:var(--primary-soft)}
+.source-search-result-icon {height:32px;width:32px;border-radius:9px;display:grid;place-items:center;background:var(--sunken);color:var(--primary)}
+.source-search-result-text {flex:1;min-width:0}
+.source-search-result-text strong {font-size:14px;font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-search-result-text small {font-size:12px;color:var(--text-2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-search-footer {font-size:11.5px;color:var(--text-3)}
+@media(max-width:640px){.source-search-footer {gap:12px;font-size:10.5px}}

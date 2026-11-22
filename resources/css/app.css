@@ -3,6 +3,7 @@
 @import './48source-prototype-exact.css';
 @import './48source-exact-adapters.css';
 @import './48source-control-system.css';
+@import './48source-authoritative-fixes.css';
 
 @source '../views';
 @source '../../vendor/tallstackui/tallstackui/**/*.php';
