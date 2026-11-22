@@ -12,15 +12,16 @@ it('keeps the approved HTML and exact design stylesheet together', function () {
     expect($reference)->toContain('Bricolage Grotesque', 'Onest', 'Quotation comparison');
 });
 
-it('registers approved redesign assets and keeps a legacy layout fallback', function () {
+it('registers approved redesign assets and uses the new layout exclusively', function () {
     $css = file_get_contents(resource_path('css/app.css'));
     $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
 
     expect($css)->toContain("48source-exact-scoped.css", "48source-exact-adapters.css");
-    expect($layout)->toContain("config('source48.redesign_enabled')");
+    expect($layout)->not->toContain('role-sidebar', 'role-header', "config('source48.redesign_enabled')");
     expect($layout)->toContain('x-layout.source-shell');
 });
 
-it('keeps the redesign rollout flag boolean', function () {
-    expect(config('source48.redesign_enabled'))->toBeBool();
+it('uses the approved supplier dashboard without a legacy fallback', function () {
+    $view = file_get_contents(resource_path('views/livewire/supplier/dashboard.blade.php'));
+    expect($view)->toContain('livewire.supplier.approved-dashboard')->not->toContain('source48.redesign_enabled');
 });
