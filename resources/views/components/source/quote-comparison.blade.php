@@ -3,12 +3,14 @@
 @php
     $quotes = $request->quotes->filter(fn($q) => in_array($q->status, ['submitted', 'accepted', 'rejected'], true))->values();
     $requestItems = $request->items;
+    $currencies = $quotes->pluck('currency')->filter()->unique();
+    $comparableCurrency = $quotes->isNotEmpty() && $currencies->count() === 1 && $quotes->every(fn($q) => filled($q->currency));
     $unitLowest = [];
     $completeTotals = [];
     foreach ($requestItems as $item) {
         $prices = $quotes->map(fn($q) => $q->items->firstWhere('request_item_id', $item->id)?->unit_price)
             ->filter(fn($v) => is_numeric($v) && (float) $v > 0)->map(fn($v) => (float) $v);
-        $unitLowest[$item->id] = $prices->isEmpty() ? null : $prices->min();
+        $unitLowest[$item->id] = !$comparableCurrency || $prices->isEmpty() ? null : $prices->min();
     }
     foreach ($quotes as $quote) {
         $sum = 0;
@@ -25,10 +27,13 @@
             $completeTotals[$quote->id] = $sum;
         }
     }
-    $lowestComplete = $completeTotals ? array_search(min($completeTotals), $completeTotals, true) : null;
+    $lowestComplete = $comparableCurrency && $completeTotals ? array_search(min($completeTotals), $completeTotals, true) : null;
 @endphp
 
 <div class="stack" x-data="{ hidden: [] }">
+    @unless($comparableCurrency)
+        <div class="note warn">{{ __('Quotation prices cannot be ranked until all quotations use a single verified currency, or a controlled FX conversion policy is implemented.') }}</div>
+    @endunless
     <div class="verdicts">
         <div class="verdict best"><h4>{{ __('Best value') }}</h4><b>{{ __('Awaiting verified assurance and performance metrics') }}</b><p class="muted sm">{{ __('Weighted evaluation cannot run on placeholder scores.') }}</p></div>
         <div class="verdict"><h4>{{ __('Lowest complete quotation') }}</h4>
