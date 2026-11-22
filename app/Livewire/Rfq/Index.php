@@ -46,6 +46,8 @@ class Index extends Component
 
     protected $queryString = [
         'status' => ['except' => 'all'],
+        'typeFilter' => ['except' => 'all'],
+        'buyerFilter' => ['except' => 'all'],
         'search' => ['except' => ''],
         'quantity' => ['except' => 10],
         'sort' => ['except' => ['column' => 'created_at', 'direction' => 'desc']],
@@ -145,7 +147,9 @@ class Index extends Component
             ->with(['buyer:id,name'])
             ->withCount(['items', 'quotes', 'supplierInvitations']);
 
-        if ($this->status !== 'all') { $query->where('status', $this->status); }
+        if (in_array($this->status, ['draft', 'open', 'closed', 'awarded', 'cancelled'], true)) {
+            $query->where('status', $this->status);
+        }
 
         if ($this->typeFilter !== 'all' && in_array($this->typeFilter, ['public', 'internal'], true)) {
             $query->where('request_type', $this->typeFilter);
@@ -176,6 +180,7 @@ class Index extends Component
         $pageSize = in_array((int) $this->quantity, [10, 25, 50], true) ? (int) $this->quantity : 10;
 
         return $query->orderBy($column, $direction)
+            ->orderBy('id', 'desc')
             ->paginate($pageSize)
             ->withQueryString();
     }
