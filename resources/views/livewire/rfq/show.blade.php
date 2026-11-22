@@ -1,3 +1,4 @@
+<div>
 @if(config('source48.redesign_enabled'))
     <x-source.rfq-detail :request="$request" />
     <livewire:rfq.update @updated="$refresh" />
@@ -803,3 +804,5 @@
 </div>
 
 @endif
+
+</div>
