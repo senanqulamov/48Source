@@ -1,3 +1,7 @@
+<div>
+@if(config('source48.redesign_enabled'))
+    <x-source.order-table :rows="$this->rows" :seller="true" />
+@else
 <div class="space-y-6">
 
     {{-- Modern Header Card - 2026 Style --}}
@@ -92,4 +96,7 @@
     </div>
 
     <livewire:seller.orders.view-order />
+</div>
+
+@endif
 </div>
