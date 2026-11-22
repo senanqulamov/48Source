@@ -85,3 +85,22 @@ html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
  .source-ui .source-rfq-grid th:nth-child(8),.source-ui .source-rfq-grid td:nth-child(8) {display:none}
  .source-ui .source-rfq-table .dt-tools {justify-content:flex-start}
 }
+
+
+/* Approved comparison matrix: fixed line-name column, scrolling vendor columns. */
+.source-ui .source-comparison-card .card-b{padding:12px 18px}
+.source-ui .source-matrix-scroll{overflow-x:auto;overscroll-behavior-x:contain}
+.source-ui .source-comparison-matrix{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}
+.source-ui .source-comparison-matrix th:first-child,.source-ui .source-comparison-matrix td:first-child{
+  min-width:225px;max-width:260px;position:sticky;left:0;z-index:2;
+  background:var(--surface);border-right:1px solid var(--line)
+}
+.source-ui .source-comparison-matrix thead th:first-child{z-index:4}
+.source-ui .source-comparison-matrix thead th{position:sticky;top:0;z-index:3;background:var(--surface)}
+.source-ui .source-comparison-matrix th:not(:first-child),.source-ui .source-comparison-matrix td:not(:first-child){min-width:215px;max-width:290px;padding:13px 16px;vertical-align:top}
+.source-ui .source-comparison-matrix .badge{margin-top:7px}
+.source-ui .source-comparison-card .chip{border:1px solid var(--line-2);border-radius:999px;min-height:28px;display:inline-flex;align-items:center;gap:7px;padding:3px 12px;background:var(--surface);color:var(--text)}
+.source-ui .source-comparison-card .chip[aria-pressed=false]{opacity:.55;text-decoration:line-through}
+.source-ui .source-comparison-card .chip[aria-pressed=true]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.source-ui .source-comparison-card .chip:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:640px){.source-ui .source-comparison-matrix th:first-child,.source-ui .source-comparison-matrix td:first-child{min-width:150px;max-width:175px}}

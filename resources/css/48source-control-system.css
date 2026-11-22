@@ -71,22 +71,23 @@
 .source-dialog button {cursor:pointer}
 .source-ui .btn, .source-dialog .btn {
   font-family:var(--font);
-  font-size:13px;
-  font-weight:600;
+  font-size:14px;
+  font-weight:500;
   line-height:1;
-  border-radius:var(--r);
+  border-radius:999px;
   box-shadow:none;
   text-decoration:none;
   transition:background-color .15s,border-color .15s,transform .12s;
 }
 .source-ui .btn-p, .source-dialog .btn-p {
-  color:var(--on-primary);
-  border-color:var(--primary);
-  background:var(--primary);
+  color:var(--on-brand);
+  border-color:var(--brand-edge);
+  background:var(--brand);
+  font-weight:600;
 }
 .source-ui .btn-p:hover, .source-dialog .btn-p:hover {
-  background:var(--primary-h);
-  border-color:var(--primary-h);
+  background:var(--brand-h);
+  border-color:var(--brand-edge);
 }
 .source-ui .btn-d.solid, .source-dialog .btn-d.solid {
   background:var(--bad); border-color:var(--bad); color:#fff;
@@ -100,9 +101,9 @@
   width:100%;
 }
 .source-ui .tbl thead th {
-  color:var(--text-2);
-  background:var(--surface-2);
-  font-weight:600;
+  color:var(--text-3);
+  background:var(--surface);
+  font-weight:500;
   border-bottom:1px solid var(--line);
   white-space:nowrap;
 }
@@ -149,7 +150,7 @@
   margin:auto;
   width:min(520px,calc(100vw - 32px));
   border:1px solid var(--line);
-  border-radius:10px;
+  border-radius:20px;
   background:var(--surface);
   color:var(--text);
   max-height:calc(100dvh - 32px);
@@ -161,46 +162,47 @@
 .source-dialog .modal.wide {width:min(720px,calc(100vw - 32px))}
 .source-dialog .ov-h,
 .source-dialog .ov-f {flex-shrink:0}
-.source-dialog .ov-h h2 {font-size:15px;font-weight:700}
+.source-dialog .ov-h h2 {font:700 18px/1.2 var(--display)}
 .source-dialog .ov-b {
   overflow:auto;
   overscroll-behavior:contain;
   min-height:0;
   flex:1 1 auto;
-  padding:18px;
+  padding:10px 22px 20px;
 }
 .source-dialog .source-dialog-form {display:flex;flex:1 1 auto;min-height:0;flex-direction:column}
 .source-dialog .source-dialog-form .ov-b {flex:1 1 auto}
 .source-dialog .ov-f {
-  background:var(--surface-2);
-  border-top:1px solid var(--line);
-  padding:12px 18px;
+  background:transparent;
+  border-top:0;
+  padding:4px 22px 20px;
   display:flex;
   align-items:center;
   justify-content:flex-end;
   gap:8px;
 }
 .source-dialog .source-admin-drawer {
-  margin:0 0 0 auto;
-  width:min(760px,100vw);
-  height:100dvh;
-  max-height:100dvh;
+  margin:8px 8px 8px auto;
+  width:min(520px,calc(100vw - 16px));
+  height:calc(100dvh - 16px);
+  max-height:calc(100dvh - 16px);
   display:flex;
   flex-direction:column;
-  border-left:1px solid var(--line);
-  border-radius:0;
+  border:1px solid var(--line);
+  border-radius:20px;
   background:var(--surface);
   color:var(--text);
   box-shadow:var(--sh-pop);
 }
-.source-dialog .source-admin-drawer .ov-b {flex:1 1 auto;overflow:auto}
-.source-dialog .source-admin-drawer .ov-f {flex:0 0 auto}
+.source-dialog .source-admin-drawer .ov-b {flex:1 1 auto;overflow:auto;padding:20px}
+.source-dialog .source-admin-drawer .ov-h {padding:18px 20px;border-bottom:1px solid var(--line)}
+.source-dialog .source-admin-drawer .ov-f {flex:0 0 auto;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
 .source-dialog .source-admin-drawer form {min-width:0}
 .source-dialog .source-admin-drawer .ov-f .flex {gap:8px}
-.source-dialog .field label, .source-dialog .field>label {font-size:12.5px;font-weight:600}
+.source-dialog .field label, .source-dialog .field>label {font-size:12.5px;font-weight:500}
 .source-dialog input.input, .source-dialog textarea.textarea {
   width:100%;
-  background:var(--surface);
+  background:var(--surface-2);
   color:var(--text);
   border:1px solid var(--line-2);
   border-radius:var(--r);
@@ -362,3 +364,34 @@ body [role=option][aria-selected=true] {
 .source-ui .source-import-hero :is(h1,h2,p),.source-ui .source-import-body :is(h1,h2,p) {color:var(--text)}
 .source-ui .source-import-hero .bg-white\/20 {background:var(--sunken)}
 .source-ui .source-import-hero :is(button,a):focus-visible {outline:2px solid var(--primary);outline-offset:2px}
+
+
+/* Confirmed reference geometry, shared across all role overlays. */
+.source-dialog .modal:not(.source-admin-drawer) > .ov-h,
+.source-dialog .modal:not(.source-admin-drawer) > .source-dialog-form + .ov-h {
+  padding:20px 22px 4px;
+  border:0;
+}
+.source-dialog .modal:not(.source-admin-drawer) .ov-b {padding:10px 22px 20px}
+.source-dialog .modal:not(.source-admin-drawer) .ov-f {padding:4px 22px 20px;background:transparent;border:0}
+.source-dialog .modal .btn,.source-dialog .drawer .btn{min-height:36px;padding:0 15px;border-radius:999px}
+.source-dialog :is(.input,.textarea,input:not([type=radio]):not([type=checkbox]),textarea,select){
+  font-size:14px;
+  min-height:38px;
+  border-radius:10px;
+}
+.source-dialog :is(.input,.textarea,input,textarea,select):focus-visible{
+  border-color:var(--primary);
+  outline:0;
+  box-shadow:0 0 0 3px var(--primary-soft);
+}
+.source-ui .source-dialog .btn-p,.source-dialog .btn-p{color:#12151C;background:var(--brand);border-color:var(--brand-edge)}
+.source-ui .source-dialog .btn-p:hover,.source-dialog .btn-p:hover{background:var(--brand-h)}
+.source-ui .source-dialog .btn-d.solid,.source-dialog .btn-d.solid{color:#fff;background:var(--bad)}
+.source-dialog .source-admin-drawer .ov-f .btn {min-height:36px}
+@media(max-width:640px){
+ .source-dialog .source-admin-drawer{
+   margin:0;width:100vw;height:100dvh;max-height:100dvh;border-radius:0
+ }
+ .source-dialog .modal{width:calc(100vw - 20px)}
+}

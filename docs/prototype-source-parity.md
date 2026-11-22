@@ -39,3 +39,11 @@ Do not merge this batch as evidence of pixel-perfect completion.
 - Column show/hide is a display-only preference; core columns remain locked.
 - Deferred from this batch: bulk selection/actions, export formats, independent category association (the Request model has no category column), tooltip keyboard regression, and pixel-by-pixel visual tests.
 - Source mapping: Appendix B.7 and Appendix C of `Pasted text(3).txt`.
+
+## Quotation comparison and awards (this batch)
+
+- Adds real `/compare` and `/compare/{request}` Livewire pages for administrators and authorized owners, connected from the navigation and administrator shortcut.
+- Displays actual quote line-unit prices, requested quantities, tax-inclusive line totals, lowest unit prices within each currency and explicit partial-line gaps. Currency mismatch prevents award selection and ranking.
+- Uses the existing auditable award service to create a separate procurement draft PO. This service requires a complete quote and non-cheapest justification.
+- Important incomplete dependency: the current quote schema lacks reliable delivery lead-time, assurance and performance scores; this page deliberately shows them as unavailable rather than inventing a “best value” score or fastest supplier.
+- Still required: capture valid quotation delivery/assurance/performance inputs, wire real weighted scorer, notifications of unsuccessful bidders, supplier hide/compare presets, and side-by-side browser pixel comparison.

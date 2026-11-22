@@ -4,7 +4,7 @@
     // Current routes, never prototype hash routes. Permissions are enforced by Laravel as well.
     $groups = match ($role) {
         'buyer' => [
-            'Workspace' => [['Dashboard','buyer.dashboard','view_dashboard'],['My RFQs','buyer.rfq.index','view_rfqs'],['Purchase orders','procurement.orders.index',null]],
+            'Workspace' => [['Dashboard','buyer.dashboard','view_dashboard'],['My RFQs','buyer.rfq.index','view_rfqs'],['Compare quotations','procurement.compare.index','view_rfqs'],['Purchase orders','procurement.orders.index',null]],
             'Sourcing' => [['Products','buyer.products.index','view_products'],['Markets','buyer.markets.index','view_markets'],['Import / Export','buyer.import-export','view_dashboard']],
         ],
         'seller' => [
@@ -23,7 +23,7 @@
         'market_worker' => ['My account' => [['Profile','user.profile',null]]],
         default => [
             'Workspace' => [['Dashboard','dashboard','view_dashboard']],
-            'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Compare quotations','rfq.index','view_rfqs'],['Purchase orders','procurement.orders.index',null]],
+            'Sourcing' => [['RFQs','rfq.index','view_rfqs'],['Compare quotations','procurement.compare.index','view_rfqs'],['Purchase orders','procurement.orders.index',null]],
             'Catalog' => [['Products','products.index','view_products'],['Categories','categories.index','view_categories'],['Markets','markets.index','view_markets']],
             'People' => [['Suppliers','users.index','view_users'],['Users & roles','privacy.index','manage_roles']],
             'Monitoring' => [['RFQ monitoring & SLA','monitoring.rfq.index','view_monitoring'],['KPI reports','reports.kpi','view_reports']],
@@ -38,7 +38,7 @@
         'monitoring.rfq.index'=>'pulse', 'rfq.index'=>'file', 'buyer.rfq.index'=>'file', 'supplier.rfq.index'=>'file',
         'products.index'=>'box', 'buyer.products.index'=>'box', 'seller.products.index'=>'box',
         'markets.index'=>'store', 'buyer.markets.index'=>'store', 'seller.markets.index'=>'store',
-        'procurement.orders.index'=>'file', 'orders.index'=>'box', 'seller.orders.index'=>'truck', 'supplier.orders.index'=>'box',
+        'procurement.compare.index'=>'cols', 'procurement.orders.index'=>'file', 'orders.index'=>'box', 'seller.orders.index'=>'truck', 'supplier.orders.index'=>'box',
         'users.index'=>'users', 'categories.index'=>'box', 'reports.kpi'=>'chart',
         'supplier.invitations.index'=>'inbox', 'supplier.quotes.index'=>'file',
         'supplier.workers.index'=>'users', 'seller.workers.index'=>'users',
@@ -63,7 +63,7 @@
                     <div class="sb-label">{{ $group }}</div>
                     @foreach($items as [$label,$routeName,$permission])
                         @if(\Illuminate\Support\Facades\Route::has($routeName) && ($permission === null || $user->can($permission)))
-                            <a class="sb-item {{ request()->routeIs($routeName) ? 'on' : '' }}" href="{{ route($routeName) }}" @if(request()->routeIs($routeName)) aria-current="page" @endif>
+                            <a class="sb-item {{ request()->routeIs($routeName) || ($routeName === 'procurement.compare.index' && request()->routeIs('procurement.compare.show')) ? 'on' : '' }}" href="{{ route($routeName) }}" wire:navigate x-on:click="mobileOpen=false" @if(request()->routeIs($routeName) || ($routeName === 'procurement.compare.index' && request()->routeIs('procurement.compare.show'))) aria-current="page" @endif>
                                 <x-source.icon :name="$routeIcons[$routeName] ?? 'dash'" />
                                 <span>{{ __($label) }}</span>
                             </a>
@@ -73,7 +73,7 @@
             @endforeach
         </div>
         <div class="sb-foot">
-            <a class="sb-item {{ request()->routeIs('user.profile') ? 'on' : '' }}" href="{{ route('user.profile') }}">
+            <a class="sb-item {{ request()->routeIs('user.profile') ? 'on' : '' }}" href="{{ route('user.profile') }}" wire:navigate>
                 <x-source.icon name="user" />
                 <span>Profile & settings</span>
             </a>

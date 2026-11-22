@@ -16,7 +16,7 @@
         @can('create_rfqs')
             <a class="sc" href="{{ route('rfq.create') }}" wire:navigate><span class="si"><x-source.icon name="plus" :size="18" /></span><span><b>{{ __('Create an RFQ') }}</b><span>{{ __('Start a request and invite suppliers') }}</span></span></a>
         @endcan
-        <a class="sc" href="{{ route('rfq.index') }}" wire:navigate><span class="si"><x-source.icon name="cols" :size="18" /></span><span><b>{{ __('Compare quotations') }}</b><span>{{ $approved['compare'] }} {{ __('requests ready for a decision') }}</span></span></a>
+        <a class="sc" href="{{ route('procurement.compare.index') }}" wire:navigate><span class="si"><x-source.icon name="cols" :size="18" /></span><span><b>{{ __('Compare quotations') }}</b><span>{{ $approved['compare'] }} {{ __('requests ready for a decision') }}</span></span></a>
         <a class="sc" href="{{ route('procurement.orders.index') }}" wire:navigate><span class="si"><x-source.icon name="box" :size="18" /></span><span><b>{{ __('Track orders') }}</b><span>{{ $approved['orders'] }} {{ __('orders in progress') }}</span></span></a>
         @can('view_users')
             <a class="sc" href="{{ route('users.index') }}" wire:navigate><span class="si"><x-source.icon name="users" :size="18" /></span><span><b>{{ __('Manage users') }}</b><span>{{ $approved['users'] }} {{ __('registered accounts') }}</span></span></a>

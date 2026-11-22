@@ -119,6 +119,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rfq/{request}', RfqShow::class)->name('rfq.show')->middleware('can:view_rfqs');
     Route::get('/rfq/{request}/quote', RfqQuoteForm::class)->name('rfq.quote')->middleware('can:submit_quotes');
 
+    // Real, buyer-scoped quotation comparisons (separate from marketplace orders).
+    Route::get('/compare', \App\Livewire\Procurement\Comparison\Index::class)->name('procurement.compare.index')->middleware('can:view_rfqs');
+    Route::get('/compare/{request}', \App\Livewire\Procurement\Comparison\Show::class)->name('procurement.compare.show')->middleware('can:view_rfqs');
+
     // Procurement POs are separate from marketplace orders.
     Route::get('/procurement/orders', \App\Livewire\Procurement\PurchaseOrders\Index::class)->name('procurement.orders.index');
     Route::get('/procurement/orders/{purchaseOrder}', \App\Livewire\Procurement\PurchaseOrders\Show::class)->name('procurement.orders.show');
