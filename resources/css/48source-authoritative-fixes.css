@@ -104,3 +104,18 @@ html[data-theme=dark] .source-ui .tab.on {background:var(--brand);color:#12151C}
 .source-ui .source-comparison-card .chip[aria-pressed=true]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
 .source-ui .source-comparison-card .chip:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 @media(max-width:640px){.source-ui .source-comparison-matrix th:first-child,.source-ui .source-comparison-matrix td:first-child{min-width:150px;max-width:175px}}
+
+/* Approved quotation price entry, shared across invitation, edit and RFQ quote flows. */
+.source-ui .source-quotation-form .source-quotation-lines th:first-child{min-width:190px}
+.source-ui .source-quotation-form .source-quotation-lines input.input{min-width:105px;text-align:right;font-variant-numeric:tabular-nums}
+.source-ui .source-quotation-form .source-quotation-lines td{vertical-align:middle}
+.source-ui .source-quotation-form .source-quotation-lines td:last-child{white-space:nowrap}
+.source-ui .source-quotation-form .source-currency-readonly{display:flex;align-items:center;min-height:38px;color:var(--text)}
+.source-ui .source-quotation-form .ph-a .seg button{padding:8px 14px}
+.source-ui .source-quotation-form .card-b.fgrid{gap:16px}
+.source-ui .source-quotation-form .field .textarea{min-height:94px;resize:vertical}
+.source-ui .source-quotation-form .btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:800px){
+ .source-ui .source-quotation-form .source-quotation-lines{min-width:650px}
+ .source-ui .source-quotation-form .ph{align-items:flex-start;flex-direction:column;gap:12px}
+}

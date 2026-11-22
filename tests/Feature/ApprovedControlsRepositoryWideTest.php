@@ -61,7 +61,7 @@ it('replaces legacy cards on account and supplier management details', function 
     ] as $path) {
         $source = file_get_contents(resource_path(str_replace('resources/', '', $path)));
         expect($source)->not->toContain('<x-card');
-        expect($source)->toContain('class="card"');
+        expect($source)->toMatch('/class="card"|<x-source\\.quotation-form/');
     }
 });
 

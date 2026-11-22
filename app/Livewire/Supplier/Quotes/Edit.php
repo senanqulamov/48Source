@@ -105,6 +105,16 @@ class Edit extends Component
 
     public function save(): void
     {
+        // Re-authorize at save time, not only when the page was loaded.
+        $fresh = Quote::query()->with('request')->whereKey($this->quote->id)
+            ->where('supplier_id', Auth::id())->firstOrFail();
+        /** @var \App\Models\Request $rfq */
+        $rfq = $fresh->request;
+        abort_unless(in_array($fresh->status, ['draft', 'submitted'], true)
+            && $rfq->status === 'open'
+            && ($rfq->getAttribute('deadline') === null || $rfq->deadline->isFuture()), 403,
+            'This quotation is no longer editable.');
+
         $this->validate();
 
         $user = Auth::user();
@@ -112,6 +122,23 @@ class Edit extends Component
         if (!$user) {
             $this->error(__('You must be logged in to update a quote.'));
             return;
+        }
+
+        // The RFQ fixes requested line IDs and quantities. Never trust editable Livewire state.
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\RequestItem> $requested */
+        $requested = $rfq->items()->get()->keyBy('id');
+        $provided = collect($this->items);
+        $ids = $provided->map(fn (array $line, $key) => (int) ($line['request_item_id'] ?? $key));
+        if ($requested->count() !== $provided->count() || $ids->unique()->count() !== $requested->count()
+            || $ids->diff($requested->keys())->isNotEmpty()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'Every requested RFQ line must be quoted exactly once.']);
+        }
+        foreach ($provided as $key => $line) {
+            $id = (int) ($line['request_item_id'] ?? $key);
+            $actual = $requested->get($id);
+            if (! $actual || abs((float) ($line['quantity'] ?? 0) - (float) $actual->quantity) > 0.001) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'RFQ quantities cannot be changed by the supplier.']);
+            }
         }
 
         $totalAmount = $this->calculateTotal();
@@ -145,7 +172,7 @@ class Edit extends Component
                 'quote_id' => $this->quote->id,
                 'request_item_id' => $requestItemId,
                 'description' => $item['description'],
-                'quantity' => $item['quantity'],
+                'quantity' => $requested->get((int) $requestItemId)->quantity,
                 'unit_price' => $item['unit_price'],
                 'tax_rate' => $item['tax_rate'] ?? 0,
                 'total' => $total,

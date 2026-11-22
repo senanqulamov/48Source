@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property float $quantity
  * @property string|null $product_name
+ * @property string|null $specifications
  */
 class RequestItem extends Model
 {

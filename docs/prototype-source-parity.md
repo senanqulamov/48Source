@@ -47,3 +47,11 @@ Do not merge this batch as evidence of pixel-perfect completion.
 - Uses the existing auditable award service to create a separate procurement draft PO. This service requires a complete quote and non-cheapest justification.
 - Important incomplete dependency: the current quote schema lacks reliable delivery lead-time, assurance and performance scores; this page deliberately shows them as unavailable rather than inventing a “best value” score or fastest supplier.
 - Still required: capture valid quotation delivery/assurance/performance inputs, wire real weighted scorer, notifications of unsuccessful bidders, supplier hide/compare presets, and side-by-side browser pixel comparison.
+
+## Unified supplier quotation flow
+
+- A single `source.quotation-form` renders invitation-based supplier quoting, supplier quotation editing, and the standalone RFQ quotation form. It uses the approved two-step Prices & Terms → Review & Submit hierarchy and the common card, table and field tokens.
+- Alpine entangles item prices, tax, notes, currency and validity with Livewire; prices and totals update immediately on the client without per-keystroke network requests. Livewire still owns database writes and validation.
+- All three save handlers now verify actual RFQ item identities and requested quantities before persistence. Supplier edits recheck ownership and lifecycle at write time; the standalone form rejects expired/closed or duplicate RFQ submissions at save time.
+- Current quotation workflow remains **complete-item only**. Partial submission, server-persisted drafts, historical unit-price warnings, delivery lead-time and suitability scoring have not yet been implemented and must not be represented as live features.
+- The complete design has not received desktop/mobile pixel-diff testing, so this batch is not a claim of pixel perfection.

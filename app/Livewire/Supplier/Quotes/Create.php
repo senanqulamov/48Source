@@ -35,7 +35,10 @@ class Create extends Component
 
         $this->invitation = $invitation;
 
-        foreach ($invitation->request->items as $requestItem) {
+        /** @var \App\Models\Request $rfq */
+        $rfq = $invitation->request;
+        foreach ($rfq->items as $requestItem) {
+            /** @var \App\Models\RequestItem $requestItem */
             $this->items[] = [
                 'request_item_id' => $requestItem->id,
                 'description' => $requestItem->product_name ?: ($requestItem->specifications ?: 'RFQ item #'.$requestItem->id),
@@ -97,10 +100,12 @@ class Create extends Component
             ->where('supplier_id', auth()->id())
             ->firstOrFail();
 
+        /** @var \App\Models\Request $rfq */
+        $rfq = $invitation->request;
         abort_unless(
             in_array($invitation->status, ['pending', 'accepted'], true)
-                && $invitation->request?->status === 'open'
-                && ($invitation->request->deadline === null || $invitation->request->deadline->isFuture()),
+                && $rfq->status === 'open'
+                && ($rfq->getAttribute('deadline') === null || $rfq->deadline->isFuture()),
             403,
             'This RFQ is not available for quotation.'
         );
@@ -120,6 +125,23 @@ class Create extends Component
             'notes' => 'nullable|string|max:1000',
             'terms_conditions' => 'nullable|string|max:2000',
         ]);
+
+        // The RFQ fixes requested line IDs and quantities. Never trust editable Livewire state.
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\RequestItem> $requested */
+        $requested = $rfq->items()->get()->keyBy('id');
+        $provided = collect($this->items);
+        $ids = $provided->map(fn (array $line, $key) => (int) ($line['request_item_id'] ?? $key));
+        if ($requested->count() !== $provided->count() || $ids->unique()->count() !== $requested->count()
+            || $ids->diff($requested->keys())->isNotEmpty()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'Every requested RFQ line must be quoted exactly once.']);
+        }
+        foreach ($provided as $key => $line) {
+            $id = (int) ($line['request_item_id'] ?? $key);
+            $actual = $requested->get($id);
+            if (! $actual || abs((float) ($line['quantity'] ?? 0) - (float) $actual->quantity) > 0.001) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'RFQ quantities cannot be changed by the supplier.']);
+            }
+        }
 
         // Create the quote
         $quote = Quote::create([
@@ -141,7 +163,7 @@ class Create extends Component
                 'quote_id' => $quote->id,
                 'request_item_id' => $item['request_item_id'],
                 'description' => $item['description'],
-                'quantity' => $item['quantity'],
+                'quantity' => $requested->get((int) $item['request_item_id'])->quantity,
                 'unit_price' => $item['unit_price'],
                 'tax_rate' => $item['tax_rate'] ?? 0,
                 'notes' => $item['notes'],
