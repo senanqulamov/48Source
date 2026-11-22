@@ -1,4 +1,13 @@
-<div class="stack" x-data="{ visible: {} }">
+<div class="stack" x-data="{
+    visible: {},
+    isVisible(id) { return this.visible[id] !== false },
+    visibleCount() { return document.querySelectorAll('[data-comparison-supplier]').length - Object.values(this.visible).filter(value => value === false).length },
+    toggle(id) {
+        if (this.isVisible(id) && this.visibleCount() <= 1) return;
+        this.visible[id] = !this.isVisible(id);
+    },
+    showAll() { this.visible = {} }
+}">
     @php
         $matrix = $this->matrix;
         $backRoute = auth()->user()?->isAdmin() ? 'rfq.show' : 'buyer.rfq.show';
@@ -58,11 +67,13 @@
             <span class="card-s">{{ count($matrix['quotes']) }} {{ __('quotations') }} · {{ count($matrix['items']) }} {{ __('requested lines') }}</span>
         </div>
         <div class="card-b">
-            <div class="row wrap">
+            <div class="row wrap" role="group" aria-label="{{ __('Displayed suppliers') }}">
+                <button class="btn btn-sm" type="button" x-on:click="showAll()">{{ __('Show all') }}</button>
                 @foreach($matrix['quotes'] as $quote)
-                    <button class="chip" type="button" wire:key="visible-{{ $quote['id'] }}"
-                        x-on:click="visible[{{ $quote['id'] }}] = (visible[{{ $quote['id'] }}] === false)"
-                        :aria-pressed="(visible[{{ $quote['id'] }}] !== false).toString()">
+                    <button class="chip" type="button" wire:key="visible-{{ $quote['id'] }}" data-comparison-supplier
+                        x-on:click="toggle({{ $quote['id'] }})"
+                        :aria-pressed="isVisible({{ $quote['id'] }}).toString()"
+                        :aria-label="(isVisible({{ $quote['id'] }}) ? '{{ __('Hide supplier') }}: ' : '{{ __('Show supplier') }}: ') + @js($quote['supplier'])">
                         <x-source.icon name="check" :size="12" />{{ $quote['supplier'] }}
                     </button>
                 @endforeach
@@ -73,7 +84,7 @@
                 <thead>
                     <tr><th scope="col">{{ __('Requested item') }}</th>
                         @foreach($matrix['quotes'] as $quote)
-                            <th scope="col" x-show="visible[{{ $quote['id'] }}] !== false">
+                            <th scope="col" x-show="isVisible({{ $quote['id'] }})">
                                 <div class="stack" style="gap:6px">
                                     <strong>{{ $quote['supplier'] }}</strong>
                                     <span class="sm muted">{{ $quote['currency'] }} · {{ $quote['coverage'] }}/{{ count($matrix['items']) }} {{ __('lines') }}</span>
@@ -100,7 +111,7 @@
                                     $entry = $quote['lines'][$line['id']] ?? null;
                                     $minimum = $line['lowest'][$quote['currency']] ?? null;
                                 @endphp
-                                <td x-show="visible[{{ $quote['id'] }}] !== false">
+                                <td x-show="isVisible({{ $quote['id'] }})">
                                     @if($entry)
                                         <strong>{{ $quote['currency'] }} {{ number_format($entry['price'],2) }}</strong>
                                         <div class="t2">{{ __('Line total') }} {{ number_format($entry['total'],2) }} {{ __('incl. tax') }}</div>
@@ -123,7 +134,7 @@
                     <tr>
                         <th scope="row">{{ __('Total including tax') }}</th>
                         @foreach($matrix['quotes'] as $quote)
-                            <td x-show="visible[{{ $quote['id'] }}] !== false" class="mono">
+                            <td x-show="isVisible({{ $quote['id'] }})" class="mono">
                                 <strong>{{ $quote['currency'] }} {{ number_format($quote['total'],2) }}</strong>
                                 @unless($quote['complete'])<div class="t2">{{ __('Partial quotation — not a comparable full total') }}</div>@endunless
                             </td>
