@@ -108,9 +108,9 @@
             @if($hasFilters)
                 <div class="dt-chips">
                     <span class="sm muted">{{ $rows->total() }} {{ __('matching RFQs') }}</span>
-                    @if(filled($this->search))<span class="fchip">{{ __('Search') }}: {{ $this->search }}</span>@endif
+                    @if(filled($searchValue))<span class="fchip">{{ __('Search') }}: {{ $searchValue }}</span>@endif
                     @if($active !== 'all')<span class="fchip">{{ __('Status') }}: {{ ucfirst($active) }}</span>@endif
-                    @if($this->typeFilter !== 'all')<span class="fchip">{{ __('Type') }}: {{ ucfirst($this->typeFilter) }}</span>@endif
+                    @if($typeFilterValue !== 'all')<span class="fchip">{{ __('Type') }}: {{ ucfirst($typeFilterValue) }}</span>@endif
                     <button type="button" class="btn btn-sm btn-g" wire:click="clearTableFilters">{{ __('Clear all') }}</button>
                 </div>
             @endif
@@ -120,11 +120,11 @@
                         @foreach(['id'=>'Reference','title'=>'Title','buyer'=>'Buyer','request_type'=>'Type','status'=>'Status','deadline'=>'Deadline','items'=>'Items','quotes'=>'Quotes','created_at'=>'Created'] as $key => $label)
                             <th scope="col" @if(in_array($key,['buyer','request_type','items','quotes','created_at'])) x-show="columns.{{ $key }}" @endif
                                 @if(in_array($key,['id','title','request_type','status','deadline','created_at']))
-                                    aria-sort="{{ ($sortState['column'] ?? '') === $key ? (($this->sort['direction'] ?? '') === 'asc' ? 'ascending' : 'descending') : 'none' }}"
+                                    aria-sort="{{ ($sortState['column'] ?? '') === $key ? (($sortState['direction'] ?? '') === 'asc' ? 'ascending' : 'descending') : 'none' }}"
                                 @endif>
                                 @if(in_array($key,['id','title','request_type','status','deadline','created_at']))
                                     <button type="button" wire:click="changeSort('{{ $key }}')"
-                                        class="{{ ($this->sort['column'] ?? '') === $key ? 'on' : '' }}">{{ __($label) }}
+                                        class="{{ ($sortState['column'] ?? '') === $key ? 'on' : '' }}">{{ __($label) }}
                                         <x-source.icon name="sort" :size="12" />
                                     </button>
                                 @else
