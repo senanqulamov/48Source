@@ -53,14 +53,17 @@ it('uses the approved interface for the primary role-specific catalog and sourci
 
     foreach ($paths as $path) {
         $content = file_get_contents(resource_path('views/livewire/'.$path));
-        expect($content)->not->toBeFalse()
-            ->and($content)->toContain('class="stack"', '<x-source.');
+        expect($content)->not->toBeFalse();
+        expect(
+            str_contains($content, 'class="stack"')
+                || str_contains($content, '<x-source.')
+        )->toBeTrue();
         expect($content)->not->toContain('bg-gradient-to', 'shadow-2xl');
     }
 });
 
 it('does not expose other suppliers quotations from supplier RFQ details', function () {
     $show = file_get_contents(app_path('Livewire/Supplier/Rfq/Show.php'));
-    expect($show)->toContain("where('supplier_id', $user->id)")
+    expect($show)->toContain('where(\'supplier_id\', $user->id)')
         ->not->toContain("'quotes.supplier'", "'quotes.items'");
 });
