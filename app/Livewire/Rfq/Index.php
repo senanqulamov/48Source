@@ -12,10 +12,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Livewire\Traits\WithRfqBulkExport;
 
 class Index extends Component
 {
-    use Alert, WithLogging, WithPagination;
+    use Alert, WithLogging, WithPagination, WithRfqBulkExport;
 
     public string $status = 'all';
 
