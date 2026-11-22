@@ -95,8 +95,33 @@ class Show extends Component
         ]);
     }
 
+    private function authorizeBuyerOwner(): void
+    {
+        $actor = Auth::user();
+        abort_unless(
+            $actor && $actor->isBuyer() && $actor->can('view_rfqs')
+                && (int) $this->request->fresh()?->buyer_id === (int) $actor->id,
+            403
+        );
+    }
+
     public function updatedStatusValue($value): void
     {
+        $this->authorizeBuyerOwner();
+        $this->request->refresh();
+        $allowed = [
+            'draft' => ['open', 'cancelled'],
+            'open' => ['closed', 'cancelled'],
+            'closed' => [],
+            'awarded' => [],
+            'cancelled' => [],
+        ];
+        if ($value !== $this->request->status &&
+            ! in_array($value, $allowed[$this->request->status] ?? [], true)) {
+            $this->statusValue = $this->request->status;
+            $this->addError('statusValue', __('Invalid RFQ status transition. Use comparison to award a supplier.'));
+            return;
+        }
         if ($value === 'awarded') {
             $this->error(__('Use the audited award decision to create the procurement PO.'));
             $this->statusValue = $this->request->status;
@@ -140,6 +165,7 @@ class Show extends Component
 
     public function openInviteModal(): void
     {
+        $this->authorizeBuyerOwner();
         $this->showInviteModal = true;
         $this->selectedSuppliers = [];
     }
@@ -152,6 +178,7 @@ class Show extends Component
 
     public function inviteSuppliers(): void
     {
+        $this->authorizeBuyerOwner();
         if (empty($this->selectedSuppliers)) {
             $this->error(__('Please select at least one supplier to invite.'));
             return;
@@ -227,6 +254,7 @@ class Show extends Component
 
     public function deleteInvitation(int $invitationId): void
     {
+        $this->authorizeBuyerOwner();
         $invitation = SupplierInvitation::where('id', $invitationId)
             ->where('request_id', $this->request->id)
             ->first();
@@ -278,6 +306,8 @@ class Show extends Component
     #[Renderless]
     public function confirmAcceptQuote(int $quoteId): void
     {
+        $this->authorizeBuyerOwner();
+        abort_unless($this->request->fresh()?->status === 'closed', 403);
         $quote = Quote::where('id', $quoteId)
             ->where('request_id', $this->request->id)
             ->first();
@@ -298,6 +328,7 @@ class Show extends Component
 
     public function acceptQuote($params): void
     {
+        $this->authorizeBuyerOwner();
         $quoteId = is_array($params) && isset($params['quoteId'])
             ? (int) $params['quoteId'] : (int) $params;
 
@@ -313,6 +344,8 @@ class Show extends Component
     #[Renderless]
     public function confirmRejectQuote(int $quoteId): void
     {
+        $this->authorizeBuyerOwner();
+        abort_unless($this->request->fresh()?->status === 'closed', 403);
         $quote = Quote::where('id', $quoteId)
             ->where('request_id', $this->request->id)
             ->first();
@@ -333,6 +366,8 @@ class Show extends Component
 
     public function rejectQuote($params): void
     {
+        $this->authorizeBuyerOwner();
+        abort_unless($this->request->fresh()?->status === 'closed', 403);
         $quoteId = is_array($params) && isset($params['quoteId']) ? (int)$params['quoteId'] : (int)$params;
         $quote = Quote::where('id', $quoteId)
             ->where('request_id', $this->request->id)
@@ -343,6 +378,7 @@ class Show extends Component
             return;
         }
 
+        abort_unless($quote->status === 'submitted', 403);
         $oldStatus = $quote->status;
 
         // Update quote status to rejected
