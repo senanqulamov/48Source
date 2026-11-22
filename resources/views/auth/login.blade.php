@@ -1,3 +1,8 @@
+@if(config('source48.redesign_enabled'))
+    <x-guest-layout>
+        @include('auth.approved-login')
+    </x-guest-layout>
+@else
 <x-guest-layout>
     <div class="min-h-screen flex items-center justify-center">
         <div class="max-w-md w-full space-y-8">
@@ -204,3 +209,5 @@
         </div>
     </div>
 </x-guest-layout>
+
+@endif
