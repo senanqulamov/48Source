@@ -1,3 +1,4 @@
+<div>
 @if(config('source48.redesign_enabled'))
     <x-source.rfq-table :rows="$this->rows" detail-route="buyer.rfq.show" status-property="statusFilter" :active-status="$statusFilter ?? 'all'" :buyer="true" />
     <livewire:buyer.rfq.create @created="$refresh" />
@@ -115,3 +116,5 @@
 </div>
 
 @endif
+
+</div>
