@@ -21,6 +21,6 @@ it('registers approved redesign assets and keeps a legacy layout fallback', func
     expect($layout)->toContain('x-layout.source-shell');
 });
 
-it('keeps existing production UI off by default when no opt-in is configured', function () {
+it('keeps the redesign rollout flag boolean', function () {
     expect(config('source48.redesign_enabled'))->toBeBool();
 });
