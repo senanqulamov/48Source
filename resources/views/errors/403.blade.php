@@ -1,1 +1,4 @@
-@include('errors.approved', ['statusCode' => 403, 'title' => __('Access denied'), 'description' => __('Your account does not have permission to view this resource.')])
+@extends('errors.layout')
+@section('code', '403')
+@section('title', 'You do not have access to this')
+@section('message', 'Your role is not allowed to open this page or do this action. An administrator can change it under Users and roles.')

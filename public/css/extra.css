@@ -1,0 +1,16 @@
+/* Additions for the Laravel build on top of the prototype stylesheet (app.css is the prototype's own, unchanged). */
+[x-cloak]{display:none!important}
+[hidden]{display:none!important}
+.acct-wrap{position:relative}.acct-pop{position:absolute;right:0;top:calc(100% + 8px);width:250px;z-index:60}.acct-pop form{margin:0}.acct-pop .pop-i{width:100%}
+.sb-scrim{display:none}@media (max-width:900px){.app.navopen .sb-scrim{display:block;position:fixed;inset:0;background:rgba(10,12,18,.45);z-index:39}}
+.toast.bad svg{color:#FF9486}
+.modal.wide{max-width:760px}.auth-h{font:700 28px/1.15 var(--display);margin:18px 0 6px}.auth-d{color:var(--text-2);margin-bottom:20px}
+.auth-form{display:grid;gap:14px}.auth-form .btn{height:44px;justify-content:center}.auth-links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13.5px;margin-top:14px}
+.tbl.busy{opacity:.55;transition:opacity .15s .12s}
+.dt-top .dt-tools>span[x-data]{display:contents}
+a.sc,a.strip-i,a.pop-i,a.btn,a.icon-btn{text-decoration:none}
+a.sc{color:inherit}
+.input.dp.cs,.cs.input{justify-content:flex-start;width:100%}
+.pop .pop-i input.chk{flex:none}
+.perm-x{width:22px;height:22px}
+.dt-search.block{max-width:none}

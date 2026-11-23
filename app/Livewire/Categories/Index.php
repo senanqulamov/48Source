@@ -2,58 +2,69 @@
 
 namespace App\Livewire\Categories;
 
-use App\Enums\TableHeaders;
+use App\Livewire\Concerns\Page;
 use App\Models\Category;
-use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Livewire\Attributes\Computed;
+use App\Support\Audit;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
-use Livewire\WithPagination;
 
+#[Layout('components.layouts.app')]
+#[Title('Categories')]
 class Index extends Component
 {
-    use WithPagination;
+    use Page;
 
-    public $quantity = 10;
+    public array $f = ['id' => null, 'name' => '', 'parent_id' => ''];
 
-    public ?string $search = null;
-
-    public array $sort = [
-        'column' => 'name',
-        'direction' => 'asc',
-    ];
-
-    public array $headers = [
-        ['index' => 'id', 'label' => '#', 'sortable' => true],
-        ['index' => 'name', 'label' => 'Name', 'sortable' => true],
-        ['index' => 'products_count', 'label' => 'Products', 'sortable' => true],
-        ['index' => 'created_at', 'label' => 'Created', 'sortable' => true],
-        ['index' => 'action', 'label' => '', 'sortable' => false],
-    ];
-
-    public function mount(): void
+    public function create(): void
     {
-        $this->headers = TableHeaders::make($this->headers);
+        $this->need('catalog', 'C');
+        $this->f = ['id' => null, 'name' => '', 'parent_id' => ''];
+        $this->open('form');
     }
 
-    public function render(): View
+    public function edit(int $id): void
     {
-        return view('livewire.categories.index');
+        $this->need('catalog', 'E');
+        $c = Category::findOrFail($id);
+        $this->f = ['id' => $c->id, 'name' => $c->name, 'parent_id' => (string) $c->parent_id];
+        $this->open('form');
     }
 
-    #[Computed]
-    public function rows(): LengthAwarePaginator
+    public function save(): void
     {
-        if ($this->quantity == 'all') {
-            $this->quantity = Category::count();
+        $this->need('catalog', $this->f['id'] ? 'E' : 'C');
+        $this->validate(['f.name' => 'required|string|min:2|max:80', 'f.parent_id' => 'nullable|exists:categories,id'], [], ['f.name' => 'name', 'f.parent_id' => 'group']);
+        $parent = $this->f['parent_id'] ?: null;
+        if ($this->f['id'] && (int) $parent === (int) $this->f['id']) {
+            $this->addError('f.parent_id', 'A category cannot be its own group.');
+
+            return;
         }
+        $c = $this->f['id'] ? Category::findOrFail($this->f['id']) : new Category;
+        if ($c->exists && $parent && $c->children()->exists()) {
+            $this->addError('f.parent_id', 'This is a group with categories inside it. Move those first.');
 
-        return Category::query()
-            ->withCount('products')
-            ->when($this->search !== null, fn (Builder $query) => $query->where('name', 'like', '%'.trim($this->search).'%'))
-            ->orderBy(...array_values($this->sort))
-            ->paginate($this->quantity)
-            ->withQueryString();
+            return;
+        }
+        $slug = Str::slug($this->f['name']);
+        $n = 1;
+        while (Category::where('slug', $slug)->where('id', '!=', $c->id ?? 0)->exists()) {
+            $slug = Str::slug($this->f['name']).'-'.(++$n);
+        }
+        $c->fill(['name' => trim($this->f['name']), 'parent_id' => $parent, 'slug' => $slug])->save();
+        Audit::log('Category', $this->f['id'] ? 'Edited category' : 'Added category', $c);
+        $this->close();
+        $this->toast("{$c->name} saved.");
+    }
+
+    public function render()
+    {
+        return view('livewire.categories.index', [
+            'groups' => Category::whereNull('parent_id')->with(['children' => fn ($q) => $q->withCount('suppliers', 'rfqs')])->orderBy('name')->get(),
+            'parents' => Category::whereNull('parent_id')->orderBy('name')->pluck('name', 'id'),
+        ]);
     }
 }

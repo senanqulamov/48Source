@@ -1,1 +1,4 @@
-@include('errors.approved', ['statusCode' => 404, 'title' => __('Page not found'), 'description' => __('The page you\'re looking for is unavailable or has moved.')])
+@extends('errors.layout')
+@section('code', '404')
+@section('title', 'This page does not exist')
+@section('message', 'The link may be out of date, or the record belongs to someone else.')

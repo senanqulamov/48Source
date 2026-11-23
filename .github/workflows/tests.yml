@@ -3,74 +3,45 @@ name: Tests
 on:
   push:
     branches:
-      - main
+      - master
+      - '*.x'
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  tests:
+    runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        os: [ubuntu-latest]
-        php: ['8.4']
+        php: [8.2, 8.3, 8.4]
 
-    name: OS:${{ matrix.os }} / PHP:${{ matrix.php }}
+    name: PHP ${{ matrix.php }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
+      - name: Checkout code
+        uses: actions/checkout@v6
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
-          tools: composer:v2
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
           coverage: none
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress --ansi
+        run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Install Node dependencies
-        run: |
-          npm ci
-          npm run build
+      - name: Copy environment file
+        run: cp .env.example .env
 
-      - name: Copy .env
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Generate app key
+        run: php artisan key:generate
 
-      - name: Creating Database
-        run: php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
-
-      - name: Preparing Laravel
-        run: php artisan key:generate --force && php artisan optimize:clear
-
-      - name: Check Route Integrity
-        run: php artisan route:list
-
-      - name: Run Migrations
-        run: php artisan migrate:fresh --step --force --no-interaction --seed
-
-      - name: Compile approved Blade views
-        run: php artisan view:cache
-
-      - name: Feature Tests
-        id: tests
-        run: ./vendor/bin/pest --ci --parallel
-
-      - name: Pint
-        run: ./vendor/bin/pint --test
-
-      - name: PhpStan
-        if: always() && steps.tests.outcome != 'cancelled'
-        run: ./vendor/bin/phpstan --configuration="phpstan.neon"
+      - name: Execute tests
+        run: php artisan test

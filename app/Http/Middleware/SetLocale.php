@@ -6,25 +6,14 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/** Uses the language the signed-in user chose. */
 class SetLocale
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->session()->get('locale')
-            ?? $request->cookie('locale');
-
-        $supported = array_keys(config('languages.supported', []));
-        $fallback = config('languages.fallback', 'en');
-
-        if ($locale && in_array($locale, $supported, true)) {
+        $locale = $request->user()?->locale;
+        if ($locale && isset(config('procurement.locales')[$locale])) {
             app()->setLocale($locale);
-        } elseif ($fallback) {
-            app()->setLocale($fallback);
         }
 
         return $next($request);

@@ -7,125 +7,55 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** @property-read \Illuminate\Database\Eloquent\Collection<int, QuoteItem> $items */
 class Quote extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'request_id',
-        'supplier_id',
-        'supplier_invitation_id',
-        'unit_price',
-        'total_price',
-        'total_amount',
-        'adjusted_total_price',
-        'adjusted_at',
-        'adjusted_by',
-        'currency',
-        'valid_until',
-        'notes',
-        'terms_conditions',
-        'status',
-        'submitted_at',
-    ];
+    public const STATUSES = ['draft' => 'Draft', 'submitted' => 'Submitted', 'withdrawn' => 'Withdrawn', 'won' => 'Won', 'lost' => 'Not selected'];
 
-    protected $casts = [
-        'valid_until' => 'datetime',
-        'submitted_at' => 'datetime',
-        'adjusted_at' => 'datetime',
-        'total_price' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'adjusted_total_price' => 'decimal:2',
-        'unit_price' => 'decimal:2',
-    ];
+    /** Database defaults, mirrored so a fresh model has them before it is reloaded. */
+    protected $attributes = ['original_total_cents' => null, 'adjust_reason' => null, 'adjusted_by' => null, 'adjusted_at' => null, 'status' => 'draft', 'currency' => 'USD', 'total_cents' => 0, 'revision' => 0];
 
-    /**
-     * Get the request that this quote belongs to.
-     */
-    public function request(): BelongsTo
+    protected $fillable = ['rfq_id', 'supplier_id', 'submitted_by', 'status', 'currency', 'delivery_days', 'payment_terms', 'valid_until', 'notes', 'total_cents', 'revision', 'submitted_at', 'original_total_cents', 'adjust_reason', 'adjusted_by', 'adjusted_at'];
+
+    protected function casts(): array
     {
-        return $this->belongsTo(Request::class);
+        return ['adjusted_at' => 'datetime', 'original_total_cents' => 'integer', 'valid_until' => 'date', 'submitted_at' => 'datetime'];
     }
 
-    /**
-     * Get the supplier (user) that provided this quote.
-     */
+    public function rfq(): BelongsTo
+    {
+        return $this->belongsTo(Rfq::class);
+    }
+
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'supplier_id');
+        return $this->belongsTo(Supplier::class);
     }
 
-    /**
-     * Get the supplier invitation this quote responds to.
-     */
-    public function supplierInvitation(): BelongsTo
-    {
-        return $this->belongsTo(SupplierInvitation::class, 'supplier_invitation_id');
-    }
-
-    /**
-     * Get the quote items.
-     */
     public function items(): HasMany
     {
         return $this->hasMany(QuoteItem::class);
     }
 
-    /**
-     * Get the user who adjusted the quote prices.
-     */
-    public function adjustedBy(): BelongsTo
+    public function statusLabel(): string
     {
-        return $this->belongsTo(User::class, 'adjusted_by');
+        return self::STATUSES[$this->status] ?? $this->status;
     }
 
-    /**
-     * Calculate the adjusted total from quote items' new unit prices
-     */
-    public function getCalculatedAdjustedTotalAttribute(): float
+    public function isExpired(): bool
     {
-        return $this->items->sum(function ($item) {
-            $price = $item->new_unit_price ?? $item->unit_price;
-            $subtotal = $item->quantity * $price;
-            $tax = $subtotal * ($item->tax_rate / 100);
-            return $subtotal + $tax;
-        });
+        return $this->valid_until !== null && $this->valid_until->endOfDay()->isPast();
     }
 
-    /**
-     * Calculate the actual total from quote items (including tax)
-     * This is the correct calculation based on items
-     */
-    public function getCalculatedTotalAttribute(): float
+    /** Number of request items this quotation prices. */
+    public function coverage(): int
     {
-        return $this->items->sum(function ($item) {
-            return $item->total; // Uses the accessor from QuoteItem model
-        });
+        return $this->items->whereNotNull('unit_price_cents')->count();
     }
 
-    /**
-     * Accessor: get the formatted total price as money.
-     */
-    public function getFormattedTotalPriceAttribute(): string
+    public function attachments(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
-        $value = $this->total_price ?? 0;
-
-        return number_format((float) $value, 2, '.', ' ');
-    }
-
-    /**
-     * Accessor: get the formatted adjusted total price as money.
-     */
-    public function getFormattedAdjustedTotalPriceAttribute(): string
-    {
-        $value = $this->adjusted_total_price ?? 0;
-
-        return number_format((float) $value, 2, '.', ' ');
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 }

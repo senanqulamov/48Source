@@ -1,39 +1,23 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\RequirePermission;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        then: function () {
-            Route::middleware('web')
-                ->group(base_path('routes/supplier.php'));
-
-            if (app()->environment('local')) {
-                Route::middleware('web')
-                    ->group(base_path('routes/test-errors.php'));
-            }
-        },
     )
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->web(append: [
-            \App\Http\Middleware\SetLocale::class,
-            \App\Http\Middleware\LogPageView::class,
-        ]);
-
-        $middleware->alias([
-            'supplier' => \App\Http\Middleware\EnsureUserIsSupplier::class,
-            'field_supplier' => \App\Http\Middleware\EnsureUserIsFieldSupplier::class,
-            'seller' => \App\Http\Middleware\EnsureUserIsSeller::class,
-            'permission' => \App\Http\Middleware\CheckPermission::class,
-            'role' => \App\Http\Middleware\CheckRole::class,
-        ]);
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias(['perm' => RequirePermission::class, 'active' => EnsureAccountActive::class]);
+        $middleware->web(append: [\App\Http\Middleware\SetLocale::class]);
+        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->redirectUsersTo(fn () => route('dashboard'));
     })
-    ->withExceptions(function (Exceptions $exceptions) {
+    ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

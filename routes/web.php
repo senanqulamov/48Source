@@ -1,166 +1,145 @@
 <?php
 
-use App\Http\Controllers\LocaleController;
-use App\Livewire\Buyer\Dashboard as BuyerDashboard;
-use App\Livewire\Buyer\Logs\Index as BuyerLogsIndex;
-use App\Livewire\Buyer\Markets\Index as BuyerMarketsIndex;
-use App\Livewire\Buyer\Products\Index as BuyerProductsIndex;
-use App\Livewire\Buyer\Rfq\Index as BuyerRfqIndex;
-use App\Livewire\Buyer\Rfq\Show as BuyerRfqShow;
-use App\Livewire\Dashboard\Index as DashboardIndex;
-use App\Livewire\Logs\Index as LogsIndex;
-use App\Livewire\Markets\Index as MarketsIndex;
-use App\Livewire\Markets\Show as MarketShow;
-use App\Livewire\Orders\Index as OrdersIndex;
-use App\Livewire\Orders\Show as OrderShow;
-use App\Livewire\Products\Index as ProductsIndex;
-use App\Livewire\Products\Show as ProductShow;
-use App\Livewire\Seller\Dashboard as SellerDashboard;
-use App\Livewire\Seller\Markets\Index as SellerMarketsIndex;
-use App\Livewire\Seller\Markets\Show as SellerMarketShow;
-use App\Livewire\Seller\Products\Index as SellerProductsIndex;
-use App\Livewire\Seller\Products\Show as SellerProductShow;
-use App\Livewire\Seller\Orders\Index as SellerOrdersIndex;
-use App\Livewire\Seller\Orders\Show as SellerOrderShow;
-use App\Livewire\Seller\Logs\Index as SellerLogsIndex;
-use App\Livewire\Settings\Index as SettingsIndex;
-use App\Livewire\User\Profile;
-use App\Livewire\Users\Index;
-use App\Livewire\Users\Show as UsersShow;
-use App\Livewire\Rfq\Create as RfqCreate;
-use App\Livewire\Rfq\Index as RfqIndex;
-use App\Livewire\Rfq\Show as RfqShow;
-use App\Livewire\Rfq\QuoteForm as RfqQuoteForm;
-use App\Livewire\Privacy\Index as PrivacyIndex;
-use App\Livewire\Privacy\Users\Show as PrivacyUserShow;
-use App\Livewire\Privacy\Roles\Show as PrivacyRoleShow;
-use App\Livewire\Shared\ImportExport;
-use App\Http\Controllers\DownloadController;
-use App\Http\Controllers\ExportController;
+use App\Livewire;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Livewire\Health\Index as HealthIndex;
-use App\Livewire\Notifications\Index as NotificationsIndex;
-use App\Livewire\Monitoring\Rfq\Index as MonitoringRfqIndex;
-use App\Livewire\Monitoring\Rfq\Create as MonitoringRfqCreate;
-use App\Livewire\Monitoring\Rfq\Show as MonitoringRfqShow;
-use App\Livewire\Sla\Index as SlaIndex;
-use App\Livewire\Seller\Workers\Index as SellerWorkersIndex;
-use App\Livewire\Categories\Index as CategoriesIndex;
-use App\Livewire\Categories\Show as CategoryShow;
-use App\Livewire\Reports\KpiIndex;
 
-Route::view('/', 'welcome')->name('welcome');
-
-Route::get('/lang/{locale}', [LocaleController::class, 'switch'])->name('lang.switch');
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', DashboardIndex::class)->name('dashboard')->middleware('can:view_dashboard');
-
-    // Role-based Dashboards
-    Route::get('/buyer/dashboard', BuyerDashboard::class)->name('buyer.dashboard')->middleware('can:view_dashboard');
-
-    // Buyer Panel Routes
-    Route::get('/buyer/rfq', BuyerRfqIndex::class)->name('buyer.rfq.index')->middleware('can:view_rfqs');
-    Route::get('/buyer/rfq/{request}', BuyerRfqShow::class)->name('buyer.rfq.show')->middleware('can:view_rfqs');
-    Route::get('/buyer/products', BuyerProductsIndex::class)->name('buyer.products.index')->middleware('can:view_products');
-    Route::get('/buyer/markets', BuyerMarketsIndex::class)->name('buyer.markets.index')->middleware('can:view_markets');
-    Route::get('/buyer/logs', BuyerLogsIndex::class)->name('buyer.logs.index')->middleware('can:view_logs');
-    Route::get('/buyer/import-export', ImportExport::class)->name('buyer.import-export')->middleware('can:view_dashboard');
-
-    Route::get('/seller/dashboard', SellerDashboard::class)->name('seller.dashboard')->middleware(['seller', 'can:view_dashboard']);
-    Route::get('/seller/markets', SellerMarketsIndex::class)->name('seller.markets.index')->middleware(['seller', 'can:view_markets']);
-    Route::get('/seller/markets/{market}', SellerMarketShow::class)->name('seller.markets.show')->middleware(['seller', 'can:view_markets']);
-    Route::get('/seller/products', SellerProductsIndex::class)->name('seller.products.index')->middleware(['seller', 'can:view_products']);
-    Route::get('/seller/products/{product}', SellerProductShow::class)->name('seller.products.show')->middleware(['seller', 'can:view_products']);
-    Route::get('/seller/orders', SellerOrdersIndex::class)->name('seller.orders.index')->middleware(['seller', 'can:view_orders']);
-    Route::get('/seller/orders/{order}', SellerOrderShow::class)->name('seller.orders.show')->middleware(['seller', 'can:view_orders']);
-    Route::get('/seller/logs', SellerLogsIndex::class)->name('seller.logs.index')->middleware(['seller', 'can:view_logs']);
-
-    // Owner-controlled market task assignments and a real worker 'Today' page.
-    Route::get('/seller/tasks', \App\Livewire\Seller\Tasks\Index::class)->name('seller.tasks.index')->middleware('seller');
-    Route::get('/market-work/today', \App\Livewire\MarketWork\Today::class)->name('market-work.today');
-
-    // Seller Workers
-    Route::get('/seller/workers', SellerWorkersIndex::class)->name('seller.workers.index')->middleware(['seller', 'can:view_dashboard']);
-
-    Route::get('/seller/import-export', ImportExport::class)->name('seller.import-export')->middleware(['seller', 'can:view_dashboard']);
-
-    Route::get('/users', Index::class)->name('users.index')->middleware('can:view_users');
-    Route::get('/users/{user}', UsersShow::class)->name('users.show')->middleware('can:view_users');
-    Route::get('/user/profile', Profile::class)->name('user.profile');
-
-    // Products
-    Route::get('/products', ProductsIndex::class)->name('products.index')->middleware('can:view_products');
-    Route::get('/products/{product}', ProductShow::class)->name('products.show')->middleware('can:view_products');
-
-    // Orders
-    Route::get('/orders', OrdersIndex::class)->name('orders.index')->middleware('can:view_orders');
-    Route::get('/orders/{order}', OrderShow::class)->name('orders.show')->middleware('can:view_orders');
-
-    // Markets
-    Route::get('/markets', MarketsIndex::class)->name('markets.index')->middleware('can:view_markets');
-    Route::get('/markets/{market}', MarketShow::class)->name('markets.show')->middleware('can:view_markets');
-
-    // Categories
-    Route::get('/categories', CategoriesIndex::class)->name('categories.index')->middleware('can:view_categories');
-    Route::get('/categories/{category}', CategoryShow::class)->name('categories.show')->middleware('can:view_categories');
-
-    // Logs
-    Route::get('/logs', LogsIndex::class)->name('logs.index')->middleware('can:view_logs');
-
-    // Settings
-    Route::get('/settings', SettingsIndex::class)->name('settings.index')->middleware('can:view_settings');
-    Route::get('/settings/flags', \App\Livewire\Settings\FeatureFlags::class)->name('settings.flags')->middleware('can:manage_feature_flags');
-
-    // Privacy & Roles Management
-    Route::get('/privacy', PrivacyIndex::class)->name('privacy.index')->middleware('can:manage_roles');
-    Route::get('/privacy/users/{user}', PrivacyUserShow::class)->name('privacy.users.show')->middleware('can:manage_roles');
-    Route::get('/privacy/roles/{role}', PrivacyRoleShow::class)->name('privacy.roles.show')->middleware('can:manage_roles');
-
-    // RFQs (buyer-facing)
-    Route::get('/rfq', RfqIndex::class)->name('rfq.index')->middleware('can:view_rfqs');
-    Route::get('/rfq/create', RfqCreate::class)->name('rfq.create')->middleware('can:create_rfqs');
-    Route::get('/rfq/{request}', RfqShow::class)->name('rfq.show')->middleware('can:view_rfqs');
-    Route::get('/rfq/{request}/quote', RfqQuoteForm::class)->name('rfq.quote')->middleware('can:submit_quotes');
-
-    // Real, buyer-scoped quotation comparisons (separate from marketplace orders).
-    Route::get('/compare', \App\Livewire\Procurement\Comparison\Index::class)->name('procurement.compare.index')->middleware('can:view_rfqs');
-    Route::get('/compare/{request}', \App\Livewire\Procurement\Comparison\Show::class)->name('procurement.compare.show')->middleware('can:view_rfqs');
-
-    // Procurement POs are separate from marketplace orders.
-    Route::get('/procurement/orders', \App\Livewire\Procurement\PurchaseOrders\Index::class)->name('procurement.orders.index');
-    Route::get('/procurement/orders/{purchaseOrder}', \App\Livewire\Procurement\PurchaseOrders\Show::class)->name('procurement.orders.show');
-
-    // Admin enhancements
-    Route::get('/health', HealthIndex::class)->name('health.index')->middleware('can:view_health');
-    Route::get('/notifications', NotificationsIndex::class)->name('notifications.index')->middleware('can:view_notifications');
-    Route::get('/monitoring/rfq', MonitoringRfqIndex::class)->name('monitoring.rfq.index')->middleware('can:view_monitoring');
-    Route::get('/monitoring/rfq/create', MonitoringRfqCreate::class)->name('monitoring.rfq.create')->middleware('can:create_rfqs');
-    Route::get('/monitoring/rfq/{request}', MonitoringRfqShow::class)->name('monitoring.rfq.show')->middleware('can:view_rfqs');
-    Route::get('/sla', SlaIndex::class)->name('sla.index')->middleware('can:manage_sla');
-
-    // KPI Reports
-    Route::get('/reports/kpi', KpiIndex::class)->name('reports.kpi')->middleware('can:view_reports');
-
-
-    // Export routes
-    Route::prefix('export')->group(function () {
-        // PDF Exports
-        Route::get('/rfq/{request}/pdf', [ExportController::class, 'exportRfqPdf'])->name('export.rfq.pdf');
-        Route::get('/rfq/{request}/quote-comparison/pdf', [ExportController::class, 'exportQuoteComparisonPdf'])->name('export.quote-comparison.pdf');
-        Route::get('/kpi/pdf', [ExportController::class, 'exportKpiPdf'])->name('export.kpi.pdf');
-        Route::get('/audit/pdf', [ExportController::class, 'exportAuditPdf'])->name('export.audit.pdf');
-
-        // Excel Exports
-        Route::get('/rfq/{request}/excel', [ExportController::class, 'exportRfqExcel'])->name('export.rfq.excel');
-        Route::get('/rfq/{request}/quotes/excel', [ExportController::class, 'exportQuotesExcel'])->name('export.quotes.excel');
-        Route::get('/kpi/excel', [ExportController::class, 'exportKpiExcel'])->name('export.kpi.excel');
-        Route::get('/suppliers/excel', [ExportController::class, 'exportSuppliersExcel'])->name('export.suppliers.excel');
-    });
-
-    // Download routes for import/export
-    Route::get('/download/template', [DownloadController::class, 'downloadTemplate'])->name('download.template');
-    Route::get('/download/export', [DownloadController::class, 'downloadExport'])->name('download.export');
+Route::middleware('guest')->group(function () {
+    Route::view('/welcome', 'pages.landing')->name('landing');
+    Route::get('/two-factor', Livewire\Auth\TwoFactor::class)->name('two-factor');
+    Route::get('/login', Livewire\Auth\Login::class)->name('login');
+    Route::get('/register', Livewire\Auth\Register::class)->name('register');
+    Route::get('/forgot-password', Livewire\Auth\ForgotPassword::class)->name('password.request');
+    Route::get('/reset-password/{token}', Livewire\Auth\ResetPassword::class)->name('password.reset');
 });
 
-require __DIR__.'/auth.php';
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', function (Request $request) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
+    })->name('logout');
+
+    Route::get('/email/verify', Livewire\Auth\VerifyEmail::class)->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
+        return redirect()->route('dashboard')->with('toast', 'Your email is confirmed.');
+    })->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+});
+
+Route::middleware(['auth', 'active', 'verified'])->group(function () {
+    Route::get('/', Livewire\Dashboard::class)->name('dashboard');
+    Route::get('/search', Livewire\Search::class)->name('search');
+    Route::get('/settings', Livewire\Settings::class)->name('settings');
+    Route::get('/notifications', Livewire\Notifications::class)->name('notifications.index');
+    Route::post('/prefs/theme', function (Request $request) {
+        $request->user()->update(['theme' => $request->input('theme') === 'dark' ? 'dark' : 'light']);
+
+        return response()->noContent();
+    })->name('prefs.theme');
+
+    Route::middleware('perm:rfqs,V')->group(function () {
+        Route::get('/rfqs', Livewire\Rfqs\Index::class)->name('rfqs.index');
+        Route::get('/rfqs/create', Livewire\Rfqs\Form::class)->middleware('perm:rfqs,C')->name('rfqs.create');
+        Route::get('/rfqs/{number}', Livewire\Rfqs\Show::class)->name('rfqs.show');
+        Route::get('/rfqs/{number}/edit', Livewire\Rfqs\Form::class)->middleware('perm:rfqs,E')->name('rfqs.edit');
+    });
+
+    Route::middleware('perm:quotes,V')->group(function () {
+        Route::get('/compare', Livewire\Rfqs\CompareIndex::class)->name('compare.index');
+        Route::get('/rfqs/{number}/compare', Livewire\Rfqs\Compare::class)->name('rfqs.compare');
+        Route::get('/quotes', Livewire\Quotes\Invitations::class)->name('quotes.invitations');
+        Route::get('/quotes/{number}', Livewire\Quotes\Form::class)->name('quotes.form');
+    });
+
+    Route::middleware('perm:orders,V')->group(function () {
+        Route::get('/orders', Livewire\Orders\Index::class)->name('orders.index');
+        Route::get('/orders/{number}', Livewire\Orders\Show::class)->name('orders.show');
+    });
+
+    Route::get('/suppliers', Livewire\Suppliers\Index::class)->middleware('perm:suppliers,V')->name('suppliers.index');
+    Route::get('/categories', Livewire\Categories\Index::class)->middleware('perm:catalog,V')->name('categories.index');
+    Route::get('/users', Livewire\Users\Index::class)->middleware('perm:users,V')->name('users.index');
+    Route::get('/logs', Livewire\Logs::class)->middleware('perm:system,V')->name('logs.index');
+
+    // ---- Part 2 ----
+    Route::middleware('perm:requisitions,V')->group(function () {
+        Route::get('/requisitions', Livewire\Requisitions\Index::class)->name('requisitions.index');
+        Route::get('/requisitions/create', Livewire\Requisitions\Form::class)->middleware('perm:requisitions,C')->name('requisitions.create');
+        Route::get('/requisitions/{number}', Livewire\Requisitions\Show::class)->name('requisitions.show');
+        Route::get('/requisitions/{number}/edit', Livewire\Requisitions\Form::class)->middleware('perm:requisitions,E')->name('requisitions.edit');
+    });
+    Route::middleware('perm:contracts,V')->group(function () {
+        Route::get('/contracts', Livewire\Contracts\Index::class)->name('contracts.index');
+        Route::get('/contracts/create', Livewire\Contracts\Form::class)->middleware('perm:contracts,C')->name('contracts.create');
+        Route::get('/contracts/{number}', Livewire\Contracts\Show::class)->name('contracts.show');
+        Route::get('/contracts/{number}/edit', Livewire\Contracts\Form::class)->middleware('perm:contracts,E')->name('contracts.edit');
+    });
+    Route::middleware('perm:invoices,V')->group(function () {
+        Route::get('/invoices', Livewire\Invoices\Index::class)->name('invoices.index');
+        Route::get('/invoices/{number}', Livewire\Invoices\Show::class)->name('invoices.show');
+    });
+    Route::middleware('perm:field,V')->group(function () {
+        Route::get('/assessments', Livewire\Assessments\Index::class)->name('assessments.index');
+        Route::get('/assessments/{number}', Livewire\Assessments\Show::class)->name('assessments.show');
+    });
+    Route::get('/rfis', Livewire\Rfis\Index::class)->middleware('perm:rfqs,V')->name('rfis.index');
+    Route::get('/rfis/create', Livewire\Rfis\Form::class)->middleware('perm:rfqs,C')->name('rfis.create');
+    Route::get('/rfis/{number}', Livewire\Rfis\Show::class)->middleware('perm:rfqs,V')->name('rfis.show');
+    Route::get('/rfis/{number}/edit', Livewire\Rfis\Form::class)->middleware('perm:rfqs,E')->name('rfis.edit');
+    Route::get('/rfqs/{number}/auction', Livewire\Rfqs\Auction::class)->middleware('perm:quotes,V')->name('rfqs.auction');
+    Route::get('/messages', Livewire\Messages\Index::class)->name('messages.index');
+    Route::get('/suppliers/{supplier}', Livewire\Suppliers\Show::class)->whereNumber('supplier')->name('suppliers.show');
+    Route::get('/suppliers/{supplier}/documents/{document}', function (Request $request, int $supplier, int $document) {
+        $u = $request->user();
+        abort_unless(($u->isSourcing() && $u->allowed('suppliers')) || ($u->role === 'supplier' && $u->supplier_id === $supplier), 403);
+        $doc = \App\Models\SupplierDocument::where('supplier_id', $supplier)->findOrFail($document);
+        abort_unless($doc->path && \Illuminate\Support\Facades\Storage::disk('local')->exists($doc->path), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download($doc->path, $doc->original_name ?? 'document');
+    })->whereNumber(['supplier', 'document'])->name('suppliers.document');
+
+    // ---- Part 3 ----
+    Route::post('/prefs/locale', function (Request $request) {
+        $locale = in_array($request->input('locale'), array_keys(config('procurement.locales')), true) ? $request->input('locale') : 'en';
+        $request->user()->update(['locale' => $locale]);
+
+        return back();
+    })->name('prefs.locale');
+    Route::middleware('perm:marketplace,V')->group(function () {
+        Route::get('/market', Livewire\Market\Shop::class)->name('market.shop');
+        Route::get('/market/basket', Livewire\Market\Basket::class)->name('market.basket');
+        Route::get('/market/sourcing/{number?}', Livewire\Market\Sourcing::class)->name('market.sourcing');
+        Route::get('/market/orders', Livewire\Market\Orders::class)->name('market.orders.index');
+        Route::get('/market/orders/{number}', Livewire\Market\OrderShow::class)->name('market.orders.show');
+        Route::get('/market/orders/{number}/pdf', [\App\Http\Controllers\PdfController::class, 'marketOrder'])->name('market.orders.pdf');
+        Route::get('/market/products', Livewire\Market\Offers::class)->name('market.offers');
+        Route::get('/market/tasks', Livewire\Market\Tasks::class)->name('market.tasks');
+    });
+    Route::get('/markets', Livewire\Market\Admin::class)->middleware('perm:catalog,A')->name('markets.index');
+    Route::get('/reports', Livewire\Reports::class)->middleware('perm:spend,V')->name('reports.index');
+    Route::get('/accounting', Livewire\Accounting::class)->middleware('perm:invoices,A')->name('accounting.index');
+    Route::get('/outbox', Livewire\Outbox::class)->middleware('perm:system,V')->name('outbox.index');
+    Route::get('/orders/{number}/pdf', [\App\Http\Controllers\PdfController::class, 'order'])->middleware('perm:orders,V')->name('orders.pdf');
+    Route::get('/rfqs/{number}/pdf', [\App\Http\Controllers\PdfController::class, 'rfq'])->middleware('perm:rfqs,V')->name('rfqs.pdf');
+    Route::get('/invoices/{number}/pdf', [\App\Http\Controllers\PdfController::class, 'invoice'])->middleware('perm:invoices,V')->name('invoices.pdf');
+
+    // ---- Part 4 ----
+    Route::view('/privacy', 'pages.privacy')->name('privacy');
+    Route::get('/rfqs/{number}/scenarios', Livewire\Rfqs\Scenarios::class)->middleware('perm:quotes,V')->name('rfqs.scenarios');
+    Route::get('/monitoring', Livewire\Monitoring::class)->middleware('perm:reports,V')->name('monitoring.index');
+    Route::get('/system', Livewire\System::class)->middleware('perm:system,V')->name('system.index');
+    Route::get('/assistant', Livewire\Assistant::class)->middleware('perm:rfqs,V')->name('assistant.index');
+    Route::get('/workers', Livewire\Workers::class)->name('workers.index');
+    Route::get('/files/{attachment}', function (Request $request, \App\Models\Attachment $attachment) {
+        abort_unless(app(\App\Services\AttachmentService::class)->canSee($attachment, $request->user()), 404);
+        abort_unless(\Illuminate\Support\Facades\Storage::disk('local')->exists($attachment->path), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download($attachment->path, $attachment->name);
+    })->whereNumber('attachment')->name('files.show');
+});

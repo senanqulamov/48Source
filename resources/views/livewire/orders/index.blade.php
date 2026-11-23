@@ -1,57 +1,27 @@
-<div class="stack">
-    <header class="ph">
-        <div><h1 class="ph-t">{{ __('Marketplace orders') }}</h1>
-            <p class="ph-d">{{ __('Review purchases, fulfillment statuses and seller activity.') }}</p></div>
-        <div class="ph-a"><livewire:orders.create @created="$refresh"/></div>
-    </header>
-    <section class="card">
-        <div class="dt">
-            <div class="dt-top">
-                <label class="dt-search">
-                    <x-source.icon name="search" :size="16"/>
-                    <span class="sr">{{ __('Search orders') }}</span>
-                    <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Order reference, buyer or market') }}"/>
-                </label>
-                <div class="dt-tools">
-                    <label for="admin-order-rows" class="sr">{{ __('Rows') }}</label>
-                    <select id="admin-order-rows" class="select" wire:model.live="quantity">
-                        <option value="10">10</option><option value="20">20</option><option value="50">50</option>
-                    </select>
-                </div>
-            </div>
-            <div class="tbl-wrap"><table class="tbl">
-                <thead><tr>
-                    <th>{{ __('Reference') }}</th><th>{{ __('Buyer') }}</th><th>{{ __('Markets') }}</th>
-                    <th class="num">{{ __('Amount') }}</th><th>{{ __('Status') }}</th>
-                    <th>{{ __('Created') }}</th><th>{{ __('Actions') }}</th>
-                </tr></thead>
-                <tbody>
-                @forelse($this->rows as $order)
-                    <tr wire:key="admin-order-row-{{ $order->id }}">
-                        <td><a href="{{ route('orders.show', $order) }}" class="link t1 mono">{{ $order->order_number }}</a></td>
-                        <td class="sm">{{ $order->user?->name ?? '—' }}</td>
-                        <td class="sm">{{ $order->items->pluck('market.name')->filter()->unique()->implode(', ') ?: '—' }}</td>
-                        <td class="num mono">{{ number_format((float)$order->total, 2) }}</td>
-                        <td><span class="badge {{ $order->status === 'completed' ? 'b-ok' : ($order->status === 'cancelled' ? 'b-bad' : 'b-info') }}">{{ ucfirst($order->status) }}</span></td>
-                        <td class="mono sm">{{ $order->created_at?->format('d M Y') ?? '—' }}</td>
-                        <td><div class="row wrap">
-                            <button type="button" class="btn btn-sm" wire:click="$dispatch('view::order', { order: '{{ $order->id }}' })">{{ __('Quick view') }}</button>
-                            @can('edit_orders')
-                                <button type="button" class="btn btn-sm" wire:click="$dispatch('load::order', { order: '{{ $order->id }}' })">{{ __('Edit') }}</button>
-                            @endcan
-                            @can('delete_orders')
-                                <livewire:orders.delete :order="$order" :key="'admin-order-delete-'.$order->id" @deleted="$refresh"/>
-                            @endcan
-                        </div></td>
-                    </tr>
-                @empty
-                    <tr><td colspan="7"><div class="empty">{{ __('No orders found.') }}</div></td></tr>
-                @endforelse
-                </tbody>
-            </table></div>
-            <div class="dt-foot">{{ $this->rows->links() }}</div>
-        </div>
-    </section>
-    <livewire:orders.update @updated="$refresh"/>
-    <livewire:orders.view-order />
+@php use App\Support\Money; @endphp
+<div>
+    <x-ph title="Purchase orders" :desc="$supplierSide ? 'Orders you have won. Acknowledge them, dispatch, then invoice.' : 'An award becomes a purchase order. Issue it, then follow it to delivery and invoice.'" :crumbs="[['Purchase orders']]" />
+    @php
+        $quick = ['' => ['All', $counts->sum()]];
+        foreach (\App\Models\PurchaseOrder::STATUSES as $k => $l) { if (! ($supplierSide && $k === 'draft') && (($counts[$k] ?? 0) || in_array($k, ['issued', 'in_transit', 'delivered']))) { $quick[$k] = [$l, $counts[$k] ?? 0]; } }
+    @endphp
+    <x-dt :lw="$this" :rows="$rows" id="po" search="Search order, request or {{ $supplierSide ? 'buyer' : 'supplier' }}" label="Search purchase orders" noun="orders" :guide="['draft' => ['Draft', 'Created by the award. Not yet sent to the supplier.'], 'issued' => ['Issued', 'Sent. Waiting for the supplier to acknowledge.'], 'acknowledged' => ['Acknowledged', 'The supplier accepted the order.'], 'in_transit' => ['In transit', 'Goods are on the way. Record receipts as they arrive.'], 'delivered' => ['Delivered', 'Everything arrived. Waiting for the invoice.'], 'invoiced' => ['Invoiced', 'The supplier sent an invoice.'], 'cancelled' => ['Cancelled', 'Stopped before delivery.']]" :all="$counts->sum()" :quick="$quick"
+          :facets="$supplierSide ? [] : ['sup' => ['Supplier', $sups]]" :cols="['rfq' => 'Related RFQ', 'buyer' => 'Buyer', 'created_at' => 'Issued', 'expected_at' => 'Delivery due']" :export="true">
+        <x-slot:empty><x-empty icon="award" title="No purchase orders yet" :text="$supplierSide ? 'When you win a request, the order appears here.' : 'Award a request to create the first order.'" /></x-slot:empty>
+        <x-slot:head>
+            <x-th col="number">Order</x-th><th>{{ $supplierSide ? 'Buyer' : 'Supplier' }}</th><th class="hide-md" data-c="rfq">Related RFQ</th><th class="hide-lg" data-c="buyer">{{ $supplierSide ? 'Contact' : 'Buyer' }}</th>
+            <x-th col="total_cents" :num="true">Amount</x-th><x-th col="created_at" :sort="$sort ?: 'created_at'" cls="hide-sm">Issued</x-th><x-th col="expected_at" cls="hide-md">Delivery due</x-th><x-th col="status">Status</x-th>
+        </x-slot:head>
+        @foreach ($rows as $p)
+            <tr wire:key="p-{{ $p->id }}" class="click" data-href="{{ route('orders.show', $p) }}" tabindex="0">
+                <td class="mono b" style="white-space:nowrap">{{ $p->number }}</td>
+                <td class="tmain"><div class="t1">{{ $supplierSide ? config('app.org', 'Buyer organisation') : $p->supplier->name }}</div><div class="t2 trunc">{{ $p->rfq->title }}</div></td>
+                <td class="hide-md mono" data-c="rfq">{{ $p->rfq->number }}</td><td class="hide-lg" data-c="buyer">{{ $p->buyer->name }}</td>
+                <td class="num mono b">{{ Money::format($p->total_cents, $p->currency) }}</td>
+                <td class="hide-sm" data-c="created_at" style="white-space:nowrap">{{ $p->created_at->format('j M Y') }}</td><td class="hide-md" data-c="expected_at" style="white-space:nowrap">{{ $p->expected_at?->format('j M Y') ?? '-' }}</td>
+                <td><x-badge :status="$p->status" :label="$p->statusLabel()" /></td>
+            </tr>
+        @endforeach
+        <x-slot:foot>{{ Money::format($pageTotal, 'USD') }} on this page</x-slot:foot>
+    </x-dt>
 </div>

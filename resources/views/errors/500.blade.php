@@ -1,1 +1,4 @@
-@include('errors.approved', ['statusCode' => 500, 'title' => __('Unexpected server error'), 'description' => __('We couldn\'t complete this request. Try again or contact your administrator.')])
+@extends('errors.layout')
+@section('code', '500')
+@section('title', 'Something went wrong')
+@section('message', 'The error has been logged. Try again in a moment.')
