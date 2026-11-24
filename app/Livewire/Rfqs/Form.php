@@ -38,6 +38,10 @@ class Form extends Component
         if ($number === null) {
             $this->f['deadline_at'] = now()->addDays(10)->format('Y-m-d\T17:00');
             $this->items = [$this->blank()];
+            if ($prefill = session()->pull('assistant.rfq_prefill')) {
+                $this->f = array_replace($this->f, $prefill['f'] ?? []);
+                $this->items = $prefill['items'] ?? $this->items;
+            }
 
             return;
         }

@@ -179,10 +179,8 @@ class PartFourTest extends TestCase
         $buyer = $this->buyer();
         $page = Livewire::actingAs($buyer)->test(Assistant::class)->set('sentence', '12.5 t cement and 30 pcs safety signs')->call('propose')->assertSee('Cement')->assertSee('12.5');
         $this->assertSame(0, Rfq::count(), 'a proposal saves nothing');
-        $page->call('createDraft')->assertRedirect();
-        $rfq = Rfq::firstOrFail();
-        $this->assertSame('draft', $rfq->status);
-        $this->assertSame(12500, $rfq->items()->first()->quantity_milli);
+        $page->call('openWizard')->assertRedirect(route('rfqs.create'));
+        $this->assertSame(0, Rfq::count(), 'opening the wizard still saves nothing');
         $this->actingAs($this->supplierUser())->get(route('assistant.index'))->assertForbidden();
     }
 
