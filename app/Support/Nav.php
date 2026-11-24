@@ -40,54 +40,138 @@ final class Nav
         'assistant.index' => 'Rule-based helpers: draft a request from a sentence, read quotations, suggest suppliers.',
         'workers.index' => 'The workers of your store or company.',
         'monitoring.index' => 'Active requests against their deadlines, and everything that is overdue.',
+        'spend.index' => 'Committed spend by month, supplier and category, with a yearly budget per category.',
+        'savings.index' => 'What each award saved against the budget and against the average quotation.',
+        'kpi.index' => 'Service figures: response rate, on-time delivery, invoices matching first time.',
+        'sla.index' => 'Reminders the system sends and the rules behind them.',
+        'sup360.index' => 'Every supplier with risk, documents, scorecards and open actions in one list.',
+        'health.index' => 'Whether the database, cache, mail, scheduler and file storage are working.',
+        'flags.index' => 'Switch optional features on or off for the whole organisation.',
+        'impex.index' => 'Import suppliers from Excel or CSV and see where each list can be exported.',
+        'market.basket' => 'Products you picked in the marketplace. One order is placed per store.',
         'system.index' => 'Service status, feature switches, currencies and supplier import.',
     ];
 
-    /** Menu definition: [group, [[route, label, icon, module (null = always), side (null = both)]]]. */
+    /**
+     * Menu definition per role, in the order of the accepted prototype:
+     * [group, [[route, label, icon, module (null = always)]]].
+     */
     private static function groups(User $user, string $side): array
     {
-        return [
-            [$side === 'buy' ? 'Overview' : 'Workspace', [['dashboard', $side === 'buy' && ! $user->isAdmin() ? 'My dashboard' : 'Dashboard', 'dash', null, null]]],
-            ['Sourcing', [
-                ['rfqs.index', $user->isAdmin() ? 'RFQs' : 'My RFQs', 'file', 'rfqs', 'buy'],
-                ['compare.index', 'Compare quotations', 'cols', 'quotes', 'buy'],
-                ['quotes.invitations', 'Invitations & quotes', 'inbox', 'quotes', 'sell'],
-                ['orders.index', 'Purchase orders', 'award', 'orders', null],
-                ['requisitions.index', 'Requisitions', 'inbox', 'requisitions', 'buy'],
-                ['rfis.index', 'Information requests', 'info', 'rfqs', $side === 'other' ? 'none' : null],
-                ['contracts.index', 'Contracts', 'clip', 'contracts', null],
-                ['assistant.index', 'Assistant', 'star', 'rfqs', 'buy'],
-            ]],
-            ['Marketplace', [
-                ['market.shop', 'Marketplace', 'store', 'marketplace', $user->canShop() ? null : 'none'],
-                ['market.sourcing', 'Source a request', 'cols', 'marketplace', $user->canShop() ? null : 'none'],
-                ['market.orders.index', in_array($user->role, ['seller', 'market_worker'], true) ? 'Sales' : 'Marketplace orders', 'truck', 'marketplace', null],
-                ['market.offers', 'My products', 'box', 'catalog', $user->role === 'seller' ? null : 'none'],
-                ['market.tasks', 'Tasks', 'check', 'marketplace', in_array($user->role, ['seller', 'market_worker'], true) ? null : 'none'],
-                ['workers.index', $user->role === 'seller' ? 'Workers' : 'Field workers', 'users', null, ($user->role === 'seller' && $user->store_id) || ($user->role === 'supplier' && $user->supplier_id) ? null : 'none'],
-            ]],
-            ['Finance', [
-                ['invoices.index', 'Invoices & receipts', 'file', 'invoices', null],
-                ['accounting.index', 'Accounting export', 'download', 'invoices', $user->isSourcing() && $user->allowed('invoices', 'A') ? null : 'none'],
-                ['reports.index', 'Spend & reports', 'chart', 'spend', 'buy'],
-                ['monitoring.index', 'Monitoring & SLA', 'pulse', 'reports', 'buy'],
-            ]],
-            ['Network', [
-                ['suppliers.index', 'Suppliers', 'building', 'suppliers', 'buy'],
-                ['suppliers.profile', 'Company profile', 'building', null, 'sell'],
-                ['assessments.index', 'Field assessments', 'camera', 'field', null],
-                ['categories.index', 'Categories', 'flag', 'catalog', 'buy'],
-                ['markets.index', 'Markets & stores', 'pin', 'catalog', $user->allowed('catalog', 'A') ? null : 'none'],
-                ['messages.index', 'Messages', 'mail', null, $side === 'other' ? 'none' : null],
-            ]],
-            ['Administration', [
-                ['users.index', 'Users & roles', 'users', 'users', null],
-                ['logs.index', 'Activity log', 'clock', 'system', null],
-                ['outbox.index', 'Email outbox', 'mail', 'system', null],
-                ['system.index', 'System', 'server', 'system', null],
-            ]],
-            ['Records', [['notifications.index', 'Notifications', 'bell', null, null]]],
+        $sourcing = [
+            ['rfqs.index', $user->isAdmin() ? 'RFQs' : 'My RFQs', 'file', 'rfqs'],
+            ['compare.index', 'Compare quotations', 'cols', 'quotes'],
+            ['orders.index', 'Purchase orders', 'box', 'orders'],
+            ['requisitions.index', 'Requisitions', 'inbox', 'requisitions'],
+            ['rfis.index', 'Information requests', 'info', 'rfqs'],
+            ['contracts.index', 'Contracts', 'clip', 'contracts'],
         ];
+        $finance = [
+            ['invoices.index', 'Invoices & receipts', 'file', 'invoices'],
+            ['spend.index', 'Spend & budgets', 'chart', 'spend'],
+            ['savings.index', 'Savings', 'award', 'spend'],
+        ];
+        $insight = [
+            ['sup360.index', 'Supplier 360', 'shield', 'suppliers'],
+            ['assistant.index', 'Assistant', 'star', 'rfqs'],
+        ];
+
+        return match (true) {
+            $user->isAdmin() => [
+                ['Overview', [['dashboard', 'Dashboard', 'dash', null]]],
+                ['Sourcing', $sourcing],
+                ['Finance', $finance],
+                ['Insight', $insight],
+                ['Marketplace', [
+                    ['categories.index', 'Categories', 'flag', 'catalog'],
+                    ['markets.index', 'Markets', 'store', 'catalog'],
+                    ['market.orders.index', 'Marketplace orders', 'truck', 'marketplace'],
+                ]],
+                ['People', [
+                    ['suppliers.index', 'Suppliers', 'building', 'suppliers'],
+                    ['users.index', 'Users & roles', 'users', 'users'],
+                    ['messages.index', 'Messages', 'mail', null],
+                ]],
+                ['Monitoring', [
+                    ['monitoring.index', 'RFQ monitoring', 'pulse', 'reports'],
+                    ['sla.index', 'SLA tracker', 'clock', 'reports'],
+                    ['kpi.index', 'KPI reports', 'chart', 'reports'],
+                ]],
+                ['System', [
+                    ['notifications.index', 'Notifications', 'bell', null],
+                    ['logs.index', 'Logs', 'clip', 'system'],
+                    ['health.index', 'System health', 'server', 'system'],
+                    ['flags.index', 'Feature flags', 'flag', 'system'],
+                    ['impex.index', 'Import / export', 'download', 'system'],
+                    ['outbox.index', 'Email outbox', 'mail', 'system'],
+                    ['accounting.index', 'Accounting export', 'download', 'invoices'],
+                ]],
+            ],
+            $user->isSourcing() => [
+                ['Workspace', [['dashboard', 'My dashboard', 'dash', null]]],
+                ['Sourcing', $sourcing],
+                ['Finance', $finance],
+                ['Insight', $insight],
+                ['Network', [
+                    ['suppliers.index', 'Suppliers', 'building', 'suppliers'],
+                    ['messages.index', 'Messages', 'mail', null],
+                ]],
+                ['Marketplace', [
+                    ['market.shop', 'Marketplace', 'store', 'marketplace'],
+                    ['market.basket', 'Basket', 'box', 'marketplace'],
+                    ['market.orders.index', 'My marketplace orders', 'truck', 'marketplace'],
+                ]],
+                ['Records', [['logs.index', 'Activity logs', 'clip', null]]],
+            ],
+            $user->role === 'supplier' => [
+                ['Workspace', [['dashboard', 'Dashboard', 'dash', null]]],
+                ['Sourcing', [
+                    ['quotes.invitations', 'Invitations & quotes', 'inbox', 'quotes'],
+                    ['orders.index', 'Purchase orders', 'box', 'orders'],
+                ]],
+                ['Marketplace', [
+                    ['market.orders.index', 'Marketplace orders', 'truck', 'marketplace'],
+                    ['market.shop', 'Buy products', 'store', 'marketplace'],
+                    ['market.basket', 'Basket', 'box', 'marketplace'],
+                ]],
+                ['Team', [
+                    ['workers.index', 'Field workers', 'users', null],
+                    ['messages.index', 'Messages', 'mail', null],
+                ]],
+                ['Records', [['logs.index', 'Activity logs', 'clip', null]]],
+                ['Company', [
+                    ['suppliers.profile', 'Company profile', 'building', null],
+                    ['contracts.index', 'Contracts', 'clip', 'contracts'],
+                    ['invoices.index', 'Invoices', 'file', 'invoices'],
+                    ['rfis.index', 'Information requests', 'info', 'rfqs'],
+                ]],
+            ],
+            $user->role === 'seller' => [
+                ['Workspace', [['dashboard', 'Dashboard', 'dash', null]]],
+                ['Marketplace', [
+                    ['market.offers', 'Products', 'box', 'catalog'],
+                    ['market.orders.index', 'Orders', 'truck', 'marketplace'],
+                ]],
+                ['Team', [
+                    ['workers.index', 'Workers', 'users', null],
+                    ['market.tasks', 'Worker tasks', 'check', 'marketplace'],
+                ]],
+                ['Records', [['logs.index', 'Activity logs', 'clip', null]]],
+            ],
+            $user->role === 'market_worker' => [
+                ['My work', [
+                    ['market.tasks', 'Today', 'clip', 'marketplace'],
+                    ['market.orders.index', 'Orders', 'truck', 'marketplace'],
+                ]],
+            ],
+            default => [
+                ['My work', [
+                    ['dashboard', 'Dashboard', 'dash', null],
+                    ['assessments.index', 'Assigned RFQs', 'clip', 'field'],
+                    ['logs.index', 'My activity', 'clock', null],
+                ]],
+            ],
+        };
     }
 
     private static function side(User $user): string
@@ -102,8 +186,8 @@ final class Nav
         $out = [];
         foreach (self::groups($user, $side) as [$label, $items]) {
             $keep = [];
-            foreach ($items as [$route, $text, $icon, $module, $for]) {
-                if (($for !== null && $for !== $side) || ($module !== null && ! $user->allowed($module))) {
+            foreach ($items as [$route, $text, $icon, $module]) {
+                if (($module !== null && ! $user->allowed($module)) || ($route === 'suppliers.profile' && ! $user->supplier_id) || ($route === 'workers.index' && ! $user->supplier_id && ! $user->store_id) || (in_array($route, ['market.shop', 'market.basket'], true) && ! $user->canShop())) {
                     continue;
                 }
                 if ($route === 'suppliers.profile' && ! $user->supplier_id) {
@@ -162,7 +246,7 @@ final class Nav
             'rfis.index' => $user->role === 'supplier' ? \App\Models\Rfi::visibleTo($user)->where('status', 'open')->whereHas('responses', fn ($r) => $r->where('supplier_id', $user->supplier_id)->where('status', 'invited'))->count() : 0,
             'market.orders.index' => in_array($user->role, ['seller', 'market_worker'], true) ? \App\Models\MarketOrder::visibleTo($user)->where('status', 'placed')->count() : 0,
             'market.tasks' => $user->store_id ? \App\Models\WorkerTask::where('store_id', $user->store_id)->where('status', 'open')->count() : 0,
-            'market.shop' => $user->canShop() ? \App\Models\CartItem::where('user_id', $user->id)->count() : 0,
+            'market.basket' => $user->canShop() ? \App\Models\CartItem::where('user_id', $user->id)->count() : 0,
             'messages.index' => app(\App\Services\MessageService::class)->unread($user),
             default => 0,
         };

@@ -36,7 +36,7 @@ class PermissionTest extends TestCase
     public function test_removing_view_closes_the_page_and_hides_the_menu_item(): void
     {
         $buyer = $this->buyer();
-        foreach (['rfqs' => 'rfqs.index', 'orders' => 'orders.index', 'suppliers' => 'suppliers.index', 'quotes' => 'compare.index', 'catalog' => 'categories.index'] as $module => $route) {
+        foreach (['rfqs' => 'rfqs.index', 'orders' => 'orders.index', 'suppliers' => 'suppliers.index', 'quotes' => 'compare.index', 'spend' => 'spend.index'] as $module => $route) {
             $this->actingAs($buyer)->get(route($route))->assertOk();
             $this->assertContains($route, collect(Nav::for($buyer))->flatMap(fn ($g) => collect($g[1])->pluck('route'))->all());
             Perm::set('buyer', $module, '');

@@ -1,8 +1,15 @@
 <div>
-    <x-ph title="System" desc="Service status, feature switches, currencies and data import for the whole organisation." :crumbs="[['System']]">
+    @php
+        $head = [
+            'health' => ['System health', 'Whether each service the application depends on is working, and the currencies in use.'],
+            'flags' => ['Feature flags', 'Optional features for the whole organisation. A change takes effect at once and is recorded.'],
+            'impex' => ['Import / export', 'Bring suppliers in from Excel or CSV, and see where each list can be exported.'],
+        ][$page];
+    @endphp
+    <x-ph :title="$head[0]" :desc="$head[1]" :crumbs="[[$head[0]]]">
         @if ($tab === 'health')<button type="button" class="btn" wire:click="$refresh"><x-icon name="refresh" />Re-check now</button>@endif
     </x-ph>
-    <x-tabs :on="$tab" :tabs="['health' => 'Services', 'flags' => ['Feature flags', $flags->count()], 'currencies' => ['Currencies', $currencies->where('active', true)->count()], 'data' => 'Import & export']" />
+    @if ($page === 'health')<x-tabs :on="$tab" :tabs="['health' => 'Services', 'currencies' => ['Currencies', $currencies->where('active', true)->count()]]" />@endif
     @if ($tab === 'health')
         <x-card :flush="true"><ul class="list">@foreach ($health as $h)<li><x-badge :status="$h['ok'] ? 'ok' : 'warn'" :label="$h['ok'] ? 'OK' : 'Check'" /><div class="grow"><div class="t1">{{ $h['name'] }}</div><div class="muted sm">{{ $h['note'] }}</div></div></li>@endforeach</ul></x-card>
     @elseif ($tab === 'flags')

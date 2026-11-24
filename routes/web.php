@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'active', 'verified'])->group(function () {
     Route::get('/', Livewire\Dashboard::class)->name('dashboard');
     Route::get('/search', Livewire\Search::class)->name('search');
+    Route::get('/search/quick', \App\Http\Controllers\QuickSearchController::class)->name('search.quick');
     Route::get('/search/suggest', SearchSuggestionController::class)->name('search.suggest');
     Route::get('/settings', Livewire\Settings::class)->name('settings');
     Route::get('/notifications', Livewire\Notifications::class)->name('notifications.index');
@@ -67,7 +68,7 @@ Route::middleware(['auth', 'active', 'verified'])->group(function () {
     Route::get('/suppliers', Livewire\Suppliers\Index::class)->middleware('perm:suppliers,V')->name('suppliers.index');
     Route::get('/categories', Livewire\Categories\Index::class)->middleware('perm:catalog,V')->name('categories.index');
     Route::get('/users', Livewire\Users\Index::class)->middleware('perm:users,V')->name('users.index');
-    Route::get('/logs', Livewire\Logs::class)->middleware('perm:system,V')->name('logs.index');
+    Route::get('/logs', Livewire\Logs::class)->name('logs.index');
 
     // ---- Part 2 ----
     Route::middleware('perm:requisitions,V')->group(function () {
@@ -124,7 +125,10 @@ Route::middleware(['auth', 'active', 'verified'])->group(function () {
         Route::get('/market/tasks', Livewire\Market\Tasks::class)->name('market.tasks');
     });
     Route::get('/markets', Livewire\Market\Admin::class)->middleware('perm:catalog,A')->name('markets.index');
-    Route::get('/reports', Livewire\Reports::class)->middleware('perm:spend,V')->name('reports.index');
+    Route::get('/spend', Livewire\Reports::class)->middleware('perm:spend,V')->defaults('page', 'spend')->name('spend.index');
+    Route::get('/savings', Livewire\Reports::class)->middleware('perm:spend,V')->defaults('page', 'savings')->name('savings.index');
+    Route::get('/kpi-reports', Livewire\Reports::class)->middleware('perm:reports,V')->defaults('page', 'kpis')->name('kpi.index');
+    Route::get('/reports', fn (Request $request) => redirect()->route(['savings' => 'savings.index', 'kpis' => 'kpi.index'][$request->query('tab')] ?? 'spend.index', $request->query('tab') === 'budgets' ? ['tab' => 'budgets'] : []))->middleware('perm:spend,V')->name('reports.index');
     Route::get('/accounting', Livewire\Accounting::class)->middleware('perm:invoices,A')->name('accounting.index');
     Route::get('/outbox', Livewire\Outbox::class)->middleware('perm:system,V')->name('outbox.index');
     Route::get('/orders/{number}/pdf', [\App\Http\Controllers\PdfController::class, 'order'])->middleware('perm:orders,V')->name('orders.pdf');
@@ -134,8 +138,13 @@ Route::middleware(['auth', 'active', 'verified'])->group(function () {
     // ---- Part 4 ----
     Route::view('/privacy', 'pages.privacy')->name('privacy');
     Route::get('/rfqs/{number}/scenarios', Livewire\Rfqs\Scenarios::class)->middleware('perm:quotes,V')->name('rfqs.scenarios');
-    Route::get('/monitoring', Livewire\Monitoring::class)->middleware('perm:reports,V')->name('monitoring.index');
-    Route::get('/system', Livewire\System::class)->middleware('perm:system,V')->name('system.index');
+    Route::get('/monitoring', Livewire\Monitoring::class)->middleware('perm:reports,V')->defaults('page', 'monitoring')->name('monitoring.index');
+    Route::get('/sla', Livewire\Monitoring::class)->middleware('perm:reports,V')->defaults('page', 'sla')->name('sla.index');
+    Route::get('/supplier-360', Livewire\Suppliers\Insight::class)->middleware('perm:suppliers,V')->name('sup360.index');
+    Route::get('/system/health', Livewire\System::class)->middleware('perm:system,V')->defaults('page', 'health')->name('health.index');
+    Route::get('/system/flags', Livewire\System::class)->middleware('perm:system,V')->defaults('page', 'flags')->name('flags.index');
+    Route::get('/import-export', Livewire\System::class)->middleware('perm:system,V')->defaults('page', 'impex')->name('impex.index');
+    Route::get('/system', fn (Request $request) => redirect()->route(['flags' => 'flags.index', 'data' => 'impex.index'][$request->query('tab')] ?? 'health.index', $request->query('tab') === 'currencies' ? ['tab' => 'currencies'] : []))->middleware('perm:system,V')->name('system.index');
     Route::get('/assistant', Livewire\Assistant::class)->middleware('perm:rfqs,V')->name('assistant.index');
     Route::get('/workers', Livewire\Workers::class)->name('workers.index');
     Route::get('/files/{attachment}', function (Request $request, \App\Models\Attachment $attachment) {

@@ -31,8 +31,13 @@ class System extends Component
 
     public array $report = [];
 
-    public function mount(): void
+    /** health, flags or impex */
+    public string $page = 'health';
+
+    public function mount(string $page = 'health'): void
     {
+        $this->page = in_array($page, ['health', 'flags', 'impex'], true) ? $page : 'health';
+        $this->tab = ['flags' => 'flags', 'impex' => 'data'][$this->page] ?? (in_array($this->tab, ['health', 'currencies'], true) ? $this->tab : 'health');
         $this->need('system');
     }
 

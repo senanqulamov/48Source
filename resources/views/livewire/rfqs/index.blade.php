@@ -6,7 +6,7 @@
     $facets = ['type' => ['Type', Rfq::TYPES]] + ($admin ? ['buyer' => ['Buyer', $buyers]] : []) + ['cat' => ['Category', $cats]];
 @endphp
 <div>
-    <x-ph :title="$admin ? 'RFQs' : 'My RFQs'" :desc="$admin ? 'Every request in the organisation, from draft to award.' : 'Requests you own, from draft to award.'" :crumbs="[[$admin ? 'RFQs' : 'My RFQs']]">
+    <x-ph :title="$admin ? 'Requests for quotation' : 'My RFQs'" :desc="$admin ? 'Every request in the organisation, from draft to award.' : 'Requests you own, from draft to award.'" :crumbs="[[$admin ? 'RFQs' : 'My RFQs']]">
         @perm('rfqs', 'C')<a class="btn btn-p" href="{{ route('rfqs.create') }}" wire:navigate><x-icon name="plus" />New RFQ</a>@endperm
     </x-ph>
     <x-dt :lw="$this" :rows="$rows" id="rfq" search="Search reference, title, buyer or category" label="Search RFQs" noun="requests" :guide="['draft' => ['Draft', 'Being prepared. Suppliers cannot see it.'], 'open' => ['Open', 'Published. Suppliers can quote until the deadline.'], 'closed' => ['Closed', 'Quoting has ended. Compare the quotations and award.'], 'awarded' => ['Awarded', 'A supplier was chosen and a purchase order exists.'], 'cancelled' => ['Cancelled', 'Stopped by the buyer. Nothing more can happen.']]" :all="$all" :quick="$quick" :facets="$facets"

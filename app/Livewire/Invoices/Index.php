@@ -46,7 +46,17 @@ class Index extends Component
         $rows = $this->query()->with('supplier', 'order')->when($this->status !== '', fn ($q) => $q->where('status', $this->status))->orderBy($this->sortCol('created_at'), $this->sortDir())->orderByDesc('id')->paginate($this->perPage());
         $receipts = $this->tab === 'receipts' ? GoodsReceipt::whereIn('purchase_order_id', PurchaseOrder::visibleTo($u)->select('id'))->with('order.supplier', 'receiver', 'items')->latest('id')->limit(100)->get() : collect();
 
-        return view('livewire.invoices.index', ['rows' => $rows, 'receipts' => $receipts, 'counts' => $this->query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'),
+        $money = fn (array $st) => \App\Support\Money::format((int) Invoice::visibleTo($u)->whereIn('status', $st)->sum('total_cents'), 'USD', false);
+        $count = fn (array $st) => Invoice::visibleTo($u)->whereIn('status', $st)->count();
+        $hold = $count(['disputed']);
+        $strip = [
+            ['l' => $u->role === 'supplier' ? 'Being checked' : 'Exceptions to review', 'v' => $hold, 's' => $hold ? $money(['disputed']).' on hold' : 'nothing on hold', 'c' => $hold ? 'bad' : ''],
+            ['l' => 'Ready to pay', 'v' => $count(['matched', 'approved']), 's' => $money(['matched', 'approved'])],
+            ['l' => 'Paid', 'v' => $count(['paid']), 's' => $money(['paid'])],
+            ['l' => 'Deliveries awaited', 'v' => PurchaseOrder::visibleTo($u)->whereIn('status', ['issued', 'acknowledged', 'in_transit'])->count(), 's' => 'orders not fully received', 'href' => route('orders.index')],
+        ];
+
+        return view('livewire.invoices.index', ['strip' => $strip, 'rows' => $rows, 'receipts' => $receipts, 'counts' => $this->query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'),
             'all' => Invoice::visibleTo($u)->count(), 'receiptCount' => GoodsReceipt::whereIn('purchase_order_id', PurchaseOrder::visibleTo($u)->select('id'))->count(), 'supplierSide' => $u->role === 'supplier',
             'open' => (int) Invoice::visibleTo($u)->whereIn('status', ['matched', 'disputed', 'approved'])->sum('total_cents')]);
     }

@@ -34,3 +34,23 @@ a.sc{color:inherit}
 .dp-chips{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:nowrap}.dp-chips button{height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--line-2);font:500 12px var(--mono);color:var(--text-2)}.dp-chips button:hover,.dp-chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 /* help menu and shortcuts */
 .keys{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;align-items:center}.keys kbd{font:600 12px var(--mono);padding:3px 8px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:7px;background:var(--surface-2);white-space:nowrap}
+
+/* ---- hover and motion hooks: the prototype keys these to data-go, the app uses data-href ---- */
+.tbl tbody tr[data-href]{cursor:pointer}
+.tbl tbody tr[data-href]:hover{background:color-mix(in srgb,var(--primary) 6%,var(--surface))}
+.tbl tbody tr[data-href]>td:first-child{box-shadow:inset 0 0 0 0 var(--primary);transition:box-shadow .15s ease}
+.tbl tbody tr[data-href]:hover>td:first-child{box-shadow:inset 3px 0 0 0 var(--primary)}
+.tbl tbody tr[data-href]:hover .t1{color:var(--primary)}
+.tbl tbody tr{transition:background .12s ease}
+.list li[data-href]{cursor:pointer;transition:background .12s ease}
+.list li[data-href]:hover{background:color-mix(in srgb,var(--primary) 6%,var(--surface))}
+.list li[data-href]>svg:last-child{transition:transform .15s ease,color .15s}
+.list li[data-href]:hover>svg:last-child{transform:translateX(3px);color:var(--primary)}
+.list li[data-href]:hover .t1{color:var(--primary)}
+.card[data-href]{cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+.card[data-href]:hover{transform:translateY(-2px);box-shadow:0 14px 30px -18px rgba(18,21,28,.4)}
+a.strip-i{color:inherit;text-decoration:none}
+.gs-pop .pop-i svg{flex:none;color:var(--text-3)}
+.pop{overscroll-behavior:contain}
+@media (prefers-reduced-motion:reduce){.tbl.fx tbody,.page.tabfx .tabs~*{animation:none}}
+.pop.pop-top{z-index:400}

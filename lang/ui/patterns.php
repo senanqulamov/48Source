@@ -66,4 +66,12 @@ return [
     '~^(\d+) quotation\(s\) ready to compare$~u' => ['az' => '{1} təklif müqayisəyə hazırdır', 'ru' => 'Котировок, готовых к сравнению: {1}'],
     '~^(\d+) questions?$~u' => ['az' => '{1} sual', 'ru' => 'Вопросов: {1}'],
     '~^(\d+) in the catalogue, listed by the stores$~u' => ['az' => 'Kataloqda {1}, mağazalar tərəfindən əlavə edilib', 'ru' => 'В каталоге {1}, добавлены магазинами'],
+    '~^Summary - (.+)$~u' => ['az' => 'Xülasə - {1}', 'ru' => 'Сводка - {1}'],
+    '~^Unusual prices - (.+)$~u' => ['az' => 'Qeyri-adi qiymətlər - {1}', 'ru' => 'Необычные цены - {1}'],
+    '~^(\\d+) expiring in 30 days$~u' => ['az' => '{1} sənəd 30 gün ərzində bitir', 'ru' => 'истекают в течение 30 дней: {1}'],
+    '~^(\\d+) (medium|overdue|expired|expiring)$~u' => ['az' => '{1} {t2}', 'ru' => '{1} {t2}'],
+    '~^(.+) on hold$~u' => ['az' => '{1} gözlədilir', 'ru' => '{1} удержано'],
+    '~^(.+) total ceiling$~u' => ['az' => 'ümumi hədd {1}', 'ru' => 'общий предел {1}'],
+    '~^(\\d+) quoting$~u' => ['az' => '{1} təklif mərhələsində', 'ru' => '{1} на этапе котировок'],
+    '~^(\\d+) in evaluation$~u' => ['az' => '{1} qiymətləndirmədə', 'ru' => '{1} на оценке'],
 ];

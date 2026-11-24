@@ -26,8 +26,13 @@ class Monitoring extends Component
     #[Url(except: 'requests')]
     public string $tab = 'requests';
 
-    public function mount(): void
+    /** monitoring or sla */
+    public string $page = 'monitoring';
+
+    public function mount(string $page = 'monitoring'): void
     {
+        $this->page = $page === 'sla' ? 'sla' : 'monitoring';
+        $this->tab = $this->page === 'sla' ? 'sla' : (in_array($this->tab, ['requests', 'actions'], true) ? $this->tab : 'requests');
         $this->need('reports');
         abort_unless($this->me()->isSourcing(), 403);
     }
@@ -92,7 +97,21 @@ class Monitoring extends Component
             $actions->push([$q->number, route('requisitions.show', $q), 'Waiting for approval for more than two days', 'warn']);
         }
 
-        return view('livewire.monitoring', ['rows' => $this->rows(), 'actions' => $actions, 'target' => self::AWARD_TARGET_DAYS,
+        $rows = $this->rows();
+        $week = now()->addDays(7);
+        $strip = $this->page === 'sla' ? [
+            ['l' => 'Tracked RFQs', 'v' => $rows->count(), 's' => 'open or in evaluation'],
+            ['l' => 'Reminders sent today', 'v' => \App\Models\Reminder::whereDate('created_at', now()->toDateString())->count(), 's' => 'each one is sent once'],
+            ['l' => 'At risk', 'v' => $rows->where('risk.0', 'warn')->count(), 's' => 'need action before the deadline', 'c' => 'warn'],
+            ['l' => 'Overdue or breached', 'v' => $rows->where('risk.0', 'bad')->count(), 's' => 'past the award target', 'c' => 'bad', 'href' => route('monitoring.index')],
+        ] : [
+            ['l' => 'Active RFQs', 'v' => $rows->count(), 's' => $rows->where('rfq.status', 'open')->count().' quoting · '.$rows->where('rfq.status', 'closed')->count().' in evaluation'],
+            ['l' => 'At risk', 'v' => $rows->where('risk.0', 'warn')->count(), 's' => 'need action before the deadline', 'c' => 'warn'],
+            ['l' => 'Overdue or breached', 'v' => $rows->where('risk.0', 'bad')->count(), 's' => 'past the deadline or the award target', 'c' => 'bad'],
+            ['l' => 'Due within 7 days', 'v' => $rows->filter(fn ($x) => $x['due']->isFuture() && $x['due']->lte($week))->count(), 's' => 'deadlines and award targets'],
+        ];
+
+        return view('livewire.monitoring', ['strip' => $strip, 'rows' => $rows, 'actions' => $actions, 'target' => self::AWARD_TARGET_DAYS,
             'reminders' => $this->tab === 'sla' ? \App\Models\Reminder::latest('id')->limit(60)->get() : collect(), 'beat' => \Illuminate\Support\Facades\Cache::get('scheduler:heartbeat')]);
     }
 }

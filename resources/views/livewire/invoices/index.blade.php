@@ -5,6 +5,7 @@
 @endphp
 <div>
     <x-ph title="Invoices & receipts" :desc="$supplierSide ? 'Invoices you sent and how they were checked.' : 'Every invoice is checked against the order and what was received before it can be paid.'" :crumbs="[['Invoices & receipts']]" />
+    <x-strip :items="$strip" />
     <x-tabs :on="$tab" :tabs="['invoices' => ['Invoices', $all], 'receipts' => ['Goods receipts', $receiptCount]]" />
     @if ($tab === 'invoices')
         <x-dt :lw="$this" :rows="$rows" id="inv" search="Search invoice, order or supplier" label="Search invoices" noun="invoices" :guide="['ok' => ['Matched', 'Agrees with the order and what was received.'], 'bad' => ['Does not match', 'Price or quantity differs. Check before approving.'], 'info' => ['Approved for payment', 'Checked and released for payment.'], 'won' => ['Paid', 'Payment was made.'], 'lost' => ['Rejected', 'Sent back to the supplier with a reason.']]" :all="$all" :quick="$quick" :export="true">

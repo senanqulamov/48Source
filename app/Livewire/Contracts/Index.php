@@ -37,6 +37,17 @@ class Index extends Component
     {
         $rows = $this->query()->with('supplier')->when($this->status !== '', fn ($q) => $q->where('status', $this->status))->orderBy($this->sortCol('created_at'), $this->sortDir())->orderByDesc('id')->paginate($this->perPage());
 
-        return view('livewire.contracts.index', ['rows' => $rows, 'counts' => $this->query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'), 'all' => Contract::visibleTo($this->me())->count()]);
+        $me = $this->me();
+        $today = now()->toDateString();
+        $soon = now()->addDays(60)->toDateString();
+        $active = Contract::visibleTo($me)->where('status', 'active');
+        $strip = [
+            ['l' => 'Active contracts', 'v' => (clone $active)->count(), 's' => \App\Support\Money::format((int) (clone $active)->sum('ceiling_cents'), 'USD', false).' total ceiling'],
+            ['l' => 'Expiring soon', 'v' => (clone $active)->whereDate('ends_on', '>=', $today)->whereDate('ends_on', '<=', $soon)->count(), 's' => 'end within 60 days', 'c' => 'warn'],
+            ['l' => 'Expired', 'v' => Contract::visibleTo($me)->where(fn ($w) => $w->where('status', 'expired')->orWhere(fn ($x) => $x->where('status', 'active')->whereDate('ends_on', '<', $today)))->count(), 's' => 'renew or close'],
+            ['l' => 'Released so far', 'v' => \App\Support\Money::format((int) (clone $active)->sum('released_cents'), 'USD', false), 's' => 'on active contracts'],
+        ];
+
+        return view('livewire.contracts.index', ['strip' => $strip, 'rows' => $rows, 'counts' => $this->query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'), 'all' => Contract::visibleTo($this->me())->count()]);
     }
 }

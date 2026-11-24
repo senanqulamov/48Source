@@ -1,10 +1,17 @@
 @php use App\Support\Money; @endphp
 <div>
-    <x-ph title="Spend & reports" desc="Committed spend from issued purchase orders, budgets by category, savings on awarded requests and service figures." :crumbs="[['Spend & reports']]">
+    @php
+        $head = [
+            'spend' => ['Spend & budgets', 'Committed spend from issued purchase orders by month, supplier and category, and the yearly budget of each category.'],
+            'savings' => ['Savings', 'What each awarded request saved against its budget and against the average quotation.'],
+            'kpis' => ['KPI reports', 'Service figures for the year: supplier response, delivery on time and invoices matching first time.'],
+        ][$page];
+    @endphp
+    <x-ph :title="$head[0]" :desc="$head[1]" :crumbs="[[$head[0]]]">
         <div style="width:110px"><select class="select" wire:model.live="year" aria-label="Year">@foreach ($years as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach</select></div>
         <button type="button" class="btn" wire:click="export"><x-icon name="download" />Excel</button>
     </x-ph>
-    <x-tabs :on="$tab" :tabs="['spend' => 'Spend', 'budgets' => 'Budgets', 'savings' => 'Savings', 'kpis' => 'Service figures']" />
+    @if ($page === 'spend')<x-tabs :on="$tab" :tabs="['spend' => 'Analysis', 'budgets' => 'Budgets']" />@endif
     @if ($tab === 'spend')
         <x-card title="Committed spend by month" :sub="$year" style="margin-bottom:16px">
             <div class="row" style="align-items:baseline;margin-bottom:4px"><span class="strip-v" style="font-size:30px" data-done="1">${{ number_format(intdiv($spend['total'], 100)) }}</span><span class="muted sm">{{ $spend['count'] }} purchase order{{ $spend['count'] === 1 ? '' : 's' }} · hover the chart for each month</span></div>{!! $area !!}</x-card>

@@ -1,6 +1,6 @@
 @php use App\Models\Rfi; $bv = ['open' => 'info', 'closed' => 'warn']; $quick = ['' => ['All', $counts->sum()]]; foreach (Rfi::STATUSES as $k => $l) { if (($counts[$k] ?? 0) || $k === 'open') { $quick[$k] = [$l, $counts[$k] ?? 0]; } } @endphp
 <div>
-    <x-ph title="Information requests" :desc="$sourcing ? 'Ask suppliers questions before you write a request for quotation: capability, lead times, certificates.' : 'Questions from the buyer. Your answers help them decide who to invite to quote.'" :crumbs="[['Information requests']]">
+    <x-ph title="Requests for information" :desc="$sourcing ? 'Ask suppliers questions before you write a request for quotation: capability, lead times, certificates.' : 'Questions from the buyer. Your answers help them decide who to invite to quote.'" :crumbs="[['Information requests']]">
         @if ($sourcing)@perm('rfqs', 'C')<a class="btn btn-p" href="{{ route('rfis.create') }}" wire:navigate><x-icon name="plus" />New information request</a>@endperm @endif
     </x-ph>
     <x-dt :lw="$this" :rows="$rows" id="rfi" search="Search reference or title" label="Search information requests" noun="information requests" :all="$all" :quick="$quick">

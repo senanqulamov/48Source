@@ -55,7 +55,7 @@ class Translator
         }
         $words = self::dictionary($locale);
         $out = [];
-        foreach (['Clear', 'Done', 'Nothing matches', 'Recently opened', 'Time', 'Guided tour', 'Hour down', 'Hour up', 'Hour', 'Minutes down', 'Minutes up', 'Minutes', 'Next month', 'Previous month', 'Search options', 'Search', 'In a week', 'In 2 weeks', 'In a month', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Select a date', 'Select date and time', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as $key) {
+        foreach (['Clear', 'Done', 'Nothing matches', 'Recently opened', 'Time', 'Guided tour', 'Hour down', 'Hour up', 'Hour', 'Minutes down', 'Minutes up', 'Minutes', 'Next month', 'Previous month', 'Search options', 'Search', 'In a week', 'In 2 weeks', 'In a month', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su', 'Select a date', 'Select date and time', 'Go to', 'No results for', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as $key) {
             if (isset($words[$key])) {
                 $out[$key] = $words[$key];
             }

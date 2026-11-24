@@ -38,6 +38,17 @@ class Index extends Component
         $rows = $this->query()->with('requester', 'approvals')->withCount('items')->when($this->status !== '', fn ($q) => $q->where('status', $this->status))
             ->orderBy($this->sortCol('created_at'), $this->sortDir())->orderByDesc('id')->paginate($this->perPage());
 
-        return view('livewire.requisitions.index', ['rows' => $rows, 'counts' => $this->query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'), 'all' => Requisition::visibleTo($this->me())->count()]);
+        $me = $this->me();
+        $mine = Requisition::visibleTo($me)->where('status', 'pending')->where('requester_id', '!=', $me->id);
+        $waiting = $me->allowed('requisitions', 'A') ? (clone $mine)->count() : 0;
+        $month = now()->startOfMonth();
+        $strip = [
+            ['l' => 'Waiting for my approval', 'v' => $waiting, 's' => $waiting ? \App\Support\Money::format((int) (clone $mine)->sum('total_cents'), 'USD', false) : 'nothing to do', 'c' => $waiting ? 'warn' : ''],
+            ['l' => 'In approval', 'v' => Requisition::visibleTo($me)->where('status', 'pending')->count(), 's' => 'across all approvers'],
+            ['l' => 'Approved, not yet ordered', 'v' => Requisition::visibleTo($me)->where('status', 'approved')->count(), 's' => 'ready to source'],
+            ['l' => 'Rejected this month', 'v' => Requisition::visibleTo($me)->where('status', 'rejected')->where('decided_at', '>=', $month)->count(), 's' => 'with a reason recorded'],
+        ];
+
+        return view('livewire.requisitions.index', ['strip' => $strip, 'rows' => $rows, 'counts' => $this->query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status'), 'all' => Requisition::visibleTo($this->me())->count()]);
     }
 }

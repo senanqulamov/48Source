@@ -1,6 +1,6 @@
 @php use App\Models\Supplier; $moves = ['active' => ['Approve', 'btn-p'], 'inactive' => ['Deactivate', ''], 'blocked' => ['Block', 'btn-d']]; @endphp
 <div>
-    <x-ph title="Suppliers" desc="Every supplier, its status and its track record. Only active suppliers can be invited or send quotations." :crumbs="[['Suppliers']]">
+    <x-ph title="Supplier directory" desc="Approved and prospective suppliers, with how they respond and perform. Only active suppliers can be invited or send quotations." :crumbs="[['Suppliers']]">
         @perm('suppliers', 'C')<button type="button" class="btn btn-p" wire:click="create"><x-icon name="plus" />Add supplier</button>@endperm
     </x-ph>
     @php $quick = ['' => ['All', $counts->sum()]]; foreach (Supplier::STATUSES as $k => $l) { $quick[$k] = [$l, $counts[$k] ?? 0]; } @endphp

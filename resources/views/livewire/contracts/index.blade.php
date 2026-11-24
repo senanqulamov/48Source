@@ -6,6 +6,7 @@
     <x-ph title="Contracts" :desc="$src ? 'Framework agreements with fixed prices. Place release orders against them instead of running a new request each time.' : 'Agreements your company holds, and the release orders placed on them.'" :crumbs="[['Contracts']]">
         @if ($src)@perm('contracts', 'C')<a class="btn btn-p" href="{{ route('contracts.create') }}" wire:navigate><x-icon name="plus" />New contract</a>@endperm @endif
     </x-ph>
+    <x-strip :items="$strip" />
     <x-dt :lw="$this" :rows="$rows" id="ct" search="Search reference, title or supplier" label="Search contracts" noun="contracts" :all="$all" :quick="$quick" :export="true">
         <x-slot:empty><x-empty icon="clip" title="No contracts yet" :text="$src ? 'Create a contract to agree prices once and order many times.' : 'Contracts appear here when a buyer activates one with your company.'" /></x-slot:empty>
         <x-slot:head><x-th col="number" cls="hide-sm">Reference</x-th><x-th col="title">Contract</x-th><x-th col="status">Status</x-th><x-th col="ends_on">Period</x-th><x-th col="released_cents">Used</x-th></x-slot:head>

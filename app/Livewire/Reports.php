@@ -24,10 +24,15 @@ class Reports extends Component
     #[Url]
     public int $year = 0;
 
+    /** Which of the three pages this is: spend, savings or kpis. */
+    public string $page = 'spend';
+
     public array $b = ['category_id' => '', 'amount' => ''];
 
-    public function mount(): void
+    public function mount(string $page = 'spend'): void
     {
+        $this->page = in_array($page, ['spend', 'savings', 'kpis'], true) ? $page : 'spend';
+        $this->tab = $this->page === 'spend' ? (in_array($this->tab, ['spend', 'budgets'], true) ? $this->tab : 'spend') : $this->page;
         $this->need('spend');
         abort_unless($this->me()->isSourcing(), 403);
         $this->year = $this->year ?: (int) now()->format('Y');

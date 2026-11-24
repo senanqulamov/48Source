@@ -359,7 +359,7 @@ class PartFourTest extends TestCase
         $admin = $this->admin();
         $buyer = $this->buyer();
         $sup = $this->supplierUser();
-        foreach (['monitoring.index', 'system.index', 'assistant.index', 'privacy', 'settings'] as $r) {
+        foreach (['monitoring.index', 'health.index', 'assistant.index', 'privacy', 'settings'] as $r) {
             $this->actingAs($admin)->get(route($r))->assertOk();
         }
         foreach (['monitoring.index', 'assistant.index', 'privacy'] as $r) {

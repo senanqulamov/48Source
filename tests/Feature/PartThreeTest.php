@@ -405,7 +405,7 @@ class PartThreeTest extends TestCase
         $buyer = $this->buyer();
         $sup = $this->supplierUser();
         $admin = $this->admin();
-        foreach (['market.shop', 'market.basket', 'market.sourcing', 'market.orders.index', 'reports.index', 'accounting.index'] as $r) {
+        foreach (['market.shop', 'market.basket', 'market.sourcing', 'market.orders.index', 'spend.index', 'savings.index', 'accounting.index'] as $r) {
             $this->actingAs($buyer)->get(route($r))->assertOk();
         }
         foreach (['market.shop', 'market.basket', 'market.sourcing', 'market.orders.index'] as $r) {
@@ -417,7 +417,7 @@ class PartThreeTest extends TestCase
         foreach (['market.orders.index', 'market.tasks', 'dashboard'] as $r) {
             $this->actingAs($worker)->get(route($r))->assertOk();
         }
-        foreach (['markets.index', 'outbox.index', 'reports.index', 'accounting.index', 'market.shop'] as $r) {
+        foreach (['markets.index', 'outbox.index', 'spend.index', 'kpi.index', 'accounting.index', 'market.shop'] as $r) {
             $this->actingAs($admin)->get(route($r))->assertOk();
         }
         foreach (['market.basket', 'market.sourcing', 'reports.index', 'markets.index', 'rfqs.index'] as $r) {

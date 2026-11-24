@@ -1,8 +1,9 @@
 <div>
-    <x-ph title="Monitoring & SLA" :desc="'Every active request against its quotation deadline and the ' . $target . '-day award target.'" :crumbs="[['Monitoring & SLA']]">
+    <x-ph :title="$page === 'sla' ? 'SLA tracker' : 'RFQ monitoring'" :desc="$page === 'sla' ? 'Reminders the system sends, when it last checked, and the rules behind each one.' : 'Every active request against its quotation deadline and the ' . $target . '-day award target.'" :crumbs="[[$page === 'sla' ? 'SLA tracker' : 'RFQ monitoring']]">
         <button type="button" class="btn" wire:click="export"><x-icon name="download" />Export</button>
     </x-ph>
-    <x-tabs :on="$tab" :tabs="['requests' => ['Active requests', $rows->count()], 'actions' => ['Actions required', $actions->count()], 'sla' => 'Reminders']" />
+    <x-strip :items="$strip" />
+    @if ($page === 'monitoring')<x-tabs :on="$tab" :tabs="['requests' => ['Active requests', $rows->count()], 'actions' => ['Actions required', $actions->count()]]" />@endif
     @if ($tab === 'requests')
         <x-card :flush="true">
             @if ($rows->isEmpty())<x-empty icon="check" title="No active requests" text="Open and closed requests that are not yet awarded appear here." />
