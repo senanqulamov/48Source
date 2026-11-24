@@ -6,7 +6,7 @@
                 <x-field label="Full name" for="sname" name="name"><input id="sname" class="input" wire:model="name" required></x-field>
                 <x-field label="Work email" for="semail" help="Ask an administrator to change your email."><input id="semail" class="input" value="{{ auth()->user()->email }}" disabled></x-field>
                 <x-field label="Phone" for="sphone" name="phone" :opt="true"><input id="sphone" class="input" wire:model="phone"></x-field>
-                <x-field label="Language" for="slocale" name="locale" help="Menus and common buttons change. Page texts stay in English."><select id="slocale" class="select" wire:model="locale">@foreach (config('procurement.locales') as $code => $n)<option value="{{ $code }}">{{ $n }}</option>@endforeach</select></x-field>
+                <x-field label="Language" for="slocale" name="locale" help="The interface is shown in the language you choose. Data you entered stays as it is."><select id="slocale" class="select" wire:model="locale">@foreach (config('procurement.locales') as $code => $n)<option value="{{ $code }}">{{ $n }}</option>@endforeach</select></x-field>
                 <div><button class="btn btn-p" type="submit" wire:loading.attr="disabled">Save profile</button></div>
             </form>
         </x-card>

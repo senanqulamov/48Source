@@ -16,11 +16,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/extra.css') }}?v={{ filemtime(public_path('css/extra.css')) }}">
+    <script>window.I18N = @json(\App\Support\Translator::forScripts())</script>
     <script src="{{ asset('js/ui.js') }}?v={{ filemtime(public_path('js/ui.js')) }}" defer data-navigate-once></script>
 </head>
 <body>
-<div id="lw-progress" role="progressbar" aria-label="Loading page" aria-hidden="true"></div>
-<div id="offline-banner" class="offline-banner" role="status" aria-live="polite" hidden>You're offline. Changes will be sent when your connection returns.</div>
 <div class="app" x-data="{ nav: false, collapsed: localStorage.getItem('sb') === '1' }" :class="{ navopen: nav, collapsed: collapsed }">
     <nav class="sb" aria-label="Primary">
         <div class="sb-top"><a class="brand" href="{{ route('dashboard') }}" wire:navigate aria-label="48Source home"><span class="mark" aria-hidden="true">48</span><span class="brand-name">48Source</span></a></div>
@@ -51,19 +50,29 @@
                 @endif
                 <div class="acct-wrap hide-sm" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
                     <button type="button" class="btn btn-sm btn-g" x-on:click="open = !open" aria-label="{{ __('Language') }}" :aria-expanded="open" title="{{ __('Language') }}"><x-icon name="globe" :size="15" />{{ strtoupper(app()->getLocale()) }}</button>
-                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak x-transition.opacity style="width:190px">
+                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak wire:ignore.self x-transition.opacity style="width:190px">
                         <div class="pop-h">{{ __('Language') }}</div>
                         @foreach (config('procurement.locales') as $code => $name)
                             <form method="post" action="{{ route('prefs.locale') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}"><button class="pop-i {{ app()->getLocale() === $code ? 'on' : '' }}" type="submit"><span style="flex:1">{{ $name }}</span>@if (app()->getLocale() === $code)<span class="k"><x-icon name="check" :size="15" /></span>@endif</button></form>
                         @endforeach
                     </div>
                 </div>
-                <button type="button" class="icon-btn hide-sm" onclick="ui48.tour()" aria-label="{{ __('Take the tour') }}" title="{{ __('Take the tour') }}"><x-icon name="info" :size="17" /></button>
+                <div class="acct-wrap hide-sm" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
+                    <button type="button" class="icon-btn" x-on:click="open = !open" aria-label="{{ __('Help') }}" :aria-expanded="open" title="{{ __('Help') }}"><x-icon name="info" :size="17" /></button>
+                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak x-transition.opacity style="width:270px">
+                        <div class="pop-h">{{ __('Help') }}</div>
+                        <button type="button" class="pop-i" x-on:click="open = false; ui48.tour()"><x-icon name="pin" /><span style="flex:1"><b style="display:block">{{ __('Take the tour') }}</b><span class="faint xs">{{ __('Visit every page of your workspace') }}</span></span></button>
+                        <button type="button" class="pop-i" x-on:click="open = false; ui48.shortcuts()"><x-icon name="sliders" /><span style="flex:1">{{ __('Keyboard shortcuts') }}</span><span class="k"><kbd>?</kbd></span></button>
+                        <a class="pop-i" href="{{ route('privacy') }}" wire:navigate><x-icon name="shield" />{{ __('Privacy and your data') }}</a>
+                        @if ($u->allowed('system'))<a class="pop-i" href="{{ route('system.index') }}" wire:navigate><x-icon name="server" />{{ __('System status') }}</a>@endif
+                        <hr><div class="pop-h" style="text-transform:none;font-weight:500">{{ __('Signed in as') }} {{ $u->email }}</div>
+                    </div>
+                </div>
                 <button type="button" class="icon-btn hide-sm" x-data x-on:click="const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; fetch('{{ route('prefs.theme') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Content-Type': 'application/json' }, body: JSON.stringify({ theme: t }) })" aria-label="Switch between light and dark theme" title="Light / dark theme"><x-icon name="moon" :size="17" /></button>
                 <a class="icon-btn" href="{{ route('notifications.index') }}" wire:navigate aria-label="Notifications, {{ $unread }} unread" title="Notifications"><x-icon name="bell" :size="17" />@if ($unread)<span class="dot"></span>@endif</a>
                 <div class="acct-wrap" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
                     <button type="button" class="acct" x-on:click="open = !open" aria-label="Account menu" :aria-expanded="open"><span class="avatar av{{ $u->id % 5 }}" aria-hidden="true">{{ $u->initials() }}</span><span class="hide-md b sm">{{ $u->name }}</span></button>
-                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak x-transition.opacity>
+                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak wire:ignore.self x-transition.opacity>
                         <div class="pop-h">{{ $u->email }}<br>{{ $u->supplier?->name ?? config('app.org', 'Buyer organisation') }}</div><hr>
                         <a class="pop-i" href="{{ route('settings') }}" wire:navigate><x-icon name="sliders" />{{ __('Settings') }}</a>
                         <form method="post" action="{{ route('logout') }}">@csrf<button class="pop-i" type="submit"><x-icon name="logout" />{{ __('Sign out') }}</button></form>
@@ -74,7 +83,11 @@
         <main class="content" id="main" tabindex="-1"><div class="page enter">{{ $slot }}</div></main>
     </div>
 </div>
-<div id="tour-t" hidden data-next="{{ __('Next') }}" data-back="{{ __('Back') }}" data-finish="{{ __('Finish') }}" data-skip="{{ __('Skip the tour') }}" data-step="{{ __('Step :n of :total') }}"></div>
+<div id="tour-t" hidden data-next="{{ __('Next') }}" data-back="{{ __('Back') }}" data-finish="{{ __('Finish') }}" data-skip="{{ __('Skip the tour') }}" data-step="{{ __('Step :n of :total') }}" data-behind="{{ __('The page behind this card is the one being described.') }}"></div>
+<template id="keys-t"><div class="modal" role="dialog" aria-modal="true" aria-label="{{ __('Keyboard shortcuts') }}"><div class="ov-h"><h2>{{ __('Keyboard shortcuts') }}</h2><span class="sp"></span><button type="button" class="icon-btn" data-x aria-label="Close"><x-icon name="x" /></button></div><div class="ov-b"><div class="keys">
+    <kbd>Ctrl K</kbd><span>{{ __('Search everything') }}</span><kbd>/</kbd><span>{{ __('Search the table on this page') }}</span><kbd>Enter</kbd><span>{{ __('Open the selected row') }}</span><kbd>Esc</kbd><span>{{ __('Close a window, a menu or the tour') }}</span>
+    <kbd>&larr; &rarr;</kbd><span>{{ __('Previous or next day in a calendar, previous or next step in the tour') }}</span><kbd>&uarr; &darr;</kbd><span>{{ __('Move in a list of options, change the time') }}</span><kbd>Ctrl Enter</kbd><span>{{ __('Send a message') }}</span><kbd>?</kbd><span>{{ __('Show this list') }}</span>
+</div></div></div></template>
 <div id="toasts" aria-live="polite" @if (session('toast')) data-flash="{{ session('toast') }}" @endif></div>
 @foreach (['down', 'cal', 'check', 'left', 'right', 'alert'] as $i)<template id="ic-{{ $i }}"><x-icon :name="$i" /></template>@endforeach
 </body>

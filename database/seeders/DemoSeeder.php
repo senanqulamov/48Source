@@ -32,20 +32,20 @@ class DemoSeeder extends Seeder
         $cat = fn (string $name) => Category::where('name', $name)->value('id');
         $user = fn (string $name, string $email, string $role, array $extra = []) => User::updateOrCreate(['email' => $email], ['name' => $name, 'password' => $password, 'role' => $role, 'status' => 'active', 'email_verified_at' => now()] + $extra);
 
-        $admin = $user('Helena Voss', 'admin@demo.48source.test', 'admin', ['department' => 'Procurement']);
-        $buyer = $user('Daniel Okafor', 'buyer@demo.48source.test', 'buyer', ['department' => 'Construction']);
-        $buyer2 = $user('Sofia Marchetti', 'buyer2@demo.48source.test', 'buyer', ['department' => 'IT']);
-        $user('Rui Mendes', 'seller@demo.48source.test', 'seller');
-        $user('Ilyas Demir', 'worker@demo.48source.test', 'market_worker');
+        $admin = $user('Leyla Hüseynova', 'admin@demo.48source.test', 'admin', ['department' => 'Procurement']);
+        $buyer = $user('Elvin Məmmədov', 'buyer@demo.48source.test', 'buyer', ['department' => 'Construction']);
+        $buyer2 = $user('Aysel Quliyeva', 'buyer2@demo.48source.test', 'buyer', ['department' => 'IT']);
+        $user('Rəşad Əliyev', 'seller@demo.48source.test', 'seller');
+        $user('Tural Həsənov', 'worker@demo.48source.test', 'market_worker');
 
         $sup = [];
         foreach ([
-            ['Baltic Steel & Rebar', 'Steel & metals', 'Riga', 45, 'active', 'supplier@demo.48source.test', 'Marta Kovac'],
-            ['Northfield Metals', 'Steel & metals', 'Gdansk', 42, 'active', 'supplier2@demo.48source.test', 'Piotr Nowak'],
-            ['Graywacke Cement & Aggregates', 'Construction materials', 'Leeds', 38, 'active', 'supplier3@demo.48source.test', 'Chen Wei'],
-            ['Vantage IT Supply', 'IT hardware', 'Dublin', 47, 'active', 'supplier4@demo.48source.test', 'Priya Nair'],
-            ['Novagrid Engineering', 'Industrial equipment', 'Oslo', 40, 'pending', 'supplier5@demo.48source.test', 'Kamran Aliyev'],
-            ['Halden Freight', 'Logistics services', 'Hamburg', 30, 'blocked', null, 'Jon Halden'],
+            ['Abşeron Polad MMC', 'Steel & metals', 'Bakı', 45, 'active', 'supplier@demo.48source.test', 'Nigar Rzayeva'],
+            ['Xəzər Metal Təchizat MMC', 'Steel & metals', 'Sumqayıt', 42, 'active', 'supplier2@demo.48source.test', 'Orxan İsmayılov'],
+            ['Qobustan Sement və Çınqıl MMC', 'Construction materials', 'Gəncə', 38, 'active', 'supplier3@demo.48source.test', 'Fərid Abbasov'],
+            ['Nizami İT Təchizat MMC', 'IT hardware', 'Bakı', 47, 'active', 'supplier4@demo.48source.test', 'Günel Kərimova'],
+            ['Şirvan Mühəndislik MMC', 'Industrial equipment', 'Mingəçevir', 40, 'pending', 'supplier5@demo.48source.test', 'Kamran Vəliyev'],
+            ['Araz Daşıma MMC', 'Logistics services', 'Şirvan', 30, 'blocked', null, 'Samir Nəbiyev'],
         ] as [$name, $category, $city, $rating, $status, $email, $contact]) {
             $s = Supplier::updateOrCreate(['name' => $name], ['category_id' => $cat($category), 'city' => $city, 'rating_tenths' => $rating, 'status' => $status, 'contact_name' => $contact, 'email' => $email, 'approved_at' => $status === 'active' ? now()->subMonths(6) : null, 'status_reason' => $status === 'blocked' ? 'Repeated late deliveries in 2025.' : null]);
             if ($email) {
@@ -53,28 +53,28 @@ class DemoSeeder extends Seeder
             }
             $sup[$name] = $s;
         }
-        $user('Jonas Petersen', 'fieldworker@demo.48source.test', 'supplier_worker', ['supplier_id' => $sup['Baltic Steel & Rebar']->id]);
+        $user('Emin Cəfərov', 'fieldworker@demo.48source.test', 'supplier_worker', ['supplier_id' => $sup['Abşeron Polad MMC']->id]);
 
         // Marketplace: markets, stores, their people, products and offers (all invented).
         $mk = fn (string $name, string $city) => \App\Models\Market::firstOrCreate(['name' => $name], ['city' => $city]);
         $st = fn (string $name, \App\Models\Market $m, string $stall) => \App\Models\Store::firstOrCreate(['name' => $name], ['market_id' => $m->id, 'stall' => $stall]);
-        $central = $mk('Central Building Market', 'Riga');
-        $harbour = $mk('Harbour Trade Yard', 'Gdansk');
-        $stores = ['Mendes Steel Trading' => $st('Mendes Steel Trading', $central, 'A-14'), 'Ostrava Metal Stock' => $st('Ostrava Metal Stock', $central, 'B-03'), 'Harbour Mesh & Wire' => $st('Harbour Mesh & Wire', $harbour, '21'), 'Bright Site Supplies' => $st('Bright Site Supplies', $harbour, '7')];
-        User::whereIn('email', ['seller@demo.48source.test', 'worker@demo.48source.test'])->update(['store_id' => $stores['Mendes Steel Trading']->id]);
-        $seller2 = $user('Lena Vasquez', 'seller2@demo.48source.test', 'seller');
-        User::where('email', 'seller2@demo.48source.test')->update(['store_id' => $stores['Harbour Mesh & Wire']->id]);
+        $central = $mk('Mərkəzi Tikinti Bazarı', 'Bakı');
+        $harbour = $mk('Sahil Ticarət Meydançası', 'Sumqayıt');
+        $stores = ['Əliyev Polad Ticarəti' => $st('Əliyev Polad Ticarəti', $central, 'A-14'), 'Dəmirçi Metal Anbarı' => $st('Dəmirçi Metal Anbarı', $central, 'B-03'), 'Sahil Tor və Məftil' => $st('Sahil Tor və Məftil', $harbour, '21'), 'Usta Təchizat' => $st('Usta Təchizat', $harbour, '7')];
+        User::whereIn('email', ['seller@demo.48source.test', 'worker@demo.48source.test'])->update(['store_id' => $stores['Əliyev Polad Ticarəti']->id]);
+        $seller2 = $user('Sevinc Bağırova', 'seller2@demo.48source.test', 'seller');
+        User::where('email', 'seller2@demo.48source.test')->update(['store_id' => $stores['Sahil Tor və Məftil']->id]);
         if (\App\Models\Offer::count() === 0) {
             $sellerService = app(\App\Services\SellerService::class);
             foreach ([
-                ['RB-16', 'Rebar B500B 16 mm, 12 m', 't', 'Steel & metals', ['Mendes Steel Trading' => ['688', '5', '220', 3], 'Ostrava Metal Stock' => ['679.50', '20', '400', 6], 'Harbour Mesh & Wire' => ['694', '1', '60', 2]]],
-                ['RB-25', 'Rebar B500B 25 mm, 12 m', 't', 'Steel & metals', ['Mendes Steel Trading' => ['706', '5', '150', 3], 'Ostrava Metal Stock' => ['699', '20', '90', 6]]],
-                ['WM-A393', 'Welded mesh A393, 4.8 x 2.4 m', 'pcs', 'Steel & metals', ['Harbour Mesh & Wire' => ['63.40', '50', '2400', 2], 'Mendes Steel Trading' => ['66', '10', '900', 3]]],
-                ['WM-A252', 'Welded mesh A252, 4.8 x 2.4 m', 'pcs', 'Steel & metals', ['Harbour Mesh & Wire' => ['45.90', '50', '1800', 2]]],
-                ['TW-16', 'Tie wire 1.6 mm, 20 kg coil', 'pcs', 'Steel & metals', ['Harbour Mesh & Wire' => ['31.20', '5', '340', 1], 'Bright Site Supplies' => ['33', '1', '80', 1]]],
-                ['SS-SET', 'Safety sign set, site entrance', 'pcs', 'Construction materials', ['Bright Site Supplies' => ['38.50', '10', '260', 2]]],
-                ['CM-42', 'Cement CEM I 42.5 R, 25 kg bag', 'bag', 'Construction materials', ['Bright Site Supplies' => ['6.85', '40', '5200', 1]]],
-                ['HV-VEST', 'High-visibility vest, class 2', 'pcs', 'Construction materials', ['Bright Site Supplies' => ['7.40', '20', '1500', 1]]],
+                ['RB-16', 'Rebar B500B 16 mm, 12 m', 't', 'Steel & metals', ['Əliyev Polad Ticarəti' => ['688', '5', '220', 3], 'Dəmirçi Metal Anbarı' => ['679.50', '20', '400', 6], 'Sahil Tor və Məftil' => ['694', '1', '60', 2]]],
+                ['RB-25', 'Rebar B500B 25 mm, 12 m', 't', 'Steel & metals', ['Əliyev Polad Ticarəti' => ['706', '5', '150', 3], 'Dəmirçi Metal Anbarı' => ['699', '20', '90', 6]]],
+                ['WM-A393', 'Welded mesh A393, 4.8 x 2.4 m', 'pcs', 'Steel & metals', ['Sahil Tor və Məftil' => ['63.40', '50', '2400', 2], 'Əliyev Polad Ticarəti' => ['66', '10', '900', 3]]],
+                ['WM-A252', 'Welded mesh A252, 4.8 x 2.4 m', 'pcs', 'Steel & metals', ['Sahil Tor və Məftil' => ['45.90', '50', '1800', 2]]],
+                ['TW-16', 'Tie wire 1.6 mm, 20 kg coil', 'pcs', 'Steel & metals', ['Sahil Tor və Məftil' => ['31.20', '5', '340', 1], 'Usta Təchizat' => ['33', '1', '80', 1]]],
+                ['SS-SET', 'Safety sign set, site entrance', 'pcs', 'Construction materials', ['Usta Təchizat' => ['38.50', '10', '260', 2]]],
+                ['CM-42', 'Cement CEM I 42.5 R, 25 kg bag', 'bag', 'Construction materials', ['Usta Təchizat' => ['6.85', '40', '5200', 1]]],
+                ['HV-VEST', 'High-visibility vest, class 2', 'pcs', 'Construction materials', ['Usta Təchizat' => ['7.40', '20', '1500', 1]]],
             ] as [$sku, $name, $unit, $category, $offers]) {
                 foreach ($offers as $storeName => [$price, $moq, $stock, $lead]) {
                     $sellerService->saveOffer($stores[$storeName], ['sku' => $sku, 'name' => $name, 'unit' => $unit, 'category' => $category, 'price' => $price, 'moq' => $moq, 'stock' => $stock, 'lead_days' => $lead]);
@@ -87,8 +87,8 @@ class DemoSeeder extends Seeder
 
         if (Rfq::count() === 0) {
             $steel = [['name' => 'Rebar B500B 16 mm, 12 m bars', 'quantity' => '144', 'unit' => 't', 'target_price' => '700'], ['name' => 'Rebar B500B 25 mm, 12 m bars', 'quantity' => '96', 'unit' => 't', 'target_price' => '720'], ['name' => 'Welded mesh A393, 4.8 x 2.4 m', 'quantity' => '820', 'unit' => 'pcs', 'target_price' => '70']];
-            $base = ['description' => 'Demo request.', 'type' => 'invited', 'currency' => 'USD', 'required_by' => now()->addDays(45)->toDateString(), 'requirements' => 'Mill certificates EN 10204 3.1.', 'payment_terms' => 'Net 30', 'scoring_preset' => 'balanced', 'sealed' => false, 'delivery_location' => 'Eastgate Depot'];
-            $steelSup = [$sup['Baltic Steel & Rebar']->id, $sup['Northfield Metals']->id, $sup['Graywacke Cement & Aggregates']->id];
+            $base = ['description' => 'Demo request.', 'type' => 'invited', 'currency' => 'USD', 'required_by' => now()->addDays(45)->toDateString(), 'requirements' => 'Mill certificates EN 10204 3.1.', 'payment_terms' => 'Net 30', 'scoring_preset' => 'balanced', 'sealed' => false, 'delivery_location' => 'Zığ anbarı'];
+            $steelSup = [$sup['Abşeron Polad MMC']->id, $sup['Xəzər Metal Təchizat MMC']->id, $sup['Qobustan Sement və Çınqıl MMC']->id];
             $price = fn (Rfq $r, array $p) => array_combine($r->items->pluck('id')->all(), $p);
             $act = function (User $u, callable $fn) {
                 Auth::setUser($u);
@@ -100,36 +100,36 @@ class DemoSeeder extends Seeder
 
             // 1. Open request with two quotations so far
             $r1 = $act($buyer, fn () => $rfqs->publish($rfqs->save($buyer, $base + ['title' => 'Reinforcement steel - Substation 2', 'category_id' => $cat('Steel & metals'), 'budget' => '320000', 'deadline_at' => now()->addDays(6), 'items' => $steel, 'suppliers' => $steelSup])));
-            $quote($r1, $sup['Baltic Steel & Rebar'], ['699', '721', '68.50'], 14);
-            $quote($r1, $sup['Northfield Metals'], ['705', '715', '71'], 10, 'Net 45');
+            $quote($r1, $sup['Abşeron Polad MMC'], ['699', '721', '68.50'], 14);
+            $quote($r1, $sup['Xəzər Metal Təchizat MMC'], ['705', '715', '71'], 10, 'Net 45');
 
             // 2. Closed request, ready to compare (one partial quotation)
             $r2 = $act($buyer, fn () => $rfqs->publish($rfqs->save($buyer, $base + ['title' => 'Structural steel - Bridge deck', 'category_id' => $cat('Steel & metals'), 'budget' => '300000', 'deadline_at' => now()->addDays(2), 'items' => $steel, 'suppliers' => $steelSup])));
-            $quote($r2, $sup['Baltic Steel & Rebar'], ['690', '715', '69'], 12);
-            $quote($r2, $sup['Northfield Metals'], ['702', '708', '66'], 9, 'Net 45');
-            $quote($r2, $sup['Graywacke Cement & Aggregates'], ['', '', '64'], 20, 'Net 15');
+            $quote($r2, $sup['Abşeron Polad MMC'], ['690', '715', '69'], 12);
+            $quote($r2, $sup['Xəzər Metal Təchizat MMC'], ['702', '708', '66'], 9, 'Net 45');
+            $quote($r2, $sup['Qobustan Sement və Çınqıl MMC'], ['', '', '64'], 20, 'Net 15');
             $act($buyer, fn () => $rfqs->close($r2));
 
             // 3. Awarded request with an order in transit
             $r3 = $act($buyer, fn () => $rfqs->publish($rfqs->save($buyer, $base + ['title' => 'Rebar top-up - Warehouse slab', 'category_id' => $cat('Steel & metals'), 'budget' => '120000', 'deadline_at' => now()->addDay(), 'items' => [$steel[0]], 'suppliers' => $steelSup])));
-            $q3 = $quote($r3, $sup['Baltic Steel & Rebar'], ['695'], 10);
-            $quote($r3, $sup['Northfield Metals'], ['712'], 8);
+            $q3 = $quote($r3, $sup['Abşeron Polad MMC'], ['695'], 10);
+            $quote($r3, $sup['Xəzər Metal Təchizat MMC'], ['712'], 8);
             $act($buyer, fn () => $rfqs->close($r3));
             $po = $act($buyer, fn () => $awards->award($r3->refresh(), $q3, $buyer));
             $act($buyer, fn () => $orders->advance($po, $buyer));
-            $act($supUser($sup['Baltic Steel & Rebar']), fn () => $orders->advance($po->refresh(), $supUser($sup['Baltic Steel & Rebar'])));
-            $act($supUser($sup['Baltic Steel & Rebar']), fn () => $orders->advance($po->refresh(), $supUser($sup['Baltic Steel & Rebar'])));
+            $act($supUser($sup['Abşeron Polad MMC']), fn () => $orders->advance($po->refresh(), $supUser($sup['Abşeron Polad MMC'])));
+            $act($supUser($sup['Abşeron Polad MMC']), fn () => $orders->advance($po->refresh(), $supUser($sup['Abşeron Polad MMC'])));
 
             // 4. A second buyer's request, and a draft
-            $act($buyer2, fn () => $rfqs->publish($rfqs->save($buyer2, $base + ['title' => 'Developer laptops - Q1 intake', 'category_id' => $cat('IT hardware'), 'budget' => '90000', 'deadline_at' => now()->addDays(9), 'delivery_location' => 'Head office', 'items' => [['name' => 'Laptop 14 inch, 32 GB RAM', 'quantity' => '48', 'unit' => 'pcs', 'target_price' => '1800']], 'suppliers' => [$sup['Vantage IT Supply']->id]])));
-            $act($buyer, fn () => $rfqs->save($buyer, $base + ['title' => 'Safety signage - Eastgate Depot', 'category_id' => $cat('Construction materials'), 'budget' => '', 'deadline_at' => now()->addDays(14), 'items' => [['name' => 'Safety sign set', 'quantity' => '60', 'unit' => 'pcs', 'target_price' => '40']], 'suppliers' => []]));
+            $act($buyer2, fn () => $rfqs->publish($rfqs->save($buyer2, $base + ['title' => 'Developer laptops - Q1 intake', 'category_id' => $cat('IT hardware'), 'budget' => '90000', 'deadline_at' => now()->addDays(9), 'delivery_location' => 'Head office', 'items' => [['name' => 'Laptop 14 inch, 32 GB RAM', 'quantity' => '48', 'unit' => 'pcs', 'target_price' => '1800']], 'suppliers' => [$sup['Nizami İT Təchizat MMC']->id]])));
+            $act($buyer, fn () => $rfqs->save($buyer, $base + ['title' => 'Safety signage - Zığ anbarı', 'category_id' => $cat('Construction materials'), 'budget' => '', 'deadline_at' => now()->addDays(14), 'items' => [['name' => 'Safety sign set', 'quantity' => '60', 'unit' => 'pcs', 'target_price' => '40']], 'suppliers' => []]));
 
             // ---- Part 2 demo data (all invented) ----
-            $baltic = $sup['Baltic Steel & Rebar'];
-            $north = $sup['Northfield Metals'];
+            $baltic = $sup['Abşeron Polad MMC'];
+            $north = $sup['Xəzər Metal Təchizat MMC'];
             $balticUser = $supUser($baltic);
             $req = app(\App\Services\RequisitionService::class);
-            $pr1 = $act($buyer2, fn () => $req->submit($req->save($buyer2, ['title' => 'Site office furniture - Eastgate', 'justification' => 'Twelve new desks for the site team starting in January.', 'needed_by' => now()->addDays(30)->toDateString(), 'category_id' => $cat('Construction materials')],
+            $pr1 = $act($buyer2, fn () => $req->submit($req->save($buyer2, ['title' => 'Site office furniture - Zığ', 'justification' => 'Twelve new desks for the site team starting in January.', 'needed_by' => now()->addDays(30)->toDateString(), 'category_id' => $cat('Construction materials')],
                 [['name' => 'Desk 160 cm', 'quantity' => '12', 'unit' => 'pcs', 'est_price' => '310'], ['name' => 'Task chair', 'quantity' => '12', 'unit' => 'pcs', 'est_price' => '185']]), $buyer2));
             $pr2 = $act($buyer, fn () => $req->submit($req->save($buyer, ['title' => 'Tower crane hire - Bridge deck', 'justification' => 'Needed for the deck pour sequence.', 'needed_by' => now()->addDays(60)->toDateString()],
                 [['name' => 'Tower crane hire', 'quantity' => '6', 'unit' => 'months', 'est_price' => '9800']]), $buyer));
@@ -165,8 +165,8 @@ class DemoSeeder extends Seeder
 
             $rfis = app(\App\Services\RfiService::class);
             $rfi = $act($buyer, fn () => $rfis->publish($rfis->save($buyer, ['title' => 'Market sounding - precast concrete elements', 'description' => 'We plan a tender for precast wall panels in the first quarter.', 'deadline_at' => now()->addDays(8)],
-                ['What is your usual lead time for 200 wall panels?', 'Which quality certificates do you hold?', 'Can you deliver to site in sequence?'], [$baltic->id, $north->id, $sup['Graywacke Cement & Aggregates']->id])->load('responses')));
-            $graywackeUser = $supUser($sup['Graywacke Cement & Aggregates']);
+                ['What is your usual lead time for 200 wall panels?', 'Which quality certificates do you hold?', 'Can you deliver to site in sequence?'], [$baltic->id, $north->id, $sup['Qobustan Sement və Çınqıl MMC']->id])->load('responses')));
+            $graywackeUser = $supUser($sup['Qobustan Sement və Çınqıl MMC']);
             $act($graywackeUser, fn () => $rfis->answer($rfi, $graywackeUser, ['Five to six weeks from approved drawings.', 'ISO 9001 and CE marking to EN 14992.', 'Yes, by pour sequence with 48 hours notice.']));
 
             $qa = app(\App\Services\QaService::class);

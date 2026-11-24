@@ -3,15 +3,15 @@
      $quick: value => [label, count]; $facets: key => [label, [value => label]]; $cols: key => label of columns the user may hide. --}}
 @php
     $all ??= $rows->total();
-    $active = collect($lw->f)->map(fn ($v) => count((array) $v))->sum();
+    $active = collect($lw->f)->map(fn ($v) => is_array($v) ? count($v) : 0)->sum();
     $pages = function (int $cur, int $n) { $o = []; for ($i = 1; $i <= $n; $i++) { if ($i === 1 || $i === $n || abs($i - $cur) <= 1) { $o[] = $i; } elseif (end($o) !== '…') { $o[] = '…'; } } return $o; };
     $pageKeys = $keys ? collect($keys)->map(fn ($k) => (string) $k)->all() : [];
     $nsel = count(array_intersect($pageKeys, $lw->selected));
 @endphp
-<section {{ $attributes->class(['card', 'dt', 'dt-' . $id]) }} wire:loading.attr="aria-busy" aria-busy="false">
+<section {{ $attributes->class(['card', 'dt', 'dt-' . $id]) }}>
     @if ($lw->hide)<style>@foreach ($lw->hide as $h).dt.dt-{{ $id }} table.tbl [data-c="{{ preg_replace('/[^a-z0-9_]/i', '', $h) }}"]{display:none!important}@endforeach</style>@endif
     <div class="dt-top">
-        <div class="dt-search"><x-icon name="search" /><input type="search" placeholder="{{ $search }}" aria-label="{{ $label }}" wire:model.live.debounce.300ms="q"><span class="dt-input-spin" wire:loading.delay wire:target="q" aria-hidden="true"></span><span class="sr-only" wire:loading.delay wire:target="q">Loading</span>@if ($lw->q !== '')<button type="button" class="dt-clear" wire:click="$set('q', '')" aria-label="Clear search"><x-icon name="x" :size="14" /></button>@endif<kbd>/</kbd></div>
+        <div class="dt-search"><x-icon name="search" /><input type="search" placeholder="{{ $search }}" aria-label="{{ $label }}" wire:model.live.debounce.300ms="q">@if ($lw->q !== '')<button type="button" class="dt-clear" wire:click="$set('q', '')" aria-label="Clear search"><x-icon name="x" :size="14" /></button>@endif<kbd>/</kbd></div>
         <div class="dt-tools">
             @if ($quick)
                 <div class="seg" role="group" aria-label="{{ $quickLabel }}">
@@ -21,13 +21,14 @@
                 </div>
             @endif
             @foreach ($facets as $k => [$fl, $opts])
-                @php $n = count($lw->f[$k] ?? []); @endphp
+                @php $n = count((array) ($lw->f[$k] ?? [])); @endphp
                 <span x-data="pop({ w: 270, left: true })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
                     <button type="button" class="fbtn {{ $n ? 'on' : '' }}" x-on:click="toggle($el)" aria-haspopup="true">{{ $fl }}@if ($n)<span class="n">{{ $n }}</span>@endif<x-icon name="down" :size="14" /></button>
-                    <div class="pop" x-ref="p" x-show="open" x-cloak :style="pos">
+                    <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos">
                         <div class="pop-h">{{ $fl }}<span class="sp"></span><button type="button" class="link sm" wire:click="clearFacet('{{ $k }}')">Clear</button></div>
                         @forelse ($opts as $v => $l)
-                            <label class="pop-i" style="cursor:pointer" wire:key="f-{{ $k }}-{{ $v }}"><input type="checkbox" class="chk" value="{{ $v }}" wire:model.live="f.{{ $k }}"><span style="flex:1;min-width:0">{{ $l }}</span></label>
+                            @php $onF = in_array((string) $v, array_map('strval', (array) ($lw->f[$k] ?? [])), true); @endphp
+                            <label class="pop-i" style="cursor:pointer" wire:key="f-{{ $k }}-{{ $v }}-{{ $onF ? 1 : 0 }}"><input type="checkbox" class="chk" wire:click="toggleFacet('{{ $k }}', '{{ $v }}')" @checked($onF)><span style="flex:1;min-width:0">{{ $l }}</span></label>
                         @empty
                             <div class="pop-h">Nothing to filter by yet</div>
                         @endforelse
@@ -38,7 +39,7 @@
             @if ($guide)
                 <span x-data="pop({ w: 340 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
                     <button type="button" class="btn btn-g btn-sm" x-on:click="toggle($el)" aria-haspopup="true"><x-icon name="info" :size="14" /><span class="hide-md">Status guide</span></button>
-                    <div class="pop" x-ref="p" x-show="open" x-cloak :style="pos"><div class="pop-h">What each status means</div>
+                    <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos"><div class="pop-h">What each status means</div>
                         @foreach ($guide as $st => [$gl, $gt])<div style="padding:7px 10px"><x-badge :status="$st" :label="$gl" /><div class="muted sm" style="margin-top:3px">{{ $gt }}</div></div>@endforeach
                     </div>
                 </span>
@@ -46,10 +47,10 @@
             @if ($cols)
                 <span x-data="pop({ w: 230 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
                     <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="Choose columns" title="Choose columns"><x-icon name="cols" :size="17" /></button>
-                    <div class="pop" x-ref="p" x-show="open" x-cloak :style="pos">
+                    <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos">
                         <div class="pop-h">{{ __('Columns') }}</div>
                         @foreach ($cols as $k => $l)
-                            <label class="pop-i" style="cursor:pointer"><input type="checkbox" class="chk" wire:click="toggleCol('{{ $k }}')" @checked(! in_array($k, $lw->hide, true))><span style="flex:1">{{ $l }}</span></label>
+                            <label class="pop-i" style="cursor:pointer" wire:key="col-{{ $k }}-{{ in_array($k, $lw->hide, true) ? 0 : 1 }}"><input type="checkbox" class="chk" wire:click="toggleCol('{{ $k }}')" @checked(! in_array($k, $lw->hide, true))><span style="flex:1">{{ $l }}</span></label>
                         @endforeach
                     </div>
                 </span>
@@ -57,7 +58,7 @@
             @if ($export)
                 <span x-data="pop({ w: 200 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
                     <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="Export" title="Export" aria-haspopup="true"><x-icon name="download" :size="17" /></button>
-                    <div class="pop" x-ref="p" x-show="open" x-cloak :style="pos" role="menu">
+                    <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos" role="menu">
                         <div class="pop-h">{{ __('Export what is shown') }}</div>
                         <button type="button" class="pop-i" wire:click="export('xlsx')" x-on:click="open = false"><x-icon name="download" />Excel (.xlsx)</button>
                         <button type="button" class="pop-i" wire:click="export('csv')" x-on:click="open = false"><x-icon name="file" />CSV</button>
@@ -66,13 +67,12 @@
             @endif
         </div>
     </div>
-    <div class="dt-body">
-        <div class="dt-loading" wire:loading.delay.block aria-hidden="true"><span></span></div>
+    <div>
         @if ($active || trim($lw->q) !== '')
             <div class="dt-chips"><span class="muted sm"><b style="color:var(--text)">{{ $rows->total() }}</b> of {{ $all }} {{ $noun }}</span>
                 @if (trim($lw->q) !== '')<button type="button" class="fchip" wire:click="$set('q', '')" aria-label="Remove search filter">Search: "{{ trim($lw->q) }}"<x-icon name="x" :size="12" /></button>@endif
                 @foreach ($facets as $k => [$fl, $opts])
-                    @foreach ($lw->f[$k] ?? [] as $v)
+                    @foreach ((array) ($lw->f[$k] ?? []) as $v)
                         <button type="button" class="fchip" wire:click="dropFacet('{{ $k }}', '{{ $v }}')" aria-label="Remove filter {{ $fl }}: {{ $opts[$v] ?? $v }}"><span class="faint">{{ $fl }}:</span> {{ $opts[$v] ?? $v }}<x-icon name="x" :size="12" /></button>
                     @endforeach
                 @endforeach

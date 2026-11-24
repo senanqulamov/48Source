@@ -30,7 +30,7 @@ Open http://127.0.0.1:8000 and sign in.
 php artisan db:seed --class=DemoSeeder
 ```
 
-This loads invented companies, people, requests, quotations and one purchase order. The seeder refuses to run on production. All demo accounts share one password: `DEMO_PASSWORD` from `.env` if you set it, otherwise a random one printed once when the seeder finishes.
+This loads invented companies and people with Azerbaijani names and cities (none of them is a real organisation or a real person), plus requests, quotations and one purchase order. The seeder refuses to run on production. All demo accounts share one password: `DEMO_PASSWORD` from `.env` if you set it, otherwise a random one printed once when the seeder finishes.
 
 | Role | Email |
 |---|---|
@@ -52,7 +52,7 @@ This loads invented companies, people, requests, quotations and one purchase ord
 php artisan test
 ```
 
-119 tests cover sign-in, registration, password reset, permissions, the RFQ lifecycle, quotations, scoring, award rules, split awards, the purchase order lifecycle, supplier lifecycle, data isolation and a render check of every page for every role, plus everything in part 2: approval chains, contract ceilings, receipts, the three-way match, supplier risk, field assessments, information requests, questions and answers, best-and-final rounds, the reverse auction and messages, and part 3: marketplace basket and checkout, store steps, item-by-item sourcing, price list import, Excel and CSV export, reports, accounting export, email outbox, reminders, languages and PDF documents.
+125 tests cover sign-in, registration, password reset, permissions, the RFQ lifecycle, quotations, scoring, award rules, split awards, the purchase order lifecycle, supplier lifecycle, data isolation and a render check of every page for every role, plus everything in part 2: approval chains, contract ceilings, receipts, the three-way match, supplier risk, field assessments, information requests, questions and answers, best-and-final rounds, the reverse auction and messages, and part 3: marketplace basket and checkout, store steps, item-by-item sourcing, price list import, Excel and CSV export, reports, accounting export, email outbox, reminders, languages and PDF documents.
 
 ## What is in part 1
 
@@ -111,10 +111,6 @@ The scheduler (`php artisan schedule:work`, or one cron entry for `schedule:run`
 
 `public/js/ui.js` (plain script, no build step) replaces native selects and date inputs with the prototype's custom controls, and adds tooltips, toasts, keyboard shortcuts (`/` focuses the table search, `Ctrl K` the global search) and row navigation. It re-applies itself after every Livewire update. Put `data-native` on a wrapper to keep a native control.
 
-### Loading states
-
-The shared loading layer lives in `public/css/extra.css` and `public/js/ui.js`. It adds a delayed spinner and disables the exact button that starts a Livewire action, including form submitters, so new pages should use normal `wire:click` and `wire:submit` directives rather than duplicate per-button markup. `x-dt` provides the table busy region, search spinner and loading bar; use it for new lists. `x-ph` provides the refresh control. File inputs with `wire:model` receive a progress bar automatically. Keep loading feedback delayed by about 150 ms, mark custom busy regions with `aria-busy`, and use the existing `.sk` class for lazy or overlay placeholders.
-
 ## What is in part 3
 
 | Area | What it does | Where |
@@ -129,7 +125,7 @@ The shared loading layer lives in `public/css/extra.css` and `public/js/ui.js`. 
 | Accounting export | Approved and paid invoices of a period as debit and credit journal lines. Exported invoices are marked so they are not sent twice. | `/accounting` |
 | Email outbox | Each notification is also written to the outbox and sent through the configured mailer. A mail failure is recorded and never stops the action. Failed emails can be sent again. Switch email off under Settings. | `/outbox`, `App\Support\Notifier` |
 | Reminders | Hourly: requests closing within a day without your quotation, orders not acknowledged, late deliveries, invoices due, requisitions waiting for approval, documents about to expire. Each reminder is sent once. | `ReminderService` |
-| Languages | English, Azerbaijani and Russian for the menu, the top bar and common buttons, chosen per user. Page texts are English; add more strings to `lang/az.json` and `lang/ru.json`. | top bar, Settings |
+| Languages | English, Azerbaijani and Russian for the whole interface, chosen per user (visitors: `?lang=az`). See "Languages" below. | top bar, Settings, landing page |
 | Guided tour | The help button walks through the menu the signed-in role really has, one sentence per entry. | `public/js/ui.js`, `App\Support\Nav::TIPS` |
 | PDF documents | Purchase order, request for quotation, invoice record and marketplace order, with the same access rules as their pages. | `PdfController` |
 
@@ -154,6 +150,17 @@ Set `MAIL_MAILER` and the SMTP details in `.env` to deliver real email; with the
 | Status guide, search, pages | A status legend on the main lists, global search over every kind of record, a privacy page and a public landing page at `/welcome`. | |
 
 Not carried over from the prototype on purpose: the role switcher, the "States" preview and the simple-view toggle, which only make sense in a demo.
+
+## Languages
+
+The views are written in English. For Azerbaijani and Russian the finished page is translated on its way out:
+
+- `app/Support/Translator.php` replaces every text between tags and every hint attribute (`placeholder`, `title`, `aria-label`, `data-tip`) that it finds in the dictionary. Livewire updates pass through the same step (`app/Http/Middleware/TranslatePage.php`).
+- `lang/ui/az.php` and `lang/ui/ru.php` hold about 1,440 texts each, keyed by the English text. `lang/ui/patterns.php` holds sentences with a changing part, such as "Sort by ..." or "3 of 5 items".
+- Text that is not in the dictionary is never changed. Names, references, titles, notes, anything typed into a field and the contents of text areas stay exactly as entered.
+- To add or correct a translation, edit the line in both dictionary files. No code change is needed. `tests/Feature/LanguageTest.php` fails if a key exists in one language only.
+
+Still English in every language: notification and email texts, messages built in PHP with a name or number inside them (for example "Order moved to ...", some toasts and validation messages), the activity log entries, PDF documents and exports. The translations were written without a native reviewer and should be read by one before customers see them.
 
 ## Still to do before production
 

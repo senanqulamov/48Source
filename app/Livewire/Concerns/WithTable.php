@@ -58,6 +58,14 @@ trait WithTable
         $this->selected = [];
     }
 
+    public function toggleFacet(string $key, string $value): void
+    {
+        $now = array_map('strval', array_values(array_filter((array) ($this->f[$key] ?? []), 'is_scalar')));
+        $this->f[$key] = in_array($value, $now, true) ? array_values(array_diff($now, [$value])) : [...$now, $value];
+        $this->resetPage();
+        $this->selected = [];
+    }
+
     public function clearFacet(string $key): void
     {
         unset($this->f[$key]);
@@ -96,7 +104,7 @@ trait WithTable
     /** Chosen values of one facet, limited to the values that facet allows. */
     protected function facet(string $key, array $allowed): array
     {
-        return array_values(array_intersect(array_map('strval', (array) ($this->f[$key] ?? [])), array_map('strval', $allowed)));
+        return array_values(array_intersect(array_map('strval', array_filter((array) ($this->f[$key] ?? []), 'is_scalar')), array_map('strval', $allowed)));
     }
 
     protected function sortCol(string $default): string
