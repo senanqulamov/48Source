@@ -3,6 +3,8 @@
 // Sentences with a changing part. {1} is copied as it is, {t1} is looked up in the dictionary first.
 return [
     '~^Sort by (.+)$~u' => ['az' => '{t1} üzrə sırala', 'ru' => 'Сортировать: {t1}'],
+    '~^Show all (\d+)$~u' => ['az' => 'Hamısını göstər ({1})', 'ru' => 'Показать все ({1})'],
+    '~^Remove filter (.+)$~u' => ['az' => 'Filtri sil: {1}', 'ru' => 'Убрать фильтр: {1}'],
     '~^Back to (.+)$~u' => ['az' => 'Geri: {t1}', 'ru' => 'Назад: {t1}'],
     '~^(View|Create|Edit|Approve) (.+)$~u' => ['az' => '{t2}: {t1}', 'ru' => '{t2}: {t1}'],
     '~^You are signed in as (.+)$~u' => ['az' => '{t1} kimi daxil olmusunuz', 'ru' => 'Вы вошли как {t1}'],

@@ -1763,4 +1763,10 @@ return [
     'Sold here' => 'Burada satılır',
     'Open market' => 'Bazarı aç',
     'No city' => 'Şəhər yoxdur',
+    'Find a category' => 'Kateqoriya axtar',
+    'Find a seller' => 'Satıcı axtar',
+    'Find a market' => 'Bazar axtar',
+    'Show fewer' => 'Daha az göstər',
+    'Filters in use' => 'Tətbiq olunan filtrlər',
+    'Remove' => 'Sil',
 ];

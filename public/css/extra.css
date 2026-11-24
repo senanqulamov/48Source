@@ -56,3 +56,24 @@ a.strip-i{color:inherit;text-decoration:none}
 .pop.pop-top{z-index:400}
 .oq{width:84px;height:34px}
 .p-pic{position:relative}
+
+/* long filter lists: short by default, searchable, with their own scroll area */
+.s-filt{overflow-x:hidden}
+button.s-fl{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:6px;border-radius:6px}
+button.s-fl:hover{color:var(--text)}button.s-fl:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+button.s-fl svg{transition:transform .18s}button.s-fl[aria-expanded="false"] svg{transform:rotate(-90deg)}button.s-fl[aria-expanded="false"]{margin-bottom:0}
+.f-find{display:flex;align-items:center;gap:7px;height:32px;padding:0 9px;margin-bottom:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--text-3);transition:border-color .15s,background .15s}
+.f-find:focus-within{border-color:var(--primary);background:var(--surface)}
+.f-find input{all:unset;flex:1;min-width:0;font-size:13px;color:var(--text)}.f-find input::-webkit-search-cancel-button{cursor:pointer}
+.f-list{display:flex;flex-direction:column}.f-list.all{max-height:232px;overflow-y:auto;margin-right:-6px;padding-right:6px;overscroll-behavior:contain;scrollbar-width:thin}
+.f-list .s-fi span:first-child,.f-list .s-ck .grow{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f-list .s-ck{margin:0;padding:5px 8px}.f-list .s-ck .n,.f-list .s-fi .n{flex:none;font-size:12px;color:var(--text-3)}.f-list .s-fi.on .n{color:inherit}
+.f-more{all:unset;cursor:pointer;display:inline-block;margin-top:6px;padding:2px 8px;font-size:12.5px;font-weight:600;color:var(--primary);border-radius:6px}
+.f-more:hover{text-decoration:underline}.f-more:focus-visible{outline:2px solid var(--primary)}
+.f-none{padding:8px;font-size:12.5px;color:var(--text-3)}
+.f-used{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.f-tag{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 4px 0 10px;border-radius:999px;background:var(--sunken);font-size:12.5px;max-width:100%}
+.f-tag b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.f-tag .icon-btn{width:22px;height:22px}
+.p-chips.one{flex-wrap:nowrap;overflow:hidden}.p-chips.one .p-chip{flex:none;white-space:nowrap}.p-chips.one .p-chip.more{margin-left:auto;position:sticky;right:0;box-shadow:-14px 0 12px -6px var(--bg,var(--surface-2))}
+.c-pop .f-find{margin:4px 4px 6px}.c-pop .pop-i.on{font-weight:600;background:var(--sunken)}
+@media (max-width:1000px){.p-chips.one{overflow-x:auto;scrollbar-width:none}.p-chips.one .p-chip.more{position:static;box-shadow:none}}

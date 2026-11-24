@@ -1763,4 +1763,10 @@ return [
     'Sold here' => 'Продаётся здесь',
     'Open market' => 'Открыть рынок',
     'No city' => 'Город не указан',
+    'Find a category' => 'Найти категорию',
+    'Find a seller' => 'Найти продавца',
+    'Find a market' => 'Найти рынок',
+    'Show fewer' => 'Показать меньше',
+    'Filters in use' => 'Применённые фильтры',
+    'Remove' => 'Убрать',
 ];

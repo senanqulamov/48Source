@@ -257,6 +257,13 @@
       },
       place(btn) { this.pos = placePop(btn, this.$refs.p, o); },
     }));
+    /* A long list of filter options: a few are shown, typing finds the rest, "Show all" opens the list inside its own scroll area. */
+    window.Alpine.data('flist', () => ({
+      t: '', more: false, shut: false,
+      term() { return this.t.trim().toLocaleLowerCase(); },
+      hit(el, keep) { const q = this.term(); return q ? (el.dataset.n || '').toLocaleLowerCase().includes(q) : (this.more || keep); },
+      get none() { const q = this.term(); return !!q && ![...this.$root.querySelectorAll('[data-n]')].some(e => (e.dataset.n || '').toLocaleLowerCase().includes(q)); },
+    }));
     window.Alpine.data('ov', () => ({ bye() { const s = this.$root; if (s.classList.contains('closing')) return; s.classList.add('closing'); setTimeout(() => this.$wire.close(), 160); } }));
   });
   /* ---------- guided tour: walks through the pages the signed-in role really has ---------- */

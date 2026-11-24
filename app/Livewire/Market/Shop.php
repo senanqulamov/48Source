@@ -115,6 +115,21 @@ class Shop extends Component
         $this->resetPage();
     }
 
+    /** Takes one filter off, from the row of filters in use above the results. */
+    public function drop(string $kind, string $id = ''): void
+    {
+        match ($kind) {
+            'q' => $this->q = '',
+            'cat' => $this->cat = '',
+            'lead' => $this->lead = '',
+            'avail' => $this->avail = '',
+            'store' => $this->stores = array_values(array_filter($this->stores, fn ($v) => (string) $v !== $id)),
+            'market' => $this->markets = array_values(array_filter($this->markets, fn ($v) => (string) $v !== $id)),
+            default => null,
+        };
+        $this->resetPage();
+    }
+
     public function show(int $productId): void
     {
         $this->openId = $productId;
@@ -159,7 +174,9 @@ class Shop extends Component
 
         // Category list with the number of products in each, before the category filter is applied.
         $counts = (clone $base)->selectRaw('category_id, count(*) as n')->groupBy('category_id')->pluck('n', 'category_id');
-        $catNames = Category::whereIn('id', $counts->keys()->filter())->orderBy('name')->pluck('name', 'id');
+        // Biggest categories first, so the short list shows the ones people most likely want.
+        $catNames = Category::whereIn('id', $counts->keys()->filter())->orderBy('name')->pluck('name', 'id')
+            ->sortByDesc(fn ($name, $id) => (int) ($counts[$id] ?? 0));
 
         $filtered = (clone $base)->when($this->cat !== '', fn ($q) => $q->where('category_id', (int) $this->cat));
         $withFigures = fn ($q) => $q->with(['category', 'offers' => fn ($o) => $live($o)->with('store.market')->orderBy('price_cents')])
@@ -203,12 +220,44 @@ class Shop extends Component
             ];
         }
 
+        // Sellers with the most offers first. The panel shows a few and finds the rest by typing.
+        $storeList = collect();
+        $storeCounts = collect();
+        if ($this->page === 'shop') {
+            $storeCounts = Offer::where('status', 'active')->selectRaw('store_id, count(*) as n')->groupBy('store_id')->pluck('n', 'store_id');
+            $storeList = Store::where('status', 'active')->whereIn('id', $storeCounts->keys())->orderBy('name')->pluck('name', 'id')
+                ->sortByDesc(fn ($name, $id) => (int) ($storeCounts[$id] ?? 0))->take(300);
+        }
+        $marketList = Market::where('status', 'active')->orderBy('name')->pluck('name', 'id');
+
+        // The filters in use, shown above the results so nobody has to look for them in the panel.
+        $used = [];
+        if (trim($this->q) !== '') {
+            $used[] = ['q', '', 'Search', trim($this->q)];
+        }
+        if ($this->cat !== '') {
+            $used[] = ['cat', '', 'Category', $catNames[(int) $this->cat] ?? Category::whereKey((int) $this->cat)->value('name') ?? 'General'];
+        }
+        if ($this->stores) {
+            foreach (Store::whereIn('id', array_map('intval', $this->stores))->orderBy('name')->pluck('name', 'id') as $id => $name) {
+                $used[] = ['store', (string) $id, 'Seller', $name];
+            }
+        }
+        if ($this->page === 'shop') {
+            foreach ($marketList->only(array_map('intval', $this->markets)) as $id => $name) {
+                $used[] = ['market', (string) $id, 'Market', $name];
+            }
+            if ($this->lead !== '') {
+                $used[] = ['lead', '', 'Delivery within', $this->lead.' d'];
+            }
+        }
+
         return view('livewire.market.shop', [
             'rows' => $rows, 'offerRows' => $offerRows, 'strip' => $strip,
             'canBuy' => $u->canShop(), 'basket' => $u->canShop() ? CartItem::where('user_id', $u->id)->count() : 0,
             'counts' => $counts, 'catNames' => $catNames, 'total' => (int) $counts->sum(),
-            'storeList' => $this->page === 'shop' ? Store::where('status', 'active')->whereHas('offers', fn ($o) => $o->where('status', 'active'))->orderBy('name')->limit(40)->pluck('name', 'id') : collect(),
-            'marketList' => Market::where('status', 'active')->orderBy('name')->pluck('name', 'id'),
+            'storeList' => $storeList, 'storeCounts' => $storeCounts,
+            'marketList' => $marketList, 'used' => $used,
             'current' => $this->modal === 'offers' && $this->openId ? Product::with(['category', 'offers' => fn ($q) => $q->live()->with('store.market')->orderBy('price_cents')])->find($this->openId) : null,
             'inBasket' => $u->canShop() ? CartItem::where('user_id', $u->id)->pluck('quantity_milli', 'offer_id') : collect(),
         ])->title($this->page === 'products' ? 'Products' : 'Marketplace');

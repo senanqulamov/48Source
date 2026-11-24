@@ -21,22 +21,66 @@
             <div style="width:190px;flex:none"><select class="select" wire:model.live="markets.0" aria-label="Market"><option value="">All markets</option>@foreach ($marketList as $id => $n)<option value="{{ $id }}">{{ $n }}</option>@endforeach</select></div>
             <div class="seg" role="group" aria-label="View"><button type="button" class="{{ $view === 'showcase' ? 'on' : '' }}" aria-pressed="{{ $view === 'showcase' ? 'true' : 'false' }}" wire:click="setView('showcase')">Showcase</button><button type="button" class="{{ $view === 'table' ? 'on' : '' }}" aria-pressed="{{ $view === 'table' ? 'true' : 'false' }}" wire:click="setView('table')">Table</button></div>
         </div>
-        <div class="p-chips">
+        @php $top = $catNames->take(7); if ($cat !== '' && ! $top->has((int) $cat) && $catNames->has((int) $cat)) { $top = $top->take(6)->put((int) $cat, $catNames[(int) $cat]); } $rest = $catNames->count() - $top->count(); @endphp
+        <div class="p-chips one">
             <button type="button" class="p-chip {{ $cat === '' ? 'on' : '' }}" wire:click="setCat('')">All <span class="n">{{ $total }}</span></button>
-            @foreach ($catNames as $id => $name)<button type="button" class="p-chip {{ $cat === (string) $id ? 'on' : '' }}" wire:click="setCat('{{ $id }}')" wire:key="chip-{{ $id }}">{{ $name }} <span class="n">{{ $counts[$id] ?? 0 }}</span></button>@endforeach
+            @foreach ($top as $id => $name)<button type="button" class="p-chip {{ $cat === (string) $id ? 'on' : '' }}" wire:click="setCat('{{ $id }}')" wire:key="chip-{{ $id }}">{{ $name }} <span class="n">{{ $counts[$id] ?? 0 }}</span></button>@endforeach
+            @if ($rest > 0)
+                <span x-data="pop({ w: 340, left: true })" style="display:contents">
+                    <button type="button" class="p-chip more" x-on:click="toggle($el)" aria-haspopup="true"><span>All categories</span> <span class="n">{{ $catNames->count() }}</span><x-icon name="down" :size="14" /></button>
+                    <div class="pop c-pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos"><div x-data="flist" x-effect="if (open) $nextTick(() => $refs.find && $refs.find.focus())">
+                        <div class="f-find"><x-icon name="search" :size="15" /><input type="search" x-ref="find" x-model="t" placeholder="Find a category" aria-label="Find a category" autocomplete="off"></div>
+                        <button type="button" class="pop-i {{ $cat === '' ? 'on' : '' }}" x-show="!t" wire:click="setCat('')" x-on:click="close()"><span style="flex:1;min-width:0">All categories</span><span class="k">{{ $total }}</span></button>
+                        @foreach ($catNames->sortBy(fn ($n) => mb_strtolower($n)) as $id => $name)<button type="button" class="pop-i {{ $cat === (string) $id ? 'on' : '' }}" data-n="{{ $name }}" x-show="hit($el, true)" wire:click="setCat('{{ $id }}')" x-on:click="close()" wire:key="cp-{{ $id }}"><span style="flex:1;min-width:0">{{ $name }}</span><span class="k">{{ $counts[$id] ?? 0 }}</span></button>@endforeach
+                        <div class="f-none" x-show="none" x-cloak>Nothing found</div>
+                    </div></div>
+                </span>
+            @endif
         </div>
     @endif
 
     <div @class(['s-lay' => ! $products])>
         @unless ($products)
+            @php $short = 5; $nSt = count($stores); $nMk = count($markets); @endphp
             <aside class="card s-filt" aria-label="Filters">
-                <div class="s-fh"><b>Filters</b><span class="sp"></span><button type="button" class="link sm" wire:click="clear">Clear all</button></div>
-                <div class="s-fg"><div class="s-fl">Category</div>
-                    <button type="button" class="s-fi {{ $cat === '' ? 'on' : '' }}" aria-pressed="{{ $cat === '' ? 'true' : 'false' }}" wire:click="setCat('')"><span>All categories</span><span class="n">{{ $total }}</span></button>
-                    @foreach ($catNames as $id => $name)<button type="button" class="s-fi {{ $cat === (string) $id ? 'on' : '' }}" aria-pressed="{{ $cat === (string) $id ? 'true' : 'false' }}" wire:click="setCat('{{ $id }}')" wire:key="fc-{{ $id }}"><span>{{ $name }}</span><span class="n">{{ $counts[$id] ?? 0 }}</span></button>@endforeach
+                <div class="s-fh"><b>Filters</b>@if ($used)<span class="sb-count" style="margin-left:6px">{{ count($used) }}</span>@endif<span class="sp"></span>@if ($used)<button type="button" class="link sm" wire:click="clear">Clear all</button>@endif</div>
+
+                <div class="s-fg" x-data="flist">
+                    <button type="button" class="s-fl" x-on:click="shut = !shut" :aria-expanded="!shut"><span>Category</span><span class="sp"></span><x-icon name="down" :size="14" /></button>
+                    <div x-show="!shut">
+                        @if ($catNames->count() > $short)<div class="f-find"><x-icon name="search" :size="15" /><input type="search" x-model="t" placeholder="Find a category" aria-label="Find a category" autocomplete="off"></div>@endif
+                        <div class="f-list" :class="(more || t) && 'all'">
+                            <button type="button" class="s-fi {{ $cat === '' ? 'on' : '' }}" style="order:-2" x-show="!t" aria-pressed="{{ $cat === '' ? 'true' : 'false' }}" wire:click="setCat('')"><span>All categories</span><span class="n">{{ $total }}</span></button>
+                            @foreach ($catNames->keys() as $i => $id)
+                                @php $name = $catNames[$id]; $on = $cat === (string) $id; @endphp
+                                <button type="button" class="s-fi {{ $on ? 'on' : '' }}" @if ($on) style="order:-1" @endif data-n="{{ $name }}" x-show="hit($el, {{ $i < $short || $on ? 'true' : 'false' }})" @if ($i >= $short && ! $on) x-cloak @endif aria-pressed="{{ $on ? 'true' : 'false' }}" wire:click="setCat('{{ $id }}')" wire:key="fc-{{ $id }}-{{ $i < $short || $on ? 1 : 0 }}" title="{{ $name }}"><span>{{ $name }}</span><span class="n">{{ $counts[$id] ?? 0 }}</span></button>
+                            @endforeach
+                            <div class="f-none" x-show="none" x-cloak>Nothing found</div>
+                        </div>
+                        @if ($catNames->count() > $short)<button type="button" class="f-more" x-show="!t" x-on:click="more = !more"><span x-show="!more">Show all {{ $catNames->count() }}</span><span x-show="more" x-cloak>Show fewer</span></button>@endif
+                    </div>
                 </div>
-                @if ($storeList->isNotEmpty())<div class="s-fg"><div class="s-fl">Seller</div>@foreach ($storeList as $id => $name)<label class="s-ck" wire:key="fs-{{ $id }}"><input type="checkbox" class="chk" value="{{ $id }}" wire:model.live="stores"><span class="grow">{{ $name }}</span></label>@endforeach</div>@endif
-                @if ($marketList->isNotEmpty())<div class="s-fg"><div class="s-fl">Market</div>@foreach ($marketList as $id => $name)<label class="s-ck" wire:key="fm-{{ $id }}"><input type="checkbox" class="chk" value="{{ $id }}" wire:model.live="markets"><span class="grow">{{ $name }}</span></label>@endforeach</div>@endif
+
+                @foreach ([['Seller', 'stores', $storeList, $storeCounts, $stores, 'Find a seller', 'fs'], ['Market', 'markets', $marketList, collect(), $markets, 'Find a market', 'fm']] as [$gl, $gm, $gopts, $gcounts, $gsel, $gph, $gk])
+                    @if ($gopts->isNotEmpty())
+                        @php $sel = array_map('strval', $gsel); @endphp
+                        <div class="s-fg" x-data="flist">
+                            <button type="button" class="s-fl" x-on:click="shut = !shut" :aria-expanded="!shut"><span>{{ $gl }}</span>@if ($sel)<span class="sb-count">{{ count($sel) }}</span>@endif<span class="sp"></span><x-icon name="down" :size="14" /></button>
+                            <div x-show="!shut">
+                                @if ($gopts->count() > $short)<div class="f-find"><x-icon name="search" :size="15" /><input type="search" x-model="t" placeholder="{{ $gph }}" aria-label="{{ $gph }}" autocomplete="off"></div>@endif
+                                <div class="f-list" :class="(more || t) && 'all'">
+                                    @foreach ($gopts->keys() as $i => $id)
+                                        @php $name = $gopts[$id]; $on = in_array((string) $id, $sel, true); @endphp
+                                        <label class="s-ck" @if ($on) style="order:-1" @endif data-n="{{ $name }}" x-show="hit($el, {{ $i < $short || $on ? 'true' : 'false' }})" @if ($i >= $short && ! $on) x-cloak @endif wire:key="{{ $gk }}-{{ $id }}-{{ $i < $short || $on ? 1 : 0 }}" title="{{ $name }}"><input type="checkbox" class="chk" value="{{ $id }}" wire:model.live="{{ $gm }}"><span class="grow">{{ $name }}</span>@if (isset($gcounts[$id]))<span class="n">{{ $gcounts[$id] }}</span>@endif</label>
+                                    @endforeach
+                                    <div class="f-none" x-show="none" x-cloak>Nothing found</div>
+                                </div>
+                                @if ($gopts->count() > $short)<button type="button" class="f-more" x-show="!t" x-on:click="more = !more"><span x-show="!more">Show all {{ $gopts->count() }}</span><span x-show="more" x-cloak>Show fewer</span></button>@endif
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
+
                 <div class="s-fg"><div class="s-fl">Delivery within</div>
                     <div class="seg" role="group" aria-label="Delivery within">@foreach (['' => 'Any', '2' => '2 d', '5' => '5 d', '7' => '7 d'] as $k => $l)<button type="button" class="{{ $lead === (string) $k ? 'on' : '' }}" aria-pressed="{{ $lead === (string) $k ? 'true' : 'false' }}" wire:click="setLead('{{ $k }}')">{{ $l }}</button>@endforeach</div>
                 </div>
@@ -50,6 +94,12 @@
                     <div style="width:210px;flex:none"><select class="select" wire:model.live="sort" aria-label="Sort"><option value="rel">Best match</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="lead">Fastest delivery</option></select></div>
                     <div class="seg" role="group" aria-label="View"><button type="button" class="{{ $view === 'product' ? 'on' : '' }}" aria-pressed="{{ $view === 'product' ? 'true' : 'false' }}" wire:click="setView('product')">By product</button><button type="button" class="{{ $view === 'offers' ? 'on' : '' }}" aria-pressed="{{ $view === 'offers' ? 'true' : 'false' }}" wire:click="setView('offers')">All offers</button></div>
                 </div>
+                @if ($used)
+                    <div class="f-used" aria-label="Filters in use">
+                        @foreach ($used as [$uk, $uid, $ul, $uv])<span class="f-tag" wire:key="u-{{ $uk }}-{{ $uid }}"><span class="muted">{{ $ul }}:</span> <b>{{ $uv }}</b><button type="button" class="icon-btn" wire:click="drop('{{ $uk }}', '{{ $uid }}')" aria-label="Remove filter {{ $uv }}" title="Remove"><x-icon name="x" :size="13" /></button></span>@endforeach
+                        @if (count($used) > 1)<button type="button" class="link sm" wire:click="clear">Clear all</button>@endif
+                    </div>
+                @endif
             @endunless
 
             @if ($offerRows !== null)

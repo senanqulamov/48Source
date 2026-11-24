@@ -74,4 +74,43 @@ class MarketplaceDesignTest extends TestCase
             ->assertSee('North Market')->assertSee('South Market')->assertSee('Open market')->assertSee('Products listed')->assertSee('class="m-card"', false)->assertDontSee('Paused Yard');
         $this->actingAs($this->admin())->get(route('market.places'))->assertOk()->assertSee('Paused Yard')->assertSee('Manage markets and stores');
     }
+
+    public function test_long_filter_lists_stay_short_and_filters_in_use_can_be_removed(): void
+    {
+        $d = $this->stock();
+        $buyer = $this->buyer();
+        foreach (range(1, 12) as $i) {
+            $c = Category::create(['name' => "Extra category $i", 'slug' => "extra-$i"]);
+            $s = Store::create(['market_id' => $d['north']->id, 'name' => "Extra store $i", 'status' => 'active']);
+            $p = Product::create(['sku' => "EX-$i", 'name' => "Extra product $i", 'category_id' => $c->id, 'unit' => 'pcs', 'status' => 'active']);
+            Offer::create(['product_id' => $p->id, 'store_id' => $s->id, 'price_cents' => 1000, 'stock_milli' => 50000, 'lead_days' => 3, 'moq_milli' => 1000]);
+        }
+
+        // Shop panel: every option is in the page, but only the first few are open; the rest wait behind search and "Show all".
+        $shop = Livewire::actingAs($buyer)->test(Shop::class)
+            ->assertSee('Find a category')->assertSee('Find a seller')->assertSee('Show all 14')->assertSee('Show fewer')
+            ->assertDontSee('Filters in use');
+        $this->assertSame(9, preg_match_all('/class="s-fi[^>]*x-cloak/', $shop->html()), 'Categories after the first five start hidden.');
+
+        // The seller with the most offers comes first.
+        $this->assertLessThan(strpos($shop->html(), 'Extra store 1'), strpos($shop->html(), 'Beta Store'));
+
+        $shop->set('stores', [(string) $d['a']->id])->call('setCat', (string) $d['steel']->id)->set('lead', '7')
+            ->assertSee('Filters in use')->assertSee('Remove filter Alpha Store')->assertSee('Remove filter Steel')->assertSee('Remove filter 7 d')
+            ->call('drop', 'store', (string) $d['a']->id)->assertSet('stores', [])->assertDontSee('Remove filter Alpha Store')
+            ->call('drop', 'cat')->assertSet('cat', '')
+            ->call('drop', 'lead')->assertSet('lead', '')->assertDontSee('Filters in use');
+
+        // Products page: one row of chips with the biggest categories, the rest in the "All categories" list.
+        $page = Livewire::actingAs($buyer)->test(Shop::class, ['page' => 'products']);
+        $html = $page->html();
+        $this->assertSame(8, substr_count($html, 'wire:key="chip-') + 1, 'All plus seven category chips.');
+        $this->assertSame(14, substr_count($html, 'wire:key="cp-'), 'Every category is in the list behind the button.');
+        $page->assertSee('Find a category');
+
+        // A chosen category outside the first seven still gets its chip.
+        $last = Category::where('name', 'Extra category 12')->value('id');
+        $page->call('setCat', (string) $last);
+        $this->assertStringContainsString('wire:key="chip-'.$last.'"', $page->html());
+    }
 }
