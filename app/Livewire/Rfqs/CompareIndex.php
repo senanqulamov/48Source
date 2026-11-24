@@ -30,6 +30,7 @@ class CompareIndex extends Component
             ->withCount('liveQuotes')
             ->with(['liveQuotes:id,rfq_id,total_cents,currency,status']);
         $all = (clone $query)->count();
+        $counts = (clone $query)->select('status')->selectRaw('count(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
 
         if ($this->q !== '') {
             $like = '%'.trim($this->q).'%';
@@ -44,6 +45,6 @@ class CompareIndex extends Component
             default => $query->orderBy('deadline_at', $this->sortDir()),
         };
 
-        return view('livewire.rfqs.compare-index', ['rows' => $query->paginate($this->perPage()), 'all' => $all]);
+        return view('livewire.rfqs.compare-index', ['rows' => $query->paginate($this->perPage()), 'all' => $all, 'counts' => $counts]);
     }
 }

@@ -37,36 +37,43 @@
             <div class="verdict"><h4>Fastest delivery</h4><b>{{ $fast['quote']->supplier->name }}</b><div class="muted sm">{{ $fast['quote']->delivery_days }} days from order.</div></div>
         </div>
         <section class="card">
-            <div class="toolbar"><span class="lbl">{{ $rows->count() }} supplier{{ $rows->count() === 1 ? '' : 's' }} · {{ $n }} item{{ $n === 1 ? '' : 's' }}</span><span class="sp"></span>
+            <div class="toolbar"><span class="lbl">Suppliers</span>
+                @foreach ($allSupplierIds as $supplierId)
+                    @php $shown = ! in_array($supplierId, $hidden, true); $supplier = $rfq->liveQuotes->firstWhere('supplier_id', $supplierId)?->supplier; @endphp
+                    <button type="button" class="chip {{ $shown ? 'on' : 'off' }}" aria-pressed="{{ $shown ? 'true' : 'false' }}" wire:click="toggleSupplier({{ $supplierId }})">@if ($shown)<x-icon name="check" :size="13" />@endif{{ $supplier?->name }}</button>
+                @endforeach
+                <span class="sp"></span>
                 <span class="row"><span class="lbl hide-sm">Weighting</span><div class="seg" role="group" aria-label="Weighting">
                     @foreach (\App\Services\QuoteEvaluator::PRESETS as $k => $p)<button type="button" class="{{ $preset === $k ? 'on' : '' }}" aria-pressed="{{ $preset === $k ? 'true' : 'false' }}" wire:click="$set('preset', '{{ $k }}')" title="Price {{ $p['price'] }}%, quality {{ $p['quality'] }}%, delivery {{ $p['delivery'] }}%, terms {{ $p['terms'] }}%">{{ $p['label'] }}</button>@endforeach
                 </div></span></div>
+            <div class="toolbar cmp-focus"><label class="lbl" for="compare-focus">Show on this screen</label><select id="compare-focus" class="select" wire:model.live="focus"><option value="all">All suppliers (scroll sideways)</option>@foreach ($rows as $r)<option value="{{ $r['quote']->supplier_id }}">{{ $r['quote']->supplier->name }}</option>@endforeach</select></div>
+            @if ($focus !== 'all')<style>@media(max-width:640px){.cmp [data-supplier]:not([data-supplier="{{ $focus }}"]){display:none}}</style>@endif
             <div class="cmp-wrap" aria-label="Quotation comparison table"><table class="cmp"><thead><tr>
                 <th class="rh"><div class="b">{{ $n }} item{{ $n === 1 ? '' : 's' }} · {{ $rows->count() }} supplier{{ $rows->count() === 1 ? '' : 's' }}</div><div class="t2">Weighting: {{ mb_strtolower(\App\Services\QuoteEvaluator::PRESETS[$preset]['label']) }}</div></th>
                 @foreach ($rows as $r)
                     @php $q = $r['quote']; @endphp
-                    <th scope="col" class="{{ $r['rank'] === 1 ? 'best' : '' }} {{ $pick === $q->id ? 'picked' : '' }}">
+                    <th scope="col" data-supplier="{{ $q->supplier_id }}" class="{{ $r['rank'] === 1 ? 'best' : '' }} {{ $pick === $q->id ? 'picked' : '' }}">
                         <div class="row wrap" style="gap:6px;margin-bottom:4px">@if ($r['rank'] === 1)<span class="badge b-info plain">Best value</span>@endif @if ($lowest && $lowest->id === $q->id)<span class="badge b-ok plain">Lowest price</span>@endif @if (in_array($q->status, ['won', 'lost']))<x-badge :status="$q->status" :label="$q->statusLabel()" class="plain" />@endif @unless ($r['complete'])<span class="badge b-warn plain">Partial · {{ $r['coverage'] }}/{{ $n }}</span>@endunless</div>
                         <span class="sname">{{ $q->supplier->name }}</span><div class="t2 muted sm">{{ $q->supplier->city ?? 'No city' }} · quoted {{ $q->submitted_at?->format('j M') }}</div>
                         <div class="score"><b>{{ round($r['score']) }}</b><div class="prog {{ $r['score'] < 90 ? 'warn' : '' }}"><i style="width:{{ min(100, round($r['score'], 1)) }}%"></i></div></div>
                         @if ($canAward)
-                            @if ($r['complete'] && ! $q->isExpired())<button type="button" class="btn btn-sm btn-p" style="margin-top:10px" wire:click="choose({{ $q->id }})"><x-icon name="award" :size="14" />Award</button>
+                            @if ($r['complete'] && ! $q->isExpired())<button type="button" class="btn btn-sm {{ $pick === $q->id ? 'btn-p' : '' }}" style="margin-top:10px" wire:click="choose({{ $q->id }})">{{ $pick === $q->id ? 'Selected' : 'Select for award' }}</button>
                             @else<div class="muted sm" style="margin-top:10px">{{ $q->isExpired() ? 'Expired, cannot be awarded' : 'Incomplete, cannot be awarded alone' }}</div>@endif
                         @endif
                     </th>
                 @endforeach
             </tr></thead><tbody>
-                <tr class="sec"><td class="rh">Line items</td>@foreach ($rows as $r)<td></td>@endforeach</tr>
+                <tr class="sec"><td class="rh">Line items</td>@foreach ($rows as $r)<td data-supplier="{{ $r['quote']->supplier_id }}"></td>@endforeach</tr>
                 @foreach ($rfq->items as $item)
                     <tr><th scope="row" class="rh">{{ $item->name }}<div class="t2" style="font-weight:400">{{ $item->qty() }} {{ $item->unit }}</div></th>
                         @foreach ($rows as $r)
                             @php $qi = $prices[$r['quote']->id][$item->id] ?? null; $lo = $low[$item->id] ?? null; $has = $qi && $qi->unit_price_cents !== null; $isLow = $has && $qi->unit_price_cents === $lo; @endphp
-                            <td class="{{ $isLow ? 'best' : '' }}">@if ($has)<span class="price">{{ Money::format($qi->unit_price_cents, $r['quote']->currency) }}</span>@if ($isLow)<span class="lowtag">Lowest</span>@elseif ($lo)<span class="delta">+{{ number_format(intdiv(($qi->unit_price_cents - $lo) * 1000, $lo) / 10, 1) }}%</span>@endif<div class="tot">{{ Money::format($qi->total_cents, $r['quote']->currency) }}</div>@else<span class="nq">Not quoted</span>@endif</td>
+                            <td data-supplier="{{ $r['quote']->supplier_id }}" class="{{ $isLow ? 'best' : '' }}">@if ($has)<span class="price">{{ Money::format($qi->unit_price_cents, $r['quote']->currency) }}</span>@if ($isLow)<span class="lowtag">Lowest</span>@elseif ($lo)<span class="delta">+{{ number_format(intdiv(($qi->unit_price_cents - $lo) * 1000, $lo) / 10, 1) }}%</span>@endif<div class="tot">{{ Money::format($qi->total_cents, $r['quote']->currency) }}</div>@else<span class="nq">Not quoted</span>@endif</td>
                         @endforeach
                     </tr>
                 @endforeach
-                <tr class="sec"><td class="rh">Totals</td>@foreach ($rows as $r)<td></td>@endforeach</tr>
-                <tr><th scope="row" class="rh">Total excl. tax</th>@foreach ($rows as $r)<td class="{{ $r['rank'] === 1 ? 'best' : '' }}"><span class="big">{{ $cur($r) }}</span>@unless ($r['complete'])<div class="tot">{{ $r['coverage'] }} of {{ $n }} items</div>@endunless</td>@endforeach</tr>
+                <tr class="sec"><td class="rh">Totals</td>@foreach ($rows as $r)<td data-supplier="{{ $r['quote']->supplier_id }}"></td>@endforeach</tr>
+                <tr><th scope="row" class="rh">Total excl. tax</th>@foreach ($rows as $r)<td data-supplier="{{ $r['quote']->supplier_id }}" class="{{ $r['rank'] === 1 ? 'best' : '' }}"><span class="big">{{ $cur($r) }}</span>@unless ($r['complete'])<div class="tot">{{ $r['coverage'] }} of {{ $n }} items</div>@endunless</td>@endforeach</tr>
                 <tr><th scope="row" class="rh">Against budget</th>@foreach ($rows as $r)<td class="mono">@if ($rfq->budget_cents && $r['complete'] && $r['quote']->currency === $rfq->currency){{ $r['quote']->total_cents <= $rfq->budget_cents ? Money::format($rfq->budget_cents - $r['quote']->total_cents, $rfq->currency, false) . ' under' : Money::format($r['quote']->total_cents - $rfq->budget_cents, $rfq->currency, false) . ' over' }}@else<span class="faint">-</span>@endif</td>@endforeach</tr>
                 <tr class="sec"><td class="rh">Terms</td>@foreach ($rows as $r)<td></td>@endforeach</tr>
                 <tr><th scope="row" class="rh">Delivery</th>@foreach ($rows as $r)<td class="mono">{{ $r['quote']->delivery_days }} days</td>@endforeach</tr>

@@ -1,6 +1,6 @@
 <div>
     <x-ph title="Quotation comparison" desc="Pick a request to compare its quotations side by side. Closed requests are ready for an award decision." :crumbs="[['Quotation comparison']]" />
-    <x-dt :lw="$this" :rows="$rows" :all="$all" id="compare" search="Search request or RFQ number" label="Search comparison requests" noun="requests" :quick="['' => ['All', $all], 'closed' => ['Ready to compare', $rows->where('status', 'closed')->count()], 'open' => ['Open', $rows->where('status', 'open')->count()], 'awarded' => ['Awarded', $rows->where('status', 'awarded')->count()]]">
+    <x-dt :lw="$this" :rows="$rows" :all="$all" id="compare" search="Search request or RFQ number" label="Search comparison requests" noun="requests" :quick="['' => ['All', $all], 'closed' => ['Ready to compare', (int) ($counts['closed'] ?? 0)], 'open' => ['Open', (int) ($counts['open'] ?? 0)], 'awarded' => ['Awarded', (int) ($counts['awarded'] ?? 0)]]">
         <x-slot:head><x-th col="number">RFQ</x-th><x-th col="status">Status</x-th><x-th col="quotes" :num="true">Quotes</x-th><th class="num hide-sm">Lowest total</th><th class="num hide-md">Price spread</th><x-th col="deadline" cls="hide-sm">Award due</x-th><th></th></x-slot:head>
         @forelse ($rows as $r)
             @php
@@ -15,7 +15,7 @@
                 <td><x-badge :status="$r->status" /></td><td class="num mono">{{ $r->live_quotes_count }}</td>
                 <td class="num mono hide-sm">{{ $lowest ? \App\Support\Money::format($lowest, $currency) : '-' }}</td>
                 <td class="num mono hide-md">{{ $spread ? '+'.$spread.'%' : '-' }}</td>
-                <td class="hide-sm">@if ($r->status === 'closed' && $awardDue){{ $awardDue->format('j M Y') }} <x-badge :status="$awardDue->isPast() ? 'bad' : 'warn'" :label="$awardDue->isPast() ? 'Overdue' : 'Due'" />@else<span class="faint">-</span>@endif</td>
+                <td class="hide-sm">@if ($r->status === 'closed' && $awardDue){{ $awardDue->format('j M Y') }} <x-badge :status="$awardDue->isPast() ? 'bad' : 'warn'" :label="$awardDue->isPast() ? 'Overdue' : 'Due'" /><div class="t2">Closed {{ $r->closed_at->diffForHumans(['parts' => 1]) }}</div>@else<span class="faint">-</span>@endif</td>
                 <td class="num"><a class="btn btn-sm btn-p" href="{{ route('rfqs.compare', $r) }}" wire:navigate>Compare</a></td>
             </tr>
         @empty

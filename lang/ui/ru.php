@@ -1455,4 +1455,10 @@ return [
     'Award due' => 'Срок выбора поставщика',
     'Nothing to compare yet' => 'Пока нечего сравнивать',
     'Closed requests with quotations will appear here. They can then be compared side by side.' => 'Здесь появятся закрытые запросы с котировками. Их можно будет сравнить рядом.',
+    'All suppliers (scroll sideways)' => 'Все поставщики (прокрутите по горизонтали)',
+    'Select for award' => 'Выбрать для присуждения',
+    'Selected' => 'Выбрано',
+    'Show on this screen' => 'Показать на этом экране',
+    'Suppliers' => 'Поставщики',
+    'Closed :time' => 'Закрыт :time назад',
 ];

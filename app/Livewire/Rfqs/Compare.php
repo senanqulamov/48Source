@@ -22,6 +22,10 @@ class Compare extends Component
 
     public ?int $pick = null;
 
+    public array $hidden = [];
+
+    public string $focus = 'all';
+
     public string $justification = '';
 
     public array $bafo = ['deadline' => '', 'message' => ''];
@@ -75,6 +79,20 @@ class Compare extends Component
         $this->open('award');
     }
 
+    public function toggleSupplier(int $supplierId): void
+    {
+        $this->need('quotes', 'A');
+        $ids = $this->rfq()->liveQuotes()->pluck('supplier_id')->unique()->values()->all();
+        if (! in_array($supplierId, $ids, true)) return;
+        if (in_array($supplierId, $this->hidden, true)) {
+            $this->hidden = array_values(array_diff($this->hidden, [$supplierId]));
+            return;
+        }
+        if (count($ids) - count($this->hidden) <= 1) return;
+        $this->hidden = array_values(array_unique([...$this->hidden, $supplierId]));
+        if ((string) $supplierId === $this->focus) $this->focus = 'all';
+    }
+
     public function award(AwardService $awards)
     {
         $this->need('quotes', 'A');
@@ -109,7 +127,9 @@ class Compare extends Component
     {
         $rfq = $this->rfq();
         abort_if($rfq->pricesHidden(), 403, 'Quotations on this request are sealed until quoting closes.');
-        $rows = $evaluator->evaluate($rfq, $this->preset);
+        $rows = $evaluator->evaluate($rfq, $this->preset)
+            ->reject(fn (array $row) => in_array($row['quote']->supplier_id, $this->hidden, true))
+            ->values();
         $prices = [];
         $low = [];
         foreach ($rows as $r) {
@@ -137,6 +157,7 @@ class Compare extends Component
             'rfq' => $rfq, 'rows' => $rows, 'prices' => $prices, 'low' => $low, 'blockers' => $awards->rfqBlockers($rfq),
             'lowest' => $lowest, 'plan' => $plan, 'planError' => $planError, 'picked' => $picked,
             'needsWhy' => $picked ? $awards->needsJustification($rfq, $picked['quote']) : false,
+            'allSupplierIds' => $rfq->liveQuotes()->pluck('supplier_id')->unique()->values(),
         ])->title('Compare '.$rfq->number);
     }
 }

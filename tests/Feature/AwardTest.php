@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Exceptions\BusinessRule;
 use App\Livewire\Rfqs\Compare;
+use App\Livewire\Rfqs\CompareIndex;
 use App\Models\FeatureFlag;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
@@ -162,5 +163,21 @@ class AwardTest extends TestCase
         $this->actingAs($buyer)->get(route('rfqs.show', $rfq).'?tab=quotes')->assertOk()->assertSee('Sealed until the deadline')->assertDontSee('77.77');
         $rfq = $this->closeRfq($rfq);
         $this->actingAs($buyer)->get(route('rfqs.compare', $rfq))->assertOk()->assertSee('77.77');
+    }
+
+    public function test_comparison_picker_uses_the_actual_close_time_and_supplier_columns_can_be_toggled(): void
+    {
+        [$buyer, $rfq, $qa, $qb] = $this->scene();
+        $rfq = $this->closeRfq($rfq);
+        $rfq->forceFill(['closed_at' => now()->subDays(3), 'created_at' => now()->subYear()])->save();
+
+        Livewire::actingAs($buyer)->test(CompareIndex::class)
+            ->assertSee('Closed 3 days ago');
+
+        Livewire::actingAs($buyer)->test(Compare::class, ['number' => $rfq->number])
+            ->assertSee('Select for award')
+            ->call('toggleSupplier', $qa->supplier_id)
+            ->assertSet('hidden', [$qa->supplier_id])
+            ->assertSee($qb->supplier->name);
     }
 }

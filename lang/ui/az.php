@@ -1455,4 +1455,10 @@ return [
     'Award due' => 'Qalib seçimi son tarixi',
     'Nothing to compare yet' => 'Hələ müqayisə ediləcək heç nə yoxdur',
     'Closed requests with quotations will appear here. They can then be compared side by side.' => 'Təklifləri olan bağlanmış sorğular burada görünəcək. Sonra onları yan-yana müqayisə edə bilərsiniz.',
+    'All suppliers (scroll sideways)' => 'Bütün təchizatçılar (üfüqi sürüşdürün)',
+    'Select for award' => 'Qalib üçün seçin',
+    'Selected' => 'Seçildi',
+    'Show on this screen' => 'Bu ekranda göstərin',
+    'Suppliers' => 'Təchizatçılar',
+    'Closed :time' => ':time əvvəl bağlanıb',
 ];
