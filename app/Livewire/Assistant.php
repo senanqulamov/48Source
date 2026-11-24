@@ -27,6 +27,8 @@ class Assistant extends Component
 
     public string $review = '';
 
+    public string $result = '';
+
     public string $category = '';
 
     public function mount(): void
@@ -43,7 +45,11 @@ class Assistant extends Component
             return;
         }
         $this->draft = $assistant->draftFromSentence($this->sentence);
+        $this->result = 'draft';
     }
+
+    public function summarise(): void { $this->result = 'summary'; }
+    public function unusual(): void { $this->result = 'unusual'; }
 
     /** Nothing exists until the user reviews and saves it in the RFQ wizard. */
     public function openWizard()
@@ -66,6 +72,7 @@ class Assistant extends Component
         return view('livewire.assistant', [
             'withQuotes' => $u->allowed('quotes') ? Rfq::visibleTo($u)->whereIn('status', ['closed', 'awarded'])->whereHas('liveQuotes')->latest('id')->limit(40)->get(['id', 'number', 'title', 'sealed', 'status', 'deadline_at']) : collect(),
             'rfq' => $rfq, 'findings' => $rfq && ! $rfq->pricesHidden() ? $assistant->reviewQuotations($rfq, $evaluator, $awards) : [],
+            'flags' => $rfq && ! $rfq->pricesHidden() ? $assistant->unusualPrices($rfq) : [],
             'categories' => Category::options(), 'suggested' => $this->category !== '' && $u->allowed('suppliers') ? $assistant->suggestSuppliers((int) $this->category) : null,
         ]);
     }

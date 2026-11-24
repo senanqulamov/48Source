@@ -130,6 +130,19 @@ class AssistantService
         return $out;
     }
 
+    /** Unit prices more than 20% from their item median, with no float arithmetic. */
+    public function unusualPrices(Rfq $rfq): array
+    {
+        $quotes = $rfq->liveQuotes()->with(['supplier', 'items'])->get(); $out = [];
+        foreach ($rfq->items as $item) {
+            $lines = $quotes->map(fn ($q) => [$q, $q->items->firstWhere('rfq_item_id', $item->id)])->filter(fn ($x) => $x[1]?->unit_price_cents !== null)->sortBy(fn ($x) => $x[1]->unit_price_cents)->values();
+            if ($lines->count() < 3) continue;
+            $median = $lines[intdiv($lines->count(), 2)][1]->unit_price_cents;
+            foreach ($lines as [$quote, $line]) { $delta = $line->unit_price_cents - $median; if (abs($delta) * 100 > $median * 20) $out[] = ['supplier' => $quote->supplier->name, 'item' => $item->name, 'price' => $line->unit_price_cents, 'median' => $median, 'difference' => intdiv($delta * 100, $median), 'check' => $delta > 0 ? 'Room to negotiate' : 'Possible mistake or missing scope']; }
+        }
+        return $out;
+    }
+
     /** Active suppliers for a category, best first, each with the reasons for its place. */
     public function suggestSuppliers(int $categoryId): array
     {

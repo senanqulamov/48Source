@@ -196,7 +196,7 @@ class PartFourTest extends TestCase
         $text = collect(app(AssistantService::class)->reviewQuotations($rfq, app(\App\Services\QuoteEvaluator::class), app(AwardService::class)))->pluck('text')->implode(' | ');
         $this->assertStringContainsString('Beta Metals priced 1 of 2 items', $text);
         $this->assertStringContainsString('$50.00 over the budget', $text);
-        Livewire::actingAs($buyer)->test(Assistant::class)->set('review', $rfq->number)->assertSee('Beta Metals priced 1 of 2 items');
+        Livewire::actingAs($buyer)->test(Assistant::class)->set('review', $rfq->number)->call('summarise')->assertSee('Beta Metals priced 1 of 2 items');
         // Another buyer cannot read it through the assistant.
         Livewire::actingAs($this->buyer())->test(Assistant::class)->set('review', $rfq->number)->assertDontSee('Beta Metals');
     }

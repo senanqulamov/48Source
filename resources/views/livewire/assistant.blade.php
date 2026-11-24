@@ -18,15 +18,17 @@
         </x-card>
         <x-card title="Review quotations" sub="A plain reading of the quotations on one request">
             <div style="max-width:560px"><x-field label="Request" for="as-r"><select id="as-r" class="select" wire:model.live="review"><option value="">Choose a closed request</option>@foreach ($withQuotes as $r)<option value="{{ $r->number }}">{{ $r->number }} - {{ $r->title }}</option>@endforeach</select></x-field></div>
-            @if ($rfq && $rfq->pricesHidden())<div style="margin-top:12px"><x-note kind="warn">Quotations on this request are sealed until quoting closes.</x-note></div>
-            @elseif ($findings)
+            @if ($rfq && $rfq->pricesHidden())<div style="margin-top:12px"><x-note kind="warn">Bids on this request are sealed until the deadline.</x-note></div>
+            @elseif ($rfq)<div class="row" style="margin-top:12px"><button type="button" class="btn btn-p" wire:click="summarise">Summarise quotations</button><button type="button" class="btn" wire:click="unusual">Find unusual prices</button></div>
+            @if ($result === 'summary' && $findings)
                 <div class="stack" style="gap:8px;margin-top:14px">@foreach ($findings as $f)<x-note :kind="$f['kind']">{{ $f['text'] }}</x-note>@endforeach</div>
                 <div class="row" style="margin-top:12px"><span class="sp"></span><a class="btn" href="{{ route('rfqs.scenarios', $rfq) }}" wire:navigate>Award scenarios</a><a class="btn btn-p" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="cols" />Open comparison</a></div>
-            @endif
+            @endif @endif
         </x-card>
         </div>
         <div>
-        @if (! $draft && ! $rfq)<x-card><x-empty icon="star" title="Results appear here" text="Pick one of the helpers on the left." /></x-card>@endif
+        @if (! $draft && ! $rfq)<x-card><x-empty icon="star" title="Results appear here" text="Pick one of the helpers on the left." /></x-card>
+        @elseif ($result === 'unusual')<x-card :title="'Unusual prices - ' . $rfq->number" :flush="true">@if ($flags)<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Supplier</th><th>Item</th><th class="num">Price</th><th class="num">Median</th><th class="num">Difference</th><th>What to check</th></tr></thead><tbody>@foreach ($flags as $flag)<tr><td>{{ $flag['supplier'] }}</td><td>{{ $flag['item'] }}</td><td class="num mono">{{ Money::format($flag['price'], $rfq->currency) }}</td><td class="num mono">{{ Money::format($flag['median'], $rfq->currency) }}</td><td class="num mono">{{ $flag['difference'] > 0 ? '+' : '' }}{{ $flag['difference'] }}%</td><td>{{ $flag['check'] }}</td></tr>@endforeach</tbody></table></div>@else<x-empty icon="check" title="No unusual prices" text="Every unit price is within 20% of the median, or fewer than three quotations price an item." />@endif</x-card>@endif
         </div>
         @perm('suppliers')
         <div hidden><x-card title="Suggest suppliers" sub="Active suppliers of a category, ranked by rating, response, orders won and risk">
