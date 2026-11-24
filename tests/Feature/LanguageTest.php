@@ -91,4 +91,12 @@ class LanguageTest extends TestCase
             }
         }
     }
+
+    public function test_the_audit_only_reports_untranslated_english_interface_text(): void
+    {
+        $html = '<button title="Close">BaÄŸla</button><p>Unknown interface text</p><p>AbÅŸeron Polad MMC</p>';
+
+        $this->assertSame(['Unknown interface text'], Translator::untranslated($html, 'az'));
+        $this->assertSame('3 təchizatçı', Translator::format(':count suppliers', ['count' => 3], 'az'));
+    }
 }

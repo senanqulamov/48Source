@@ -4,6 +4,7 @@ namespace App\Livewire\Concerns;
 
 use App\Exceptions\BusinessRule;
 use App\Models\User;
+use App\Support\Translator;
 use Illuminate\Support\Facades\Auth;
 
 /** Shared helpers for full-page components. */
@@ -24,7 +25,7 @@ trait Page
 
     protected function toast(string $text, string $kind = 'check'): void
     {
-        $this->dispatch('toast', text: $text, kind: $kind);
+        $this->dispatch('toast', text: Translator::text($text), kind: $kind);
     }
 
     /** Run a business action; a refused rule becomes a message instead of an error page. */

@@ -90,6 +90,38 @@ class Translator
         return self::lookup($locale, $text) ?? $text;
     }
 
+    /** Translate a source message before it becomes a toast, email, notification or PDF string. */
+    public static function format(string $text, array $replace = [], ?string $locale = null): string
+    {
+        foreach ($replace as $key => $value) {
+            $text = str_replace(':'.$key, (string) $value, $text);
+        }
+
+        return self::text($text, $locale);
+    }
+
+    /** @return array<int, string> Interface-looking text still unknown to the dictionary. */
+    public static function untranslated(string $html, string $locale): array
+    {
+        if (! self::has($locale)) {
+            return [];
+        }
+        $values = [];
+        $knownTranslations = array_fill_keys(self::dictionary($locale), true);
+        preg_match_all('~(?<=>)([^<>]+)(?=<)|(?:placeholder|title|aria-label|data-tip|data-tour|data-empty)="([^"]+)"~u', $html, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+            $raw = trim(html_entity_decode($match[1] !== '' ? $match[1] : $match[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            // User-entered values tend to contain a reference, number, e-mail address or URL.
+            $translatedParts = str_contains($raw, ':') && collect(explode(':', $raw))->filter()->every(fn ($part) => isset($knownTranslations[trim($part)]));
+            if ($raw === '' || $translatedParts || isset($knownTranslations[$raw]) || mb_strlen($raw) > 240 || ! preg_match('~^[\x20-\x7E]+$~', $raw) || ! preg_match('~[A-Za-z]{2}~', $raw) || preg_match('~[\d@/\\\\]|https?://|^\.|^[A-Z_]{1,}$~', $raw) || self::lookup($locale, $raw) !== null) {
+                continue;
+            }
+            $values[$raw] = true;
+        }
+
+        return array_keys($values);
+    }
+
     public static function html(string $html, ?string $locale = null): string
     {
         $locale ??= app()->getLocale();
