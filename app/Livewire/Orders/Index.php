@@ -22,7 +22,7 @@ class Index extends Component
 
     protected function exportData(): array
     {
-        $rows = PurchaseOrder::visibleTo($this->me())->with('supplier', 'rfq', 'buyer')->when($this->status !== '', fn ($q) => $q->where('status', $this->status))->orderByDesc('id')->get()
+        $rows = $this->picked(PurchaseOrder::visibleTo($this->me()), 'number')->with('supplier', 'rfq', 'buyer')->when($this->status !== '' && ! $this->onlySelected, fn ($q) => $q->where('status', $this->status))->orderByDesc('id')->get()
             ->map(fn (PurchaseOrder $p) => [$p->number, $p->supplier->name, $p->rfq->number, $p->buyer->name, \App\Support\Money::input($p->total_cents), $p->currency, $p->statusLabel(), $p->created_at->format('Y-m-d'), $p->expected_at?->format('Y-m-d')]);
 
         return ['purchase-orders', ['Order', 'Supplier', 'RFQ', 'Buyer', 'Amount', 'Currency', 'Status', 'Issued', 'Delivery due'], $rows];

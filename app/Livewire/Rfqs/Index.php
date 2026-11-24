@@ -26,6 +26,23 @@ class Index extends Component
         return ['number', 'title', 'type', 'status', 'deadline_at', 'created_at', 'live_quotes_count', 'items_count'];
     }
 
+    /** Bulk bar: remind the suppliers of every selected open request. Each request keeps its own 12-hour limit. */
+    public function remindSelected(\App\Services\RfqToolsService $tools): void
+    {
+        $this->need('rfqs', 'E');
+        $sent = 0;
+        $skipped = 0;
+        foreach (Rfq::visibleTo($this->me())->whereIn('number', $this->selected)->get() as $rfq) {
+            try {
+                $sent += $tools->remind($rfq, $this->me());
+            } catch (\App\Exceptions\BusinessRule) {
+                $skipped++;
+            }
+        }
+        $this->selected = [];
+        $this->toast($sent ? "Reminder sent to {$sent} supplier(s)".($skipped ? ". {$skipped} request(s) skipped." : '.') : 'Nothing to remind: the selected requests are not open, were reminded recently or everyone has quoted.', $sent ? 'check' : 'alert');
+    }
+
     public function closeSelected(RfqService $service): void
     {
         $this->need('rfqs', 'E');
@@ -55,7 +72,7 @@ class Index extends Component
     protected function exportData(): array
     {
         $this->need('rfqs');
-        $rows = $this->query()->when($this->status !== '', fn ($q) => $q->where('status', $this->status))->with('category', 'buyer')->withCount('liveQuotes', 'items')->orderByDesc('id')->get()
+        $rows = $this->picked($this->query(), 'number')->when($this->status !== '' && ! $this->onlySelected, fn ($q) => $q->where('status', $this->status))->with('category', 'buyer')->withCount('liveQuotes', 'items')->orderByDesc('id')->get()
             ->map(fn (Rfq $r) => [$r->number, $r->title, $r->buyer->name, Rfq::TYPES[$r->type] ?? $r->type, $r->category?->name, $r->statusLabel(), $r->deadline_at?->format('Y-m-d H:i'), $r->items_count, $r->live_quotes_count, $r->created_at->format('Y-m-d')]);
 
         return ['rfqs', ['Reference', 'Title', 'Buyer', 'Type', 'Category', 'Status', 'Deadline', 'Items', 'Quotations', 'Created'], $rows];

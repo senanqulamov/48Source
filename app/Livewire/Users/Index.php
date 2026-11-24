@@ -151,10 +151,45 @@ class Index extends Component
         Audit::log('Users', 'Changed permissions of '.Perm::ROLES[$this->role].': '.Perm::MODULES[$module].' = '.(Perm::matrix()[$this->role][$module] ?: 'none'));
     }
 
+    /** Bulk bar: deactivate the selected accounts. Your own account and the last administrator are always kept. */
+    public function disableSelected(): void
+    {
+        $this->need('users', 'E');
+        $done = 0;
+        $kept = 0;
+        foreach (User::whereIn('id', $this->selected)->where('status', '!=', 'disabled')->get() as $u) {
+            $lastAdmin = $u->role === 'admin' && $u->status === 'active' && User::where('role', 'admin')->where('status', 'active')->count() <= 1;
+            if ($u->id === $this->me()->id || $lastAdmin) {
+                $kept++;
+
+                continue;
+            }
+            $u->update(['status' => 'disabled']);
+            Audit::log('Users', 'Deactivated user', $u);
+            $done++;
+        }
+        $this->selected = [];
+        $this->toast($done ? "{$done} account(s) deactivated".($kept ? ". {$kept} kept: your own account or the last administrator." : '.') : 'No account was changed.', $done ? 'check' : 'alert');
+    }
+
+    /** Bulk bar: send the set-password link again to selected people who have not signed in yet. */
+    public function resendSelected(): void
+    {
+        $this->need('users', 'E');
+        $sent = 0;
+        foreach (User::whereIn('id', $this->selected)->where('status', 'invited')->get() as $u) {
+            Password::sendResetLink(['email' => $u->email]);
+            Audit::log('Users', 'Sent a set-password link', $u);
+            $sent++;
+        }
+        $this->selected = [];
+        $this->toast($sent ? "Set-password link sent to {$sent} invited user(s)." : 'None of the selected users is waiting for an invitation.', $sent ? 'check' : 'alert');
+    }
+
     protected function exportData(): array
     {
         $this->need('users');
-        $rows = User::with('supplier')->orderBy('name')->get()->map(fn (User $u) => [$u->name, $u->email, $u->roleLabel(), $u->supplier?->name, $u->status, $u->last_login_at?->format('Y-m-d H:i')]);
+        $rows = $this->picked(User::with('supplier'), 'id')->orderBy('name')->get()->map(fn (User $u) => [$u->name, $u->email, $u->roleLabel(), $u->supplier?->name, $u->status, $u->last_login_at?->format('Y-m-d H:i')]);
 
         return ['users', ['Name', 'Email', 'Role', 'Supplier', 'Status', 'Last sign-in'], $rows];
     }

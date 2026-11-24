@@ -4,7 +4,7 @@
         @perm('suppliers', 'C')<button type="button" class="btn btn-p" wire:click="create"><x-icon name="plus" />Add supplier</button>@endperm
     </x-ph>
     @php $quick = ['' => ['All', $counts->sum()]]; foreach (Supplier::STATUSES as $k => $l) { $quick[$k] = [$l, $counts[$k] ?? 0]; } @endphp
-    <x-dt :lw="$this" :rows="$rows" id="sup" search="Search name, city, contact or email" label="Search suppliers" noun="suppliers" :all="$counts->sum()" :quick="$quick" :facets="['cat' => ['Category', $catNames]]"
+    <x-dt :lw="$this" :rows="$rows" id="sup" :keys="$rows->pluck('id')" search="Search name, city, contact or email" label="Search suppliers" noun="suppliers" :all="$counts->sum()" :quick="$quick" :facets="['cat' => ['Category', $catNames]]"
           :cols="['cat' => 'Category', 'part' => 'Participation', 'contact' => 'Contact']" :export="true">
         <x-slot:empty><x-empty icon="building" title="No suppliers yet" text="Add the first supplier, or let suppliers register themselves." /></x-slot:empty>
         <x-slot:head>
@@ -13,7 +13,8 @@
         </x-slot:head>
         @foreach ($rows as $s)
             @php $resp = $s->invitations_count ? intdiv($s->quotes_count * 100, max(1, $s->invitations_count)) : 0; @endphp
-            <tr wire:key="s-{{ $s->id }}" class="click" wire:click="show({{ $s->id }})" tabindex="0" wire:keydown.enter="show({{ $s->id }})">
+            <tr wire:key="s-{{ $s->id }}" class="click {{ in_array((string) $s->id, array_map('strval', $selected), true) ? 'sel' : '' }}" wire:click="show({{ $s->id }})" tabindex="0" wire:keydown.enter="show({{ $s->id }})">
+                <td class="hide-sm" x-on:click.stop><input type="checkbox" class="chk" value="{{ $s->id }}" wire:model.live="selected" aria-label="Select row"></td>
                 <td class="tmain"><div class="row"><span class="avatar av{{ $s->id % 5 }}" aria-hidden="true">{{ \Illuminate\Support\Str::of($s->name)->explode(' ')->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->join('') }}</span><div><div class="t1">{{ $s->name }}</div><div class="t2">{{ $s->city ?? 'No city' }} · since {{ $s->created_at->format('Y') }}</div></div></div></td>
                 <td><x-badge :status="$s->status" :label="$s->statusLabel()" /></td>
                 <td class="hide-sm" data-c="cat">@if ($s->category)<span class="tag">{{ $s->category->name }}</span>@else<span class="faint">None</span>@endif</td>
@@ -22,6 +23,10 @@
                 <td class="hide-lg" data-c="contact"><div>{{ $s->contact_name ?? '-' }}</div><div class="t2">{{ $s->email ?? 'No email' }}</div></td>
             </tr>
         @endforeach
+        <x-slot:bulk>
+            @perm('rfqs', 'E')<button type="button" class="bb-btn" wire:click="open('bulkInvite')"><x-icon name="send" :size="15" />Invite to RFQ</button>@endperm
+            <button type="button" class="bb-btn" wire:click="exportSelected"><x-icon name="download" :size="15" />Export</button>
+        </x-slot:bulk>
     </x-dt>
 
     @if ($modal === 'drawer' && $current)
@@ -65,6 +70,14 @@
             <p style="margin-bottom:12px">{{ ['active' => 'The supplier can be invited to requests and send quotations.', 'inactive' => 'The supplier keeps its history but cannot be invited or quote until it is reactivated.', 'blocked' => 'The supplier cannot be invited, quote or be awarded. Its users are told.'][$to] }}</p>
             <x-field label="Reason" for="sr" :opt="$to === 'active'" help="Recorded in the supplier's history and shared with the supplier."><textarea id="sr" class="textarea" rows="3" wire:model="reason" autofocus></textarea></x-field>
             <x-slot:foot><button type="button" class="btn" wire:click="close">Cancel</button><button type="button" class="btn {{ $to === 'blocked' ? 'btn-d solid' : 'btn-p' }}" wire:click="changeStatus">Confirm</button></x-slot:foot>
+        </x-modal>
+    @endif
+    @if ($modal === 'bulkInvite')
+        @php $myRfqs = \App\Models\Rfq::visibleTo(auth()->user())->whereIn('status', ['draft', 'open'])->latest('id')->limit(100)->get(['number', 'title', 'status']); @endphp
+        <x-modal title="Invite to a request">
+            <p class="muted" style="margin-bottom:12px">{{ count($selected) }} supplier(s) selected. Only active suppliers that are not invited yet are added.</p>
+            <x-field label="Request" for="bi-r" help="Your draft and open requests."><select id="bi-r" class="select" wire:model="bulkRfq"><option value="">Choose a request</option>@foreach ($myRfqs as $r)<option value="{{ $r->number }}">{{ $r->number }} - {{ \Illuminate\Support\Str::limit($r->title, 48) }}</option>@endforeach</select></x-field>
+            <x-slot:foot><button type="button" class="btn" x-on:click="bye()">Cancel</button><button type="button" class="btn btn-p" wire:click="inviteSelected" wire:loading.attr="disabled">Invite</button></x-slot:foot>
         </x-modal>
     @endif
 </div>

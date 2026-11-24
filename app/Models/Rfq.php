@@ -19,13 +19,13 @@ class Rfq extends Model
     public const TYPES = ['invited' => 'Invited suppliers only', 'public' => 'Public tender'];
 
     /** Database defaults, mirrored so a fresh model has them before it is reloaded. */
-    protected $attributes = ['last_reminded_at' => null, 'type' => 'invited', 'status' => 'draft', 'currency' => 'USD', 'scoring_preset' => 'balanced', 'sealed' => false, 'round' => 1];
+    protected $attributes = ['requires_assessment' => false, 'last_reminded_at' => null, 'type' => 'invited', 'status' => 'draft', 'currency' => 'USD', 'scoring_preset' => 'balanced', 'sealed' => false, 'round' => 1];
 
-    protected $fillable = ['number', 'title', 'description', 'type', 'category_id', 'buyer_id', 'status', 'currency', 'budget_cents', 'deadline_at', 'delivery_location', 'required_by', 'requirements', 'payment_terms', 'scoring_preset', 'sealed', 'round', 'published_at', 'closed_at', 'awarded_at', 'cancelled_at', 'cancel_reason', 'last_reminded_at'];
+    protected $fillable = ['number', 'title', 'description', 'type', 'category_id', 'buyer_id', 'status', 'currency', 'budget_cents', 'deadline_at', 'delivery_location', 'required_by', 'requirements', 'payment_terms', 'scoring_preset', 'sealed', 'round', 'published_at', 'closed_at', 'awarded_at', 'cancelled_at', 'cancel_reason', 'last_reminded_at', 'requires_assessment'];
 
     protected function casts(): array
     {
-        return ['last_reminded_at' => 'datetime', 'deadline_at' => 'datetime', 'required_by' => 'date', 'published_at' => 'datetime', 'closed_at' => 'datetime', 'awarded_at' => 'datetime', 'cancelled_at' => 'datetime', 'sealed' => 'boolean'];
+        return ['requires_assessment' => 'boolean', 'last_reminded_at' => 'datetime', 'deadline_at' => 'datetime', 'required_by' => 'date', 'published_at' => 'datetime', 'closed_at' => 'datetime', 'awarded_at' => 'datetime', 'cancelled_at' => 'datetime', 'sealed' => 'boolean'];
     }
 
     public function getRouteKeyName(): string

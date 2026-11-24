@@ -123,6 +123,31 @@ trait WithTable
     }
 
     /** Download what the current filters show, as Excel or CSV. */
+    /** True while "Export" in the bulk bar is running: exportData() then keeps only the selected rows. */
+    protected bool $onlySelected = false;
+
+    /** Bulk bar: export only the rows that are ticked. */
+    public function exportSelected(string $format = 'xlsx')
+    {
+        if (! $this->selected) {
+            return null;
+        }
+        $this->onlySelected = true;
+
+        return $this->export($format);
+    }
+
+    /** Limits an export query to the ticked rows when the export was started from the bulk bar. */
+    protected function picked($query, string $column)
+    {
+        return $query->when($this->onlySelected, fn ($q) => $q->whereIn($column, $this->selected));
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selected = [];
+    }
+
     public function export(string $format = 'xlsx')
     {
         [$name, $head, $rows] = $this->exportData();

@@ -74,4 +74,10 @@ return [
     '~^(.+) total ceiling$~u' => ['az' => 'ümumi hədd {1}', 'ru' => 'общий предел {1}'],
     '~^(\\d+) quoting$~u' => ['az' => '{1} təklif mərhələsində', 'ru' => '{1} на этапе котировок'],
     '~^(\\d+) in evaluation$~u' => ['az' => '{1} qiymətləndirmədə', 'ru' => '{1} на оценке'],
+    '~^(\\d+) of (\\d+) have quoted$~u' => ['az' => '{2} təchizatçıdan {1} təklif verib', 'ru' => 'Котировку дали {1} из {2}'],
+    '~^(\\d+) of (\\d+) items have a target price$~u' => ['az' => '{2} maldan {1} üçün hədəf qiymət var', 'ru' => 'Целевая цена есть у {1} из {2} позиций'],
+    '~^Target total \\(([A-Z]{3})\\)$~u' => ['az' => 'Hədəf cəm ({1})', 'ru' => 'Целевая сумма ({1})'],
+    '~^Round (\\d+) - best and final offers\\.$~u' => ['az' => 'Raund {1} - son və ən yaxşı təkliflər.', 'ru' => 'Раунд {1} - лучшие финальные предложения.'],
+    '~^(\\d+) open$~u' => ['az' => '{1} açıq', 'ru' => 'открытых: {1}'],
+    '~^(\\d+) supplier\\(s\\) selected\\. Only active suppliers that are not invited yet are added\\.$~u' => ['az' => '{1} təchizatçı seçilib. Yalnız hələ dəvət edilməmiş aktiv təchizatçılar əlavə olunur.', 'ru' => 'Выбрано поставщиков: {1}. Добавляются только активные и ещё не приглашённые.'],
 ];

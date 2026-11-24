@@ -28,7 +28,7 @@ class Orders extends Component
 
     protected function exportData(): array
     {
-        $rows = $this->query()->with('store', 'buyer', 'supplier')->orderByDesc('id')->get()->map(fn (MarketOrder $o) => [$o->number, $o->store->name, $o->supplier?->name ?? $o->buyer->name, $o->statusLabel(), Money::input($o->total_cents), $o->currency, $o->created_at->format('Y-m-d'), $o->delivered_at?->format('Y-m-d')]);
+        $rows = $this->picked($this->query(), 'number')->with('store', 'buyer', 'supplier')->orderByDesc('id')->get()->map(fn (MarketOrder $o) => [$o->number, $o->store->name, $o->supplier?->name ?? $o->buyer->name, $o->statusLabel(), Money::input($o->total_cents), $o->currency, $o->created_at->format('Y-m-d'), $o->delivered_at?->format('Y-m-d')]);
 
         return ['marketplace-orders', ['Order', 'Store', 'Buyer', 'Status', 'Amount', 'Currency', 'Placed', 'Delivered'], $rows];
     }

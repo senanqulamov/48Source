@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\BusinessRule;
 use App\Models\Quote;
 use App\Models\Rfq;
+use App\Models\Supplier;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Support\Audit;
@@ -39,6 +40,93 @@ class RfqToolsService
         Audit::log('RFQ', "Reminded {$ids->count()} supplier(s)", $rfq, $rfq->number);
 
         return $ids->count();
+    }
+
+    /** Remind one invited supplier that has not quoted. At most once every 12 hours per supplier and request. */
+    public function remindOne(Rfq $rfq, User $by, int $supplierId): Supplier
+    {
+        if (! $rfq->isOpenForQuotes()) {
+            throw new BusinessRule('Reminders can only be sent while the request is open.');
+        }
+        $inv = $rfq->invitations()->where('supplier_id', $supplierId)->with('supplier')->first();
+        if (! $inv) {
+            throw new BusinessRule('This supplier is not invited to the request.');
+        }
+        if ($inv->status === 'declined') {
+            throw new BusinessRule('This supplier declined the invitation.');
+        }
+        if ($rfq->quotes()->where('supplier_id', $supplierId)->where('status', 'submitted')->exists()) {
+            throw new BusinessRule('This supplier has already quoted.');
+        }
+        $key = "rfq-remind:{$rfq->id}:{$supplierId}";
+        if (\Illuminate\Support\Facades\Cache::has($key)) {
+            throw new BusinessRule('This supplier was reminded less than 12 hours ago.');
+        }
+        Notifier::supplier($supplierId, "Reminder from the buyer: {$rfq->number} \"{$rfq->title}\" closes {$rfq->deadline_at->format('j M Y, H:i')}.", route('quotes.form', $rfq), 'RFQ');
+        \Illuminate\Support\Facades\Cache::put($key, true, now()->addHours(12));
+        Audit::log('RFQ', "Reminded {$inv->supplier->name}", $rfq, $rfq->number);
+
+        return $inv->supplier;
+    }
+
+    /** Add one more supplier to a draft or open request. On an open request the supplier is told at once. */
+    public function invite(Rfq $rfq, User $by, int $supplierId): Supplier
+    {
+        if (! $by->isSourcing() || ! ($by->isAdmin() || $rfq->buyer_id === $by->id)) {
+            throw new BusinessRule('Only the buyer of this request can invite suppliers.');
+        }
+        if (! in_array($rfq->status, ['draft', 'open'], true)) {
+            throw new BusinessRule('Suppliers can be invited while the request is a draft or open.');
+        }
+        $supplier = Supplier::find($supplierId);
+        if (! $supplier || $supplier->status !== 'active') {
+            throw new BusinessRule('Choose an active supplier.');
+        }
+        if ($rfq->invitations()->where('supplier_id', $supplier->id)->exists()) {
+            throw new BusinessRule("{$supplier->name} is already invited.");
+        }
+        $rfq->invitations()->create(['supplier_id' => $supplier->id]);
+        if ($rfq->status === 'open') {
+            Notifier::supplier($supplier->id, "New invitation to quote: {$rfq->number} {$rfq->title}", route('quotes.form', $rfq), 'Invitation');
+        }
+        Audit::log('RFQ', "Invited {$supplier->name}", $rfq, $rfq->number);
+
+        return $supplier;
+    }
+
+    /** Administrator: switch between invited-only and public while nobody has been awarded. */
+    public function setType(Rfq $rfq, User $admin, string $type): Rfq
+    {
+        if (! $admin->isAdmin()) {
+            throw new BusinessRule('Only an administrator can change the request type.');
+        }
+        if (! isset(Rfq::TYPES[$type])) {
+            throw new BusinessRule('Choose a request type.');
+        }
+        if (! in_array($rfq->status, ['draft', 'open'], true)) {
+            throw new BusinessRule('The type can be changed while the request is a draft or open.');
+        }
+        if ($rfq->type !== $type) {
+            $rfq->update(['type' => $type]);
+            Audit::log('RFQ', 'Changed request type to '.Rfq::TYPES[$type], $rfq, $rfq->number);
+        }
+
+        return $rfq->fresh();
+    }
+
+    /** Administrator: mark that quotations on this request need an approved field assessment. */
+    public function requireAssessment(Rfq $rfq, User $admin, bool $on): Rfq
+    {
+        if (! $admin->isAdmin()) {
+            throw new BusinessRule('Only an administrator can change this.');
+        }
+        if (in_array($rfq->status, ['awarded', 'cancelled'], true)) {
+            throw new BusinessRule('This request is finished.');
+        }
+        $rfq->update(['requires_assessment' => $on]);
+        Audit::log('RFQ', $on ? 'Field assessment required' : 'Field assessment no longer required', $rfq, $rfq->number);
+
+        return $rfq->fresh();
     }
 
     /** A new draft with the same details, items and invited suppliers. Deadline and dates are left empty. */

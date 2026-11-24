@@ -61,51 +61,110 @@
     <x-tabs :on="$tab" :tabs="['overview' => 'Overview', 'items' => ['Items', $rfq->items->count()], 'suppliers' => ['Suppliers', $rfq->invitations->count()], 'quotes' => ['Quotations', $live->count()], 'qa' => ['Questions', $qa->count()], 'files' => ['Files', $files->count()], 'activity' => 'Activity']" />
 
     @if ($tab === 'overview')
+        @php
+            $mine = $u->isAdmin() || $rfq->buyer_id === $u->id;
+            $awardBy = $rfq->status === 'closed' ? ($rfq->closed_at ?? $rfq->deadline_at)?->copy()->addDays(\App\Livewire\Monitoring::AWARD_TARGET_DAYS) : ($rfq->deadline_at?->copy()->addDays(\App\Livewire\Monitoring::AWARD_TARGET_DAYS));
+            $canSeal = $mine && $u->allowed('rfqs', 'E') && ($rfq->status === 'draft' || ($rfq->status === 'open' && ! $rfq->sealed && $live->isEmpty()));
+        @endphp
         <div class="grid g-2-1">
             <div class="stack">
                 @if ($assessments->isNotEmpty() || ($u->allowed('field', 'A') && in_array($rfq->status, ['open', 'closed']) && $rfq->invitations->isNotEmpty()))
-                    <x-card title="Field assessments" sub="Site checks asked from invited suppliers" :flush="true">
+                    <x-card title="Field assessments" :sub="$assessments->isEmpty() ? 'Site checks asked from invited suppliers' : 'Open one to approve or reject it'" :flush="true">
                         <x-slot:act>@if ($u->allowed('field', 'A') && in_array($rfq->status, ['open', 'closed']) && $rfq->invitations->isNotEmpty())<button type="button" class="btn btn-sm" wire:click="open('fa')"><x-icon name="plus" :size="14" />Request</button>@endif</x-slot:act>
                         @if ($assessments->isEmpty())<div class="card-b faint">None requested yet.</div>
                         @else<ul class="list">@foreach ($assessments as $a)<li class="click" style="cursor:pointer" data-href="{{ route('assessments.show', $a) }}" tabindex="0"><div class="grow"><div class="t1">{{ $a->title }}</div><div class="muted sm"><span class="mono">{{ $a->number }}</span> · {{ $a->supplier->name }}</div></div><x-badge :status="['submitted' => 'info', 'approved' => 'ok', 'rejected' => 'bad', 'in_progress' => 'warn'][$a->status] ?? 'draft'" :label="$a->statusLabel()" /><x-icon name="right" /></li>@endforeach</ul>@endif
                     </x-card>
                 @endif
+                @if ($u->isAdmin())
+                    <x-card title="Admin controls" sub="Only administrators see this">
+                        <div class="fgrid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+                            <x-field label="Change status" for="ac1" help="Awarded is set by accepting a quotation.">
+                                <select id="ac1" class="select" wire:change="adminStatus($event.target.value)" wire:key="ac1-{{ $rfq->status }}-{{ $modal }}" @disabled(in_array($rfq->status, ['awarded', 'cancelled']))>
+                                    @foreach (\App\Models\Rfq::STATUSES as $k => $label)@if ($k !== 'awarded' || $rfq->status === 'awarded')<option value="{{ $k }}" @selected($rfq->status === $k)>{{ $label }}</option>@endif @endforeach
+                                </select>
+                            </x-field>
+                            <x-field label="Request type" for="ac2">
+                                <select id="ac2" class="select" wire:change="adminType($event.target.value)" wire:key="ac2-{{ $rfq->type }}" @disabled(! in_array($rfq->status, ['draft', 'open']))>
+                                    @foreach (\App\Models\Rfq::TYPES as $k => $label)<option value="{{ $k }}" @selected($rfq->type === $k)>{{ $label }}</option>@endforeach
+                                </select>
+                            </x-field>
+                            <x-field label="Buyer" for="ac3"><button id="ac3" type="button" class="btn" style="justify-content:flex-start;width:100%" wire:click="open('reassign')"><x-icon name="user" />{{ $rfq->buyer->name }}</button></x-field>
+                            <div class="field"><span class="lbl">Field assessment</span><label class="row" style="height:34px;cursor:pointer"><input type="checkbox" class="chk" wire:change="adminAssessment($event.target.checked)" @checked($rfq->requires_assessment) @disabled(in_array($rfq->status, ['awarded', 'cancelled']))>Requires field assessment</label></div>
+                        </div>
+                    </x-card>
+                @endif
                 <x-card title="Details"><dl class="kv">
-                    <dt>Quotation deadline</dt><dd>{{ $rfq->deadline_at?->format('j M Y, H:i') ?? '-' }}</dd>
-                    <dt>Delivery needed by</dt><dd>{{ $rfq->required_by?->format('j M Y') ?? '-' }}</dd>
                     <dt>Delivery location</dt><dd>{{ $rfq->delivery_location ?: '-' }}</dd>
                     <dt>Payment terms</dt><dd>{{ $rfq->payment_terms ?: '-' }}</dd>
                     <dt>Currency</dt><dd>{{ $rfq->currency }}</dd>
                     <dt>Budget</dt><dd class="mono">{{ Money::format($rfq->budget_cents, $rfq->currency) }}</dd>
                     <dt>Scoring</dt><dd>{{ \App\Services\QuoteEvaluator::PRESETS[$rfq->scoring_preset]['label'] ?? $rfq->scoring_preset }}</dd>
+                    <dt>Bids</dt><dd>{{ $rfq->sealed ? 'Sealed until the deadline' : 'Visible as they arrive' }}</dd>
                 </dl></x-card>
-                @if ($rfq->description)<x-card title="Description"><p style="white-space:pre-line">{{ $rfq->description }}</p></x-card>@endif
-                @if ($rfq->requirements)<x-card title="Requirements for suppliers"><p style="white-space:pre-line">{{ $rfq->requirements }}</p></x-card>@endif
+                @if ($rfq->description)<x-card title="Description"><p style="white-space:pre-line">{{ $rfq->description }}</p>@if ($rfq->requirements)<h3 class="lbl" style="margin:14px 0 6px">Requirements</h3><p style="white-space:pre-line">{{ $rfq->requirements }}</p>@endif</x-card>
+                @elseif ($rfq->requirements)<x-card title="Requirements for suppliers"><p style="white-space:pre-line">{{ $rfq->requirements }}</p></x-card>@endif
+                @if ($rfq->status !== 'cancelled')
+                    <x-card title="Sourcing tools" sub="Clarify, negotiate and compare before you award">
+                        <div class="row wrap" style="gap:8px">
+                            <button type="button" class="btn" wire:click="$set('tab', 'qa')"><x-icon name="mail" />Questions &amp; answers @if ($openQuestions)<span class="badge b-warn plain">{{ $openQuestions }} open</span>@endif</button>
+                            @if ($rfq->auction)<a class="btn" href="{{ route('rfqs.auction', $rfq) }}" wire:navigate><x-icon name="pulse" />{{ $rfq->auction->status === 'live' ? 'Live auction' : 'Auction result' }}</a>
+                            @elseif (in_array($rfq->status, ['open', 'closed']) && $live->count() >= 2 && ! $rfq->pricesHidden() && $u->allowed('quotes'))<a class="btn" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="pulse" />Start reverse auction</a>@endif
+                            @if ($rfq->status === 'closed' && $live->count() && $u->allowed('quotes'))<a class="btn" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="refresh" />Ask for best and final offers</a>@endif
+                            @if ($live->count() >= 2 && ! $rfq->pricesHidden() && $u->allowed('quotes'))<a class="btn" href="{{ route('rfqs.scenarios', $rfq) }}" wire:navigate><x-icon name="cols" />Award scenarios</a>@endif
+                            @if ($canSeal || ($rfq->sealed && in_array($rfq->status, ['draft', 'open'])))<button type="button" class="btn" wire:click="toggleSeal" @disabled(! $canSeal)><x-icon name="lock" />{{ $rfq->sealed ? 'Sealed bids: on' : 'Seal bids until deadline' }}</button>@endif
+                            @if ($live->count() && $u->allowed('quotes'))<a class="btn" href="{{ route('assistant.index', ['request' => $rfq->number]) }}" wire:navigate><x-icon name="star" />Summarise quotations</a>@endif
+                        </div>
+                        @if ($rfq->round > 1)<p class="help" style="margin-top:10px">Round {{ $rfq->round }} - best and final offers.</p>@endif
+                    </x-card>
+                @endif
             </div>
-            <x-card title="At a glance"><dl class="kv" style="grid-template-columns:150px 1fr">
-                <dt>Items</dt><dd class="mono">{{ $rfq->items->count() }}</dd>
-                <dt>Suppliers invited</dt><dd class="mono">{{ $rfq->invitations->count() }}</dd>
-                <dt>Accepted</dt><dd class="mono">{{ $rfq->invitations->where('status', 'accepted')->count() }}</dd>
-                <dt>Declined</dt><dd class="mono">{{ $rfq->invitations->where('status', 'declined')->count() }}</dd>
-                <dt>Quotations</dt><dd class="mono">{{ $live->count() }}</dd>
-                <dt>Created</dt><dd>{{ $rfq->created_at->format('j M Y') }}</dd>
-                <dt>Published</dt><dd>{{ $rfq->published_at?->format('j M Y') ?? '-' }}</dd>
-            </dl></x-card>
+            <div class="stack">
+                <x-card title="Important dates"><dl class="kv" style="grid-template-columns:150px 1fr">
+                    <dt>Created</dt><dd>{{ $rfq->created_at->format('j M Y') }}</dd>
+                    <dt>Published</dt><dd>{{ $rfq->published_at?->format('j M Y') ?? '-' }}</dd>
+                    <dt>Quotation deadline</dt><dd>{{ $rfq->deadline_at?->format('j M Y, H:i') ?? '-' }}</dd>
+                    @if (in_array($rfq->status, ['open', 'closed']))<dt>Award target</dt><dd>{{ $awardBy?->format('j M Y') ?? '-' }}</dd>@endif
+                    @if ($rfq->awarded_at)<dt>Awarded</dt><dd>{{ $rfq->awarded_at->format('j M Y') }}</dd>@endif
+                    <dt>Delivery required</dt><dd>{{ $rfq->required_by?->format('j M Y') ?? '-' }}</dd>
+                </dl></x-card>
+                <x-card title="Buyer">
+                    <div class="row" style="gap:12px;align-items:flex-start">
+                        <span class="avatar" aria-hidden="true" style="width:44px;height:44px;font-size:15px">{{ $rfq->buyer->initials() }}</span>
+                        <div style="min-width:0"><div class="b">{{ $rfq->buyer->name }}</div><div class="muted sm">{{ $rfq->buyer->roleLabel() }}@if ($rfq->buyer->department) · {{ $rfq->buyer->department }}@endif</div><div class="sm trunc">{{ $rfq->buyer->email }}</div></div>
+                    </div>
+                </x-card>
+                <x-card title="Latest activity" :flush="true">
+                    <x-slot:act><button type="button" class="link" wire:click="$set('tab', 'activity')">View all</button></x-slot:act>
+                    @if ($latest->isEmpty())<div class="card-b faint">Nothing recorded yet.</div>
+                    @else<ul class="list">@foreach ($latest as $log)<li data-plain><div class="grow"><div>{{ $log->action }}</div><div class="muted sm">{{ $log->actor_name }} · {{ $log->created_at->format('j M Y') }}</div></div></li>@endforeach</ul>@endif
+                </x-card>
+            </div>
         </div>
     @elseif ($tab === 'items')
-        <x-card :flush="true"><div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:44px">#</th><th>Item</th><th class="num">Quantity</th><th class="num">Target unit price</th></tr></thead><tbody>
-            @foreach ($rfq->items as $i)<tr><td class="mono muted">{{ $i->position }}</td><td class="t1">{{ $i->name }}</td><td class="num mono">{{ $i->qty() }} {{ $i->unit }}</td><td class="num mono">{{ Money::format($i->target_price_cents, $rfq->currency) }}</td></tr>@endforeach
-        </tbody></table></div></x-card>
+        @php $est = $rfq->items->sum(fn ($i) => $i->target_price_cents ? Money::lineTotal($i->target_price_cents, $i->quantity_milli) : 0); $priced = $rfq->items->whereNotNull('target_price_cents')->count(); @endphp
+        <x-card title="Requested items" :sub="$rfq->budget_cents ? 'Budget ' . Money::format($rfq->budget_cents, $rfq->currency, false) : 'No budget set'" :flush="true">
+            <x-slot:act><button type="button" class="btn btn-sm" wire:click="exportItems('xlsx')"><x-icon name="download" :size="14" />Excel</button></x-slot:act>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:44px">#</th><th>Item</th><th class="num">Quantity</th><th>Unit</th><th class="num">Target unit price</th><th class="num">Estimated total</th></tr></thead><tbody>
+                @foreach ($rfq->items as $i)<tr data-plain><td class="mono muted">{{ $i->position }}</td><td class="t1">{{ $i->name }}</td><td class="num mono">{{ $i->qty() }}</td><td>{{ $i->unit }}</td><td class="num mono">{{ $i->target_price_cents ? Money::format($i->target_price_cents, $rfq->currency) : '-' }}</td><td class="num mono">{{ $i->target_price_cents ? Money::format(Money::lineTotal($i->target_price_cents, $i->quantity_milli), $rfq->currency) : '-' }}</td></tr>@endforeach
+                <tr data-plain><td></td><td class="b">Estimated value</td><td></td><td></td><td class="num muted sm">@if ($priced < $rfq->items->count()){{ $priced }} of {{ $rfq->items->count() }} items have a target price @endif</td><td class="num mono b">{{ $priced ? Money::format($est, $rfq->currency) : '-' }}</td></tr>
+            </tbody></table></div>
+        </x-card>
     @elseif ($tab === 'suppliers')
-        <x-card :flush="true">
-            @if ($rfq->invitations->isEmpty())<x-empty icon="building" title="No suppliers invited" :text="$rfq->status === 'draft' ? 'Edit the draft to choose suppliers.' : 'This is a public tender. Suppliers appear here when they join.'" />
-            @else<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Supplier</th><th>Invitation</th><th>Quotation</th><th>Responded</th></tr></thead><tbody>
+        @php $quotedIds = $live->pluck('supplier_id')->all(); @endphp
+        <x-card title="Supplier invitations" :sub="count(array_intersect($quotedIds, $rfq->invitations->pluck('supplier_id')->all())) . ' of ' . $rfq->invitations->count() . ' have quoted'" :flush="true">
+            <x-slot:act>@if ($canInvite)<button type="button" class="btn btn-sm" wire:click="open('invite')"><x-icon name="plus" :size="14" />Invite supplier</button>@endif</x-slot:act>
+            @if ($rfq->invitations->isEmpty())<x-empty icon="building" title="No suppliers invited" :text="$rfq->type === 'public' ? 'This is a public tender. Suppliers appear here when they join.' : 'Invite the suppliers that should quote on this request.'" />
+            @else<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Supplier</th><th class="hide-sm">Contact</th><th>Invitation</th><th class="hide-sm">Rating</th><th class="hide-md">On-time</th><th></th></tr></thead><tbody>
                 @foreach ($rfq->invitations as $inv)
-                    @php $q = $quotes->firstWhere('supplier_id', $inv->supplier_id); @endphp
-                    <tr><td><div class="t1">{{ $inv->supplier->name }}</div><div class="t2">{{ $inv->supplier->city }}</div></td>
-                        <td><x-badge :status="$inv->status" />@if ($inv->decline_reason)<div class="t2">{{ $inv->decline_reason }}</div>@endif</td>
-                        <td>@if ($q)<x-badge :status="$q->status" :label="$q->statusLabel()" />@else<span class="faint">Not yet</span>@endif</td>
-                        <td>{{ $inv->responded_at?->format('j M Y') ?? '-' }}</td></tr>
+                    @php $q = $quotes->firstWhere('supplier_id', $inv->supplier_id); $quoted = $q && in_array($q->status, ['submitted', 'won', 'lost'], true); $sp = $inv->supplier; @endphp
+                    <tr wire:key="inv-{{ $inv->id }}">
+                        <td><a class="t1" href="{{ route('suppliers.show', $sp->id) }}" wire:navigate>{{ $sp->name }}</a><div class="t2">{{ $sp->city ?: '-' }}</div></td>
+                        <td class="hide-sm">{{ $sp->contact_name ?: '-' }}<div class="t2">{{ $sp->email }}</div></td>
+                        <td>@if ($quoted)<x-badge status="ok" label="Quoted" />@elseif ($q && $q->status === 'withdrawn')<x-badge status="warn" label="Withdrawn" />@else<x-badge :status="$inv->status" />@endif @if ($inv->decline_reason)<div class="t2">{{ $inv->decline_reason }}</div>@endif</td>
+                        <td class="hide-sm"><span class="row" style="gap:5px"><x-icon name="star" :size="14" style="color:#F2A900" /><b class="mono">{{ number_format($sp->rating_tenths / 10, 1) }}</b></span></td>
+                        <td class="hide-md mono">{{ isset($onTime[$sp->id]) ? $onTime[$sp->id] . '%' : '-' }}</td>
+                        <td class="num">@if ($rfq->status === 'open' && ! $quoted && $inv->status !== 'declined')@perm('rfqs', 'E')<button type="button" class="btn btn-sm" wire:click.stop="remindOne({{ $sp->id }})" wire:loading.attr="disabled" wire:target="remindOne({{ $sp->id }})"><x-icon name="send" :size="14" />Remind</button>@endperm @endif</td>
+                    </tr>
                 @endforeach
             </tbody></table></div>@endif
         </x-card>
@@ -116,7 +175,7 @@
             <x-card><x-empty icon="inbox" title="No quotations yet" :text="$rfq->status === 'open' ? 'Suppliers have until ' . $rfq->deadline_at->format('j M Y, H:i') . '.' : 'No supplier sent a quotation.'" /></x-card>
         @else
             @php $full = $live->filter(fn ($q) => $q->coverage() === $rfq->items->count()); $lowest = $full->min('total_cents'); @endphp
-            <div class="row wrap" style="margin-bottom:12px"><span class="muted">{{ $quotes->count() }} quotation{{ $quotes->count() === 1 ? '' : 's' }} · open one to see every line.</span><span class="sp"></span>
+            <div class="row wrap" style="margin-bottom:12px"><span class="muted">{{ $quotes->count() }} quotation{{ $quotes->count() === 1 ? '' : 's' }} · open one to see every line{{ $u->isAdmin() ? ' and adjust prices' : '' }}.</span><span class="sp"></span>
                 @if ($live->count() && $u->allowed('quotes'))<a class="btn btn-p" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="cols" />Compare side by side</a>@endif</div>
             <div class="stack" style="gap:10px">
                 @foreach ($quotes as $n => $q)
@@ -126,7 +185,19 @@
                             <span class="muted sm" style="display:block">Submitted {{ $q->submitted_at?->format('j M Y, H:i') }} · revision {{ $q->revision }} · {{ $q->delivery_days }} days delivery · {{ $q->payment_terms ?: 'no terms stated' }}</span></span>
                         <span class="num"><span class="muted xs" style="display:block">Total excl. tax</span><b class="mono" style="font-size:15px">{{ Money::format($q->total_cents, $q->currency) }}</b></span>
                         <x-badge :status="$q->status" :label="$q->status === 'submitted' && $rfq->status === 'closed' ? 'Under review' : $q->statusLabel()" />
+                        @if ($rfq->status === 'closed' && $q->status === 'submitted' && $q->coverage() === $rfq->items->count() && $u->allowed('quotes', 'A') && ($u->isAdmin() || $rfq->buyer_id === $u->id))<a class="btn btn-sm btn-p" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="check" :size="14" />Accept</a>@endif
                         <span class="cv"><x-icon name="down" /></span></summary>
+                        @if ($u->isAdmin() && $q->status === 'submitted' && $rfq->status === 'closed')
+                            <div class="adjtool" wire:key="adj-{{ $q->id }}">
+                                <div class="row wrap"><b><x-icon name="sliders" :size="14" /> Price adjustment tool</b><span class="tag">Admin only</span></div>
+                                <div class="row wrap" style="margin-top:8px;align-items:flex-end">
+                                    <div class="field" style="flex:0 1 220px"><label for="adj-t-{{ $q->id }}">Target total ({{ $q->currency }})</label><input id="adj-t-{{ $q->id }}" class="input mono" inputmode="decimal" placeholder="{{ Money::input((int) round($q->total_cents * 0.97)) }}" wire:model="adj.{{ $q->id }}.target"></div>
+                                    <div class="field" style="flex:1 1 240px"><label for="adj-r-{{ $q->id }}">Reason (recorded in the audit trail)</label><input id="adj-r-{{ $q->id }}" class="input" placeholder="e.g. Negotiated discount confirmed by email on 20 Nov" wire:model="adj.{{ $q->id }}.reason"></div>
+                                    <button type="button" class="btn" wire:click="adjustQuote({{ $q->id }})" wire:loading.attr="disabled" wire:target="adjustQuote({{ $q->id }})">Apply adjusted prices</button>
+                                </div>
+                                <p class="help" style="margin-top:6px">Records a total agreed with the supplier outside the system. Every line price is reduced in the same proportion, the original total is kept and shown to the buyer, and the supplier is told.</p>
+                            </div>
+                        @endif
                         <div class="tbl-wrap"><table class="tbl compact"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Total</th></tr></thead><tbody>
                             @foreach ($rfq->items as $it)
                                 @php $l = $lines[$it->id] ?? null; if ($l && $l->unit_price_cents === null) { $l = null; } @endphp
@@ -137,6 +208,8 @@
                         </tbody></table></div>
                         <div class="row wrap sm muted" style="padding:10px 16px;border-top:1px solid var(--line);gap:18px"><span>Valid until <b style="color:var(--text)">{{ $q->valid_until?->format('j M Y') ?? 'not stated' }}</b>@if ($q->isExpired()) <x-badge status="bad" label="Expired" />@endif</span>
                             @if ($rfq->budget_cents && $q->coverage() === $rfq->items->count())<span>{{ $q->total_cents > $rfq->budget_cents ? 'Over' : 'Under' }} budget by <b class="mono" style="color:var(--text)">{{ Money::format(abs($q->total_cents - $rfq->budget_cents), $q->currency) }}</b></span>@endif
+                            @php $fa = $faBySupplier[$q->supplier_id] ?? null; @endphp
+                            @if ($fa || $rfq->requires_assessment)<span>Field assessment @if ($fa)<x-badge :status="['submitted' => 'info', 'approved' => 'ok', 'rejected' => 'bad', 'in_progress' => 'warn'][$fa->status] ?? 'draft'" :label="$fa->statusLabel()" />@else<x-badge status="warn" label="Required, not requested" />@endif</span>@endif
                             @if ($q->notes)<span>Note: {{ $q->notes }}</span>@endif
                             @foreach ($q->attachments as $f)<a class="link" href="{{ route('files.show', $f->id) }}"><x-icon name="paperclip" :size="13" /> {{ $f->name }}</a>@endforeach</div>
                         @if ($q->original_total_cents)<div style="padding:0 16px 12px"><x-note kind="warn"><b>Total adjusted</b> by an administrator on {{ $q->adjusted_at->format('j M Y') }} from {{ Money::format($q->original_total_cents, $q->currency) }} to {{ Money::format($q->total_cents, $q->currency) }}. Reason: {{ $q->adjust_reason }}</x-note></div>@endif
@@ -146,7 +219,7 @@
         @endif
     @elseif ($tab === 'qa')
         <x-card title="Questions from suppliers" sub="Your answers are shown to every invited supplier, without saying who asked" :flush="true">
-            @if ($qa->isEmpty())<x-empty icon="inbox" title="No questions yet" text="Suppliers can ask while the request is open." />
+            @if ($qa->isEmpty())<x-empty icon="inbox" title="No questions yet" text="Suppliers ask on their quotation page while the request is open. You answer here, and every invited supplier sees the answer." />
             @else
                 <ul class="list">
                     @foreach ($qa as $q)
@@ -158,9 +231,14 @@
             @endif
         </x-card>
     @elseif ($tab === 'files')
-        @php $canFile = $u->allowed('rfqs', 'E') && in_array($rfq->status, ['draft', 'open']) && ($u->isAdmin() || $rfq->buyer_id === $u->id); @endphp
-        <x-card title="Files" sub="Specifications, drawings and terms. Every invited supplier can download them." :flush="true">
-            @if ($canFile)<div class="card-b" style="border-bottom:1px solid var(--line)"><label class="drop" style="display:block;cursor:pointer"><input type="file" wire:model="upload" style="position:absolute;opacity:0;width:1px;height:1px" aria-label="Add a file"><x-icon name="upload" :size="20" /><div class="b" style="margin-top:6px">Choose a file to add</div><div class="muted sm">PDF, Office, image, CSV, DWG or ZIP, up to 10 MB</div><div wire:loading wire:target="upload" class="muted sm">Uploading...</div></label>@error('upload')<span class="errt">{{ $message }}</span>@enderror</div>@endif
+        @php $mayFile = $u->allowed('rfqs', 'E') && ($u->isAdmin() || $rfq->buyer_id === $u->id); $canFile = $mayFile && in_array($rfq->status, ['draft', 'open']); @endphp
+        <x-card title="Related files" sub="Specifications, drawings and terms. Every invited supplier can download them." :flush="true">
+            <x-slot:act>
+                @if ($canFile)<label class="btn btn-sm" style="cursor:pointer" wire:loading.class="busy" wire:target="upload"><input type="file" wire:model="upload" style="position:absolute;opacity:0;width:1px;height:1px" aria-label="Upload a file"><x-icon name="upload" :size="14" /><span wire:loading.remove wire:target="upload">Upload</span><span wire:loading wire:target="upload">Uploading...</span></label>
+                @elseif ($mayFile)<button type="button" class="btn btn-sm" disabled data-tip="Files can be added while the request is a draft or open."><x-icon name="upload" :size="14" />Upload</button>@endif
+            </x-slot:act>
+            @error('upload')<div class="card-b" style="border-bottom:1px solid var(--line)"><p class="err">{{ $message }}</p></div>@enderror
+            @if ($canFile && $files->isEmpty())<div class="card-b" style="border-bottom:1px solid var(--line)"><label class="drop" style="display:block;cursor:pointer"><input type="file" wire:model="upload" style="position:absolute;opacity:0;width:1px;height:1px" aria-label="Add a file"><x-icon name="upload" :size="20" /><div class="b" style="margin-top:6px">Choose a file to add</div><div class="muted sm">PDF, Office, image, CSV, DWG or ZIP, up to 10 MB</div></label></div>@endif
             @if ($files->isEmpty())<x-empty icon="paperclip" title="No files yet" :text="$canFile ? 'Add the specification or drawings suppliers need to price the request.' : 'Nothing was attached to this request.'" />
             @else<ul class="list">@foreach ($files as $f)<li wire:key="f-{{ $f->id }}"><x-icon name="paperclip" /><div class="grow" style="min-width:0"><div class="t1 trunc">{{ $f->name }}</div><div class="muted sm">{{ $f->sizeLabel() }} · {{ $f->uploader->name }} · {{ $f->created_at->format('j M Y, H:i') }}</div></div><a class="btn btn-sm btn-g" href="{{ route('files.show', $f->id) }}"><x-icon name="download" :size="14" />Download</a>@if ($canFile)<button type="button" class="icon-btn" wire:click="removeFile({{ $f->id }})" wire:confirm="Remove {{ $f->name }}?" aria-label="Remove {{ $f->name }}"><x-icon name="trash" :size="15" /></button>@endif</li>@endforeach</ul>@endif
         </x-card>
@@ -189,6 +267,13 @@
                 <p class="help">The supplier's field worker answers a five-point site checklist and writes the findings. You then approve it or return it.</p>
             </div>
             <x-slot:foot><button type="button" class="btn" x-on:click="bye()">Cancel</button><button type="button" class="btn btn-p" wire:click="requestAssessment">Request assessment</button></x-slot:foot>
+        </x-modal>
+    @endif
+    @if ($modal === 'invite')
+        <x-modal title="Invite a supplier">
+            <x-field label="Supplier" for="iv-s" help="Only active suppliers that are not invited yet are listed."><select id="iv-s" class="select" wire:model="inviteId"><option value="">Choose a supplier</option>@foreach ($inviteable as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></x-field>
+            @if ($rfq->status === 'open')<p class="help" style="margin-top:10px">The request is open, so the supplier is told at once and can quote until {{ $rfq->deadline_at->format('j M Y, H:i') }}.</p>@endif
+            <x-slot:foot><button type="button" class="btn" x-on:click="bye()">Cancel</button><button type="button" class="btn btn-p" wire:click="invite">Invite</button></x-slot:foot>
         </x-modal>
     @endif
     @if ($modal === 'reopen')

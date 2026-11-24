@@ -10,18 +10,24 @@
 
     @if ($tab === 'users')
         @php $quick = ['' => ['All', $roleCounts->sum()]]; foreach (Perm::ROLES as $k => $l) { if ($roleCounts[$k] ?? 0) { $quick[$k] = [$l, $roleCounts[$k]]; } } @endphp
-        <x-dt :lw="$this" :rows="$rows" id="usr" search="Search name or email" label="Search users" noun="users" :all="$roleCounts->sum()" :quick="$quick" quick-label="Role"
+        <x-dt :lw="$this" :rows="$rows" id="usr" :keys="$rows->pluck('id')" search="Search name or email" label="Search users" noun="users" :all="$roleCounts->sum()" :quick="$quick" quick-label="Role"
               :facets="['st' => ['Status', ['active' => 'Active', 'invited' => 'Invited', 'disabled' => 'Disabled']]]" :cols="['org' => 'Organisation', 'last_login_at' => 'Last active']" :export="true">
             <x-slot:head>
                 <x-th col="name" :sort="$sort ?: 'name'" :dir="$sort === '' ? 'asc' : $dir">User</x-th><x-th col="role">Role</x-th><th class="hide-md" data-c="org">Organisation</th><x-th col="status">Status</x-th><x-th col="last_login_at" cls="hide-sm">Last active</x-th>
             </x-slot:head>
             @foreach ($rows as $usr)
-                <tr wire:key="u-{{ $usr->id }}" class="click" wire:click="show({{ $usr->id }})" tabindex="0" wire:keydown.enter="show({{ $usr->id }})">
+                <tr wire:key="u-{{ $usr->id }}" class="click {{ in_array((string) $usr->id, array_map('strval', $selected), true) ? 'sel' : '' }}" wire:click="show({{ $usr->id }})" tabindex="0" wire:keydown.enter="show({{ $usr->id }})">
+                    <td class="hide-sm" x-on:click.stop><input type="checkbox" class="chk" value="{{ $usr->id }}" wire:model.live="selected" aria-label="Select row"></td>
                     <td class="tmain"><div class="row"><span class="avatar av{{ $usr->id % 5 }}" aria-hidden="true">{{ $usr->initials() }}</span><div style="min-width:0"><div class="t1">{{ $usr->name }}@if ($usr->id === $me->id) <span class="tag">You</span>@endif</div><div class="t2">{{ $usr->email }}</div></div></div></td>
                     <td><span class="tag">{{ $usr->roleLabel() }}</span></td><td class="hide-md" data-c="org">{{ $usr->supplier?->name ?? ($usr->department ?: config('app.org', 'Buyer organisation')) }}</td>
                     <td><x-badge :status="$usr->status" /></td><td class="hide-sm muted" data-c="last_login_at">{{ $usr->last_login_at?->diffForHumans() ?? 'Never' }}</td>
                 </tr>
             @endforeach
+            <x-slot:bulk>
+                @perm('users', 'E')<button type="button" class="bb-btn" wire:click="disableSelected" wire:confirm="Deactivate the selected accounts? They will not be able to sign in."><x-icon name="lock" :size="15" />Disable</button>
+                <button type="button" class="bb-btn" wire:click="resendSelected"><x-icon name="send" :size="15" />Resend invitation</button>@endperm
+                <button type="button" class="bb-btn" wire:click="exportSelected"><x-icon name="download" :size="15" />Export</button>
+            </x-slot:bulk>
         </x-dt>
     @else
         <div class="grid" style="grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:16px">

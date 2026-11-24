@@ -99,10 +99,38 @@ class Index extends Component
         }
     }
 
+    public string $bulkRfq = '';
+
+    /** Bulk bar: invite every selected active supplier to one of the user's draft or open requests. */
+    public function inviteSelected(\App\Services\RfqToolsService $tools): void
+    {
+        $this->need('rfqs', 'E');
+        $rfq = \App\Models\Rfq::visibleTo($this->me())->where('number', $this->bulkRfq)->first();
+        if (! $rfq) {
+            $this->toast('Choose a request.', 'alert');
+
+            return;
+        }
+        $done = 0;
+        $skipped = 0;
+        foreach (Supplier::whereIn('id', $this->selected)->pluck('id') as $id) {
+            try {
+                $tools->invite($rfq, $this->me(), (int) $id);
+                $done++;
+            } catch (\App\Exceptions\BusinessRule) {
+                $skipped++;
+            }
+        }
+        $this->selected = [];
+        $this->bulkRfq = '';
+        $this->modal = null;
+        $this->toast($done ? "{$done} supplier(s) invited to {$rfq->number}".($skipped ? ". {$skipped} skipped: not active, already invited or the request is closed." : '.') : 'Nobody was invited: the suppliers are not active, are already invited, or the request is closed.', $done ? 'check' : 'alert');
+    }
+
     protected function exportData(): array
     {
         $this->need('suppliers');
-        $rows = Supplier::with('category')->when($this->status !== '', fn ($q) => $q->where('status', $this->status))->orderBy('name')->get()
+        $rows = $this->picked(Supplier::with('category'), 'id')->when($this->status !== '' && ! $this->onlySelected, fn ($q) => $q->where('status', $this->status))->orderBy('name')->get()
             ->map(fn (Supplier $s) => [$s->name, $s->statusLabel(), $s->category?->name, $s->city, $s->contact_name, $s->email, $s->phone, $s->rating()]);
 
         return ['suppliers', ['Supplier', 'Status', 'Category', 'City', 'Contact', 'Email', 'Phone', 'Rating'], $rows];

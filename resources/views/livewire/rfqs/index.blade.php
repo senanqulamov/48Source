@@ -35,7 +35,8 @@
             </tr>
         @endforeach
         <x-slot:bulk>
-            <button type="button" class="bb-btn" wire:click="export"><x-icon name="download" :size="15" />Export</button>
+            <button type="button" class="bb-btn" wire:click="exportSelected"><x-icon name="download" :size="15" />Export</button>
+            @perm('rfqs', 'E')<button type="button" class="bb-btn" wire:click="remindSelected" wire:loading.attr="disabled"><x-icon name="send" :size="15" />Send reminder</button>@endperm
             @perm('rfqs', 'E')<button type="button" class="bb-btn" wire:click="closeSelected" wire:confirm="Close the selected open requests to quotations?"><x-icon name="lock" :size="15" />Close quoting</button>@endperm
         </x-slot:bulk>
     </x-dt>
