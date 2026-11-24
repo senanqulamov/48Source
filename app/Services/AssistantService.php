@@ -20,15 +20,17 @@ class AssistantService
      * Turn a sentence such as "40 t rebar 16 mm and 200 sheets welded mesh for the bridge deck, needed in 3 weeks"
      * into a title, items and a suggested deadline.
      *
-     * @return array{title:string,items:array<int,array{name:string,quantity:string,unit:string}>,deadline_days:int,category_id:?int,notes:array<int,string>}
+     * @return array{title:string,items:array<int,array{name:string,quantity:string,unit:string}>,deadline_days:int,needed_days:int,category_id:?int,notes:array<int,string>}
      */
     public function draftFromSentence(string $text): array
     {
         $text = trim(preg_replace('/\s+/u', ' ', $text));
         $notes = [];
         $days = 14;
+        $neededDays = 30;
         if (preg_match('/\b(?:in|within)\s+(\d{1,3})\s*(day|days|week|weeks|month|months)\b/iu', $text, $m)) {
             $n = (int) $m[1] * (str_starts_with(mb_strtolower($m[2]), 'week') ? 7 : (str_starts_with(mb_strtolower($m[2]), 'month') ? 30 : 1));
+            $neededDays = $n;
             $days = max(3, min(60, intdiv($n, 2)));
             $notes[] = "You need it in {$n} days, so the quotation deadline is set {$days} days from now.";
             $text = trim(str_replace($m[0], '', $text));
@@ -86,7 +88,7 @@ class AssistantService
             $notes[] = "Category guessed from your words: {$category->name}.";
         }
 
-        return ['title' => $title, 'items' => $items, 'deadline_days' => $days, 'category_id' => $category?->id, 'budget' => $budget, 'delivery_location' => $location, 'notes' => $notes];
+        return ['title' => $title, 'items' => $items, 'deadline_days' => $days, 'needed_days' => $neededDays, 'category_id' => $category?->id, 'budget' => $budget, 'delivery_location' => $location, 'notes' => $notes];
     }
 
     /** Plain sentences about the quotations on a request. @return array<int, array{kind:string,text:string}> */
@@ -98,18 +100,28 @@ class AssistantService
         }
         $out = [];
         $n = $rfq->items()->count();
-        $best = $rows->firstWhere('rank', 1);
-        $lowest = $awards->lowestComplete($rfq);
-        $out[] = ['kind' => 'ok', 'text' => "{$rows->count()} quotation(s). Best overall score: {$best['quote']->supplier->name} with " . round($best['score']) . ' points at ' . Money::format($best['quote']->total_cents, $best['quote']->currency) . '.'];
-        if ($lowest && $lowest->id !== $best['quote']->id) {
-            $out[] = ['kind' => 'warn', 'text' => "The lowest complete price is from {$lowest->supplier->name} (" . Money::format($lowest->total_cents, $lowest->currency) . '), ' . Money::format($best['quote']->total_cents - $lowest->total_cents, $lowest->currency) . ' below the best score. Awarding to anyone else needs a written reason.'];
-        }
+        $quotes = $rfq->liveQuotes()->with(['supplier.documents', 'supplier.scorecards', 'supplier.actions', 'items'])->get();
+        $out[] = ['kind' => 'ok', 'text' => "{$rows->count()} quotation(s) received; " . $rows->filter(fn ($r) => $r['complete'])->count() . ' cover every item.'];
         $full = $rows->filter(fn ($r) => $r['complete']);
-        if ($full->count() >= 2) {
-            $min = $full->min(fn ($r) => $r['quote']->total_cents);
-            $max = $full->max(fn ($r) => $r['quote']->total_cents);
+        $currencies = $quotes->pluck('currency')->unique()->values();
+        if ($currencies->count() > 1) {
+            $out[] = ['kind' => 'warn', 'text' => 'Quotations use different currencies (' . $currencies->join(', ') . '). Align currencies before comparing totals or the budget.'];
+        } elseif ($full->isNotEmpty()) {
+            $full = $full->sortBy(fn ($r) => $r['quote']->total_cents)->values();
+            $lowest = $full->first()['quote'];
+            $out[] = ['kind' => 'ok', 'text' => 'Lowest complete quotation: ' . $lowest->supplier->name . ' at ' . Money::format($lowest->total_cents, $lowest->currency) . '.'];
+            if ($rfq->budget_cents) {
+                $difference = $rfq->budget_cents - $lowest->total_cents;
+                $out[] = ['kind' => $difference >= 0 ? 'ok' : 'bad', 'text' => 'The lowest complete quotation is ' . Money::format(abs($difference), $rfq->currency) . ($difference >= 0 ? ' under' : ' over') . ' the budget of ' . Money::format($rfq->budget_cents, $rfq->currency) . '.'];
+            }
+        }
+        if ($currencies->count() === 1 && $full->count() >= 2) {
+            $min = $full->first()['quote']->total_cents;
+            $next = $full->get(1)['quote'];
+            $max = $full->last()['quote']->total_cents;
             $spread = $min > 0 ? intdiv(($max - $min) * 100, $min) : 0;
-            $out[] = ['kind' => $spread > 25 ? 'warn' : 'info', 'text' => "Complete quotations differ by {$spread}% between the lowest and the highest." . ($spread > 25 ? ' A spread this wide often means the suppliers understood the scope differently. Check the quantities and requirements.' : '')];
+            $nextDifference = $min > 0 ? intdiv(($next->total_cents - $min) * 100, $min) : 0;
+            $out[] = ['kind' => $spread > 25 ? 'warn' : 'info', 'text' => 'Next lowest: ' . $next->supplier->name . ' at ' . Money::format($next->total_cents, $next->currency) . " ({$nextDifference}% higher). The spread from lowest to highest is {$spread}%" . ($spread > 25 ? '; check that suppliers understood the same scope.' : '.')];
         }
         foreach ($rows->reject(fn ($r) => $r['complete']) as $r) {
             $out[] = ['kind' => 'warn', 'text' => "{$r['quote']->supplier->name} priced {$r['coverage']} of {$n} items and cannot be awarded alone."];
@@ -117,15 +129,18 @@ class AssistantService
         foreach ($rows->filter(fn ($r) => $r['quote']->isExpired()) as $r) {
             $out[] = ['kind' => 'bad', 'text' => "The quotation from {$r['quote']->supplier->name} is no longer valid (until {$r['quote']->valid_until->format('j M Y')})."];
         }
-        if ($rfq->budget_cents && $lowest) {
-            $d = $rfq->budget_cents - $lowest->total_cents;
-            $out[] = ['kind' => $d >= 0 ? 'ok' : 'bad', 'text' => 'The lowest complete quotation is ' . Money::format(abs($d), $rfq->currency) . ($d >= 0 ? ' under' : ' over') . ' the budget of ' . Money::format($rfq->budget_cents, $rfq->currency) . '.'];
-        }
         if ($rows->count() === 1) {
             $out[] = ['kind' => 'warn', 'text' => 'Only one supplier quoted. Consider a best-and-final round or inviting more suppliers before awarding.'];
         }
         $fast = $rows->sortBy(fn ($r) => $r['quote']->delivery_days)->first();
         $out[] = ['kind' => 'info', 'text' => "Fastest delivery: {$fast['quote']->supplier->name}, {$fast['quote']->delivery_days} days."];
+        $risk = app(SupplierInsightService::class);
+        foreach ($quotes as $quote) {
+            $level = $risk->risk($quote->supplier);
+            if ($level['level'] === 'high') {
+                $out[] = ['kind' => 'bad', 'text' => $quote->supplier->name . ' has high supplier risk' . ($level['reasons'] ? ': ' . $level['reasons'][0] : '.')];
+            }
+        }
 
         return $out;
     }
@@ -133,7 +148,8 @@ class AssistantService
     /** Unit prices more than 20% from their item median, with no float arithmetic. */
     public function unusualPrices(Rfq $rfq): array
     {
-        $quotes = $rfq->liveQuotes()->with(['supplier', 'items'])->get(); $out = [];
+        // Values in different currencies cannot share a median until an exchange rate is chosen.
+        $quotes = $rfq->liveQuotes()->where('currency', $rfq->currency)->with(['supplier', 'items'])->get(); $out = [];
         foreach ($rfq->items as $item) {
             $lines = $quotes->map(fn ($q) => [$q, $q->items->firstWhere('rfq_item_id', $item->id)])->filter(fn ($x) => $x[1]?->unit_price_cents !== null)->sortBy(fn ($x) => $x[1]->unit_price_cents)->values();
             if ($lines->count() < 3) continue;

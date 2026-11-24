@@ -13,6 +13,7 @@ use App\Support\Audit;
 use App\Support\Money;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
@@ -25,6 +26,7 @@ class Assistant extends Component
 
     public ?array $draft = null;
 
+    #[Url(as: 'request')]
     public string $review = '';
 
     public string $result = '';
@@ -60,7 +62,7 @@ class Assistant extends Component
             return null;
         }
         $d = $this->draft;
-        session()->put('assistant.rfq_prefill', ['f' => ['title' => $d['title'], 'description' => trim($this->sentence), 'category_id' => (string) ($d['category_id'] ?? ''), 'deadline_at' => now()->addDays($d['deadline_days'])->format('Y-m-d\T17:00'), 'budget' => $d['budget'] ?? '', 'delivery_location' => $d['delivery_location'] ?? ''], 'items' => array_map(fn ($item) => $item + ['target_price' => ''], $d['items'])]);
+        session()->put('assistant.rfq_prefill', ['f' => ['title' => $d['title'], 'description' => trim($this->sentence), 'category_id' => (string) ($d['category_id'] ?? ''), 'deadline_at' => now()->addDays($d['deadline_days'])->format('Y-m-d\T17:00'), 'required_by' => now()->addDays($d['needed_days'])->toDateString(), 'budget' => $d['budget'] ?? '', 'delivery_location' => $d['delivery_location'] ?? ''], 'items' => array_map(fn ($item) => $item + ['target_price' => ''], $d['items'])]);
         return $this->redirectRoute('rfqs.create', navigate: true);
     }
 
@@ -70,10 +72,10 @@ class Assistant extends Component
         $rfq = $this->review !== '' && $u->allowed('quotes') ? Rfq::visibleTo($u)->where('number', $this->review)->first() : null;
 
         return view('livewire.assistant', [
-            'withQuotes' => $u->allowed('quotes') ? Rfq::visibleTo($u)->whereIn('status', ['closed', 'awarded'])->whereHas('liveQuotes')->latest('id')->limit(40)->get(['id', 'number', 'title', 'sealed', 'status', 'deadline_at']) : collect(),
+            'withQuotes' => $u->allowed('quotes') ? Rfq::visibleTo($u)->whereIn('status', ['open', 'closed', 'awarded'])->whereHas('liveQuotes')->latest('id')->limit(40)->get(['id', 'number', 'title', 'sealed', 'status', 'deadline_at']) : collect(),
             'rfq' => $rfq, 'findings' => $rfq && ! $rfq->pricesHidden() ? $assistant->reviewQuotations($rfq, $evaluator, $awards) : [],
             'flags' => $rfq && ! $rfq->pricesHidden() ? $assistant->unusualPrices($rfq) : [],
-            'categories' => Category::options(), 'suggested' => $this->category !== '' && $u->allowed('suppliers') ? $assistant->suggestSuppliers((int) $this->category) : null,
+            'categories' => Category::options(),
         ]);
     }
 }

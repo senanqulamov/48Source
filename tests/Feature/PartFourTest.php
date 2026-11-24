@@ -173,6 +173,7 @@ class PartFourTest extends TestCase
         $d = app(AssistantService::class)->draftFromSentence('We need 40 t rebar 16 mm, 200 sheets welded mesh and 15 tie wire coils for the bridge deck, needed in 4 weeks');
         $this->assertSame([['Rebar 16 mm', '40', 't'], ['Welded mesh', '200', 'sheets'], ['Tie wire coils', '15', 'pcs']], array_map(fn ($i) => [$i['name'], $i['quantity'], $i['unit']], $d['items']));
         $this->assertSame(14, $d['deadline_days']);
+        $this->assertSame(28, $d['needed_days']);
         $this->assertStringContainsString('Bridge deck', $d['title']);
         $this->assertSame([], app(AssistantService::class)->draftFromSentence('please help me buy things')['items']);
 
@@ -199,6 +200,28 @@ class PartFourTest extends TestCase
         Livewire::actingAs($buyer)->test(Assistant::class)->set('review', $rfq->number)->call('summarise')->assertSee('Beta Metals priced 1 of 2 items');
         // Another buyer cannot read it through the assistant.
         Livewire::actingAs($this->buyer())->test(Assistant::class)->set('review', $rfq->number)->assertDontSee('Beta Metals');
+    }
+
+    public function test_the_assistant_flags_outlier_prices_and_does_not_compare_mixed_currencies(): void
+    {
+        $buyer = $this->buyer();
+        $a = $this->supplierUser(['name' => 'Alpha Steel']);
+        $b = $this->supplierUser(['name' => 'Beta Metals']);
+        $c = $this->supplierUser(['name' => 'Gamma Works']);
+        $d = $this->supplierUser(['name' => 'Delta Industrial']);
+        $rfq = $this->openRfq($buyer, [$a, $b, $c, $d]);
+        $this->quote($rfq, $a, ['10.00', '100.00']);
+        $this->quote($rfq, $b, ['11.00', '100.00']);
+        $this->quote($rfq, $c, ['30.00', '100.00']);
+        $this->quote($rfq, $d, ['12.00', '100.00'], ['currency' => 'EUR']);
+        $rfq = $this->closeRfq($rfq);
+
+        $flags = app(AssistantService::class)->unusualPrices($rfq);
+        $this->assertSame('Gamma Works', $flags[0]['supplier']);
+        $text = collect(app(AssistantService::class)->reviewQuotations($rfq, app(\App\Services\QuoteEvaluator::class), app(AwardService::class)))->pluck('text')->implode(' | ');
+        $this->assertStringContainsString('different currencies (USD, EUR)', $text);
+        $this->actingAs($buyer)->get(route('rfqs.show', $rfq))->assertSee('Summarise');
+        Livewire::actingAs($buyer)->test(Assistant::class)->set('review', $rfq->number)->call('unusual')->assertSee('Gamma Works')->assertSee('Unusual prices');
     }
 
     public function test_sign_in_with_an_email_code(): void

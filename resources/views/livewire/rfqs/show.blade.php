@@ -11,6 +11,9 @@
         @if (in_array($rfq->status, ['closed', 'awarded']) && $live->count() && $u->allowed('quotes'))
             <a class="btn {{ $rfq->status === 'closed' ? 'btn-p' : '' }}" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="cols" />{{ $rfq->status === 'closed' ? 'Compare and award' : 'View comparison' }}</a>
         @endif
+        @if ($live->count() && $u->allowed('quotes'))
+            <a class="btn" href="{{ route('assistant.index', ['request' => $rfq->number]) }}" wire:navigate><x-icon name="star" />Summarise</a>
+        @endif
         @if (in_array($rfq->status, ['draft', 'open', 'closed']))@perm('rfqs', 'E')<button type="button" class="btn btn-d" wire:click="open('cancel')">Cancel request</button>@endperm @endif
         <span x-data="pop({ w: 240 })" style="display:contents">
             <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="More actions" title="More actions" aria-haspopup="true"><x-icon name="more" /></button>
