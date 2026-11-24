@@ -16,13 +16,14 @@ use RuntimeException;
 class LargeDemoSeeder extends Seeder
 {
     private const PREFIX = 'Demo ';
+    private string $batch = '';
 
     public function run(int $scale = 1, int $seed = 48, bool $fresh = false): void
     {
         if (app()->isProduction()) throw new RuntimeException('Demo data must never run in production.');
         if ($fresh) $this->clear();
         if (DB::table('demo_data_runs')->exists()) { $this->line('Large demo data already exists - use --fresh to rebuild it.'); return; }
-        mt_srand($seed); $started = microtime(true); $this->call(DatabaseSeeder::class);
+        mt_srand($seed); $started = microtime(true); $this->batch = (string) Str::uuid(); $this->call(DatabaseSeeder::class);
         $password = env('DEMO_PASSWORD') ?: Str::password(18, symbols: true);
         $now = now(); $stamp = $now->toDateTimeString(); $passwordHash = Hash::make($password);
         $this->line('1/6 Categories, suppliers and accounts');
@@ -68,7 +69,20 @@ class LargeDemoSeeder extends Seeder
     }
 
     private function users(array $rows, string $hash, string $stamp): array { foreach ($rows as &$r) $r += ['password' => $hash, 'status' => 'active', 'email_verified_at' => $stamp, 'theme' => 'light', 'locale' => 'en', 'two_factor' => false, 'email_notices' => true, 'created_at' => $stamp, 'updated_at' => $stamp]; unset($r); $this->insert('users', $rows); return DB::table('users')->whereIn('email', array_column($rows, 'email'))->orderBy('id')->pluck('id')->all(); }
-    private function insert(string $table, array $rows): void { foreach (array_chunk($rows, 500) as $chunk) DB::table($table)->insert($chunk); }
+    private function insert(string $table, array $rows): void
+    {
+        foreach (array_chunk($rows, 500) as $chunk) {
+            $before = DB::table($table)->max('id') ?? 0;
+            DB::table($table)->insert($chunk);
+            $ids = DB::table($table)->where('id', '>', $before)->orderBy('id')->limit(count($chunk))->pluck('id');
+            $this->track($table, $ids->all());
+        }
+    }
+    private function track(string $table, array $ids): void
+    {
+        if ($this->batch === '' || $ids === []) return;
+        DB::table('demo_records')->insert(array_map(fn ($id) => ['table_name' => $table, 'record_id' => $id, 'batch' => $this->batch, 'created_at' => now()], $ids));
+    }
     private function line(string $text): void { $this->command?->info($text); }
     private function table(array $head, array $rows): void { $this->command?->table($head, $rows); }
     private function info(string $text): void { $this->command?->info($text); }
@@ -78,6 +92,7 @@ class LargeDemoSeeder extends Seeder
         // The small DemoSeeder uses the same safe domain, so never delete by email
         // alone. Every row made here has the explicit "Demo " label or DEMO- SKU.
         DB::transaction(function () {
+            $this->clearTracked();
             DB::table('demo_data_runs')->delete();
             $poIds = DB::table('purchase_orders')->where('number', 'like', 'PO-%-D%')->pluck('id')->all();
             $invoiceIds = DB::table('invoices')->whereIn('purchase_order_id', $poIds)->pluck('id')->all();
@@ -128,6 +143,17 @@ class LargeDemoSeeder extends Seeder
             DB::table('users')->where('name', 'like', self::PREFIX.'%')->delete();
             DB::table('categories')->where('slug', 'like', 'demo-%')->delete();
         });
+    }
+    /** Remove marker-owned rows before using the legacy name-based fallback. */
+    private function clearTracked(): void
+    {
+        if (! DB::getSchemaBuilder()->hasTable('demo_records')) return;
+        $tables = ['invoice_items', 'invoices', 'goods_receipt_items', 'goods_receipts', 'purchase_order_items', 'purchase_orders', 'quote_items', 'quotes', 'rfq_invitations', 'rfq_questions', 'auction_bids', 'auctions', 'bafo_rounds', 'rfq_items', 'rfqs', 'contract_release_items', 'contract_releases', 'contract_items', 'contracts', 'requisition_approvals', 'requisition_items', 'requisitions', 'rfi_responses', 'rfis', 'conversation_reads', 'messages', 'conversations', 'worker_tasks', 'market_order_items', 'market_orders', 'offers', 'products', 'stores', 'markets', 'supplier_documents', 'supplier_scorecards', 'supplier_actions', 'field_assessments', 'suppliers', 'users', 'categories'];
+        foreach ($tables as $table) {
+            $ids = DB::table('demo_records')->where('table_name', $table)->pluck('record_id');
+            if ($ids->isNotEmpty()) DB::table($table)->whereIn('id', $ids)->delete();
+        }
+        DB::table('demo_records')->delete();
     }
     private function makeOrders(array $rfqs, array $suppliers, array $buyers, array $firstItems, array $supplierUsers, string $stamp, $now, int $scale): void
     {
