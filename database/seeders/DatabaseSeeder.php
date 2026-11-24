@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 /**
  * Reference data only. It creates no user accounts and no passwords.
  * Create the first administrator with:  php artisan app:create-admin you@company.com "Your Name"
- * Load invented demo data (never on production) with:  php artisan db:seed --class=DemoSeeder
+ * Load isolated synthetic local workflow data with: php artisan db:seed --class=RealisticWorkflowSeeder
  */
 class DatabaseSeeder extends Seeder
 {

@@ -137,7 +137,12 @@ class Dashboard extends Component
         }
         $orders = \App\Models\MarketOrder::where('store_id', $store->id);
         $tasks = \App\Models\WorkerTask::where('store_id', $store->id)->where('status', 'open')->count();
-        $month = (int) (clone $orders)->where('status', '!=', 'cancelled')->where('created_at', '>=', now()->startOfMonth())->sum('total_cents');
+        $monthlyOrders = (clone $orders)->where('status', '!=', 'cancelled')
+            ->where('created_at', '>=', now()->startOfMonth())->get(['currency', 'total_cents']);
+        $currencies = $monthlyOrders->pluck('currency')->filter()->unique();
+        $monthlyLabel = $currencies->count() > 1
+            ? 'Mixed currencies'
+            : \App\Support\Money::format((int) $monthlyOrders->sum('total_cents'), $currencies->first() ?? 'AZN', false);
         $sc = [[route('market.tasks'), 'check', 'Tasks', $tasks . ' to pick or deliver'], [route('market.orders.index'), 'truck', 'Sales', 'Every order placed with the store']];
         if ($u->role === 'seller') {
             array_unshift($sc, [route('market.offers'), 'box', 'My products', 'Prices, stock and price list import']);
@@ -150,7 +155,7 @@ class Dashboard extends Component
                 ['l' => 'New orders', 'v' => (clone $orders)->where('status', 'placed')->count(), 's' => 'waiting to be confirmed', 'href' => route('market.orders.index', ['status' => 'placed'])],
                 ['l' => 'Open tasks', 'v' => $tasks, 's' => 'pick or deliver', 'href' => route('market.tasks')],
                 ['l' => 'Products on sale', 'v' => \App\Models\Offer::where('store_id', $store->id)->where('status', 'active')->where('stock_milli', '>', 0)->count(), 's' => 'with stock'],
-                ['l' => 'Sales this month', 'v' => \App\Support\Money::format($month, 'USD', false), 's' => 'not counting cancelled orders'],
+                ['l' => 'Sales this month', 'v' => $monthlyLabel, 's' => 'not counting cancelled orders'],
             ],
             'orders' => (clone $orders)->whereIn('status', ['placed', 'confirmed', 'ready'])->with('buyer', 'supplier')->oldest('id')->limit(8)->get(),
             'low' => \App\Models\Offer::where('store_id', $store->id)->where('status', 'active')->whereColumn('stock_milli', '<', 'moq_milli')->with('product')->limit(8)->get(),
