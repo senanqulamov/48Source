@@ -34,6 +34,13 @@ class AssistantService
             $text = trim(str_replace($m[0], '', $text));
         }
         $text = trim(preg_replace('/\s*,?\s*\b(?:needed|required|due)\b\s*/iu', ' ', $text));
+        $budget = '';
+        if (preg_match('/\bbudget\s+(\d+(?:[.,]\d+)?)\s*([km])?\b/iu', $text, $m)) {
+            $budget = Money::input(Money::parse(str_replace(',', '.', $m[1])) * (mb_strtolower($m[2] ?? '') === 'm' ? 1000000 : (mb_strtolower($m[2] ?? '') === 'k' ? 1000 : 1)));
+            $text = trim(str_replace($m[0], '', $text));
+        }
+        $location = '';
+        if (preg_match('/\bfor\s+([\p{L}][^,.;]+?)(?=\s+(?:within|in|budget)|,|\.|;|$)/iu', $text, $m)) $location = trim($m[1]);
         $purpose = '';
         if (preg_match('/\bfor\s+(?:the\s+)?([^,.;]+?)(?:,|\.|;|$|\bneeded\b|\bby\b)/iu', $text, $m)) {
             $purpose = trim($m[1]);
@@ -79,7 +86,7 @@ class AssistantService
             $notes[] = "Category guessed from your words: {$category->name}.";
         }
 
-        return ['title' => $title, 'items' => $items, 'deadline_days' => $days, 'category_id' => $category?->id, 'notes' => $notes];
+        return ['title' => $title, 'items' => $items, 'deadline_days' => $days, 'category_id' => $category?->id, 'budget' => $budget, 'delivery_location' => $location, 'notes' => $notes];
     }
 
     /** Plain sentences about the quotations on a request. @return array<int, array{kind:string,text:string}> */

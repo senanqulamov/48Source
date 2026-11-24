@@ -54,7 +54,7 @@ class Assistant extends Component
             return null;
         }
         $d = $this->draft;
-        session()->put('assistant.rfq_prefill', ['f' => ['title' => $d['title'], 'description' => trim($this->sentence), 'category_id' => (string) ($d['category_id'] ?? ''), 'deadline_at' => now()->addDays($d['deadline_days'])->format('Y-m-d\T17:00')], 'items' => array_map(fn ($item) => $item + ['target_price' => ''], $d['items'])]);
+        session()->put('assistant.rfq_prefill', ['f' => ['title' => $d['title'], 'description' => trim($this->sentence), 'category_id' => (string) ($d['category_id'] ?? ''), 'deadline_at' => now()->addDays($d['deadline_days'])->format('Y-m-d\T17:00'), 'budget' => $d['budget'] ?? '', 'delivery_location' => $d['delivery_location'] ?? ''], 'items' => array_map(fn ($item) => $item + ['target_price' => ''], $d['items'])]);
         return $this->redirectRoute('rfqs.create', navigate: true);
     }
 
