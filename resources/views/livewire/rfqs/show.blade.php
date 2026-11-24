@@ -12,7 +12,7 @@
             <a class="btn {{ $rfq->status === 'closed' ? 'btn-p' : '' }}" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="cols" />{{ $rfq->status === 'closed' ? 'Compare and award' : 'View comparison' }}</a>
         @endif
         @if (in_array($rfq->status, ['draft', 'open', 'closed']))@perm('rfqs', 'E')<button type="button" class="btn btn-d" wire:click="open('cancel')">Cancel request</button>@endperm @endif
-        <span x-data="pop({ w: 240 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
+        <span x-data="pop({ w: 240 })" style="display:contents">
             <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="More actions" title="More actions" aria-haspopup="true"><x-icon name="more" /></button>
             <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos" role="menu">
                 @perm('rfqs', 'C')<button type="button" class="pop-i" wire:click="duplicate"><x-icon name="file" />Duplicate as draft</button>@endperm

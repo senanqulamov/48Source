@@ -48,8 +48,8 @@
                 @if ($u->isSourcing() && $u->allowed('rfqs', 'C'))
                     <a class="btn btn-sm btn-p" href="{{ route('rfqs.create') }}" wire:navigate style="margin-right:6px"><x-icon name="plus" :size="14" /><span class="hide-md">New RFQ</span></a>
                 @endif
-                <div class="acct-wrap hide-sm" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
-                    <button type="button" class="btn btn-sm btn-g" x-on:click="open = !open" aria-label="{{ __('Language') }}" :aria-expanded="open" title="{{ __('Language') }}"><x-icon name="globe" :size="15" />{{ strtoupper(app()->getLocale()) }}</button>
+                <div class="acct-wrap hide-sm" x-data="pop({ inline: true })">
+                    <button type="button" class="btn btn-sm btn-g" x-on:click="toggle($el)" aria-label="{{ __('Language') }}" :aria-expanded="open" title="{{ __('Language') }}"><x-icon name="globe" :size="15" />{{ strtoupper(app()->getLocale()) }}</button>
                     <div class="pop acct-pop" role="menu" x-show="open" x-cloak wire:ignore.self x-transition.opacity style="width:190px">
                         <div class="pop-h">{{ __('Language') }}</div>
                         @foreach (config('procurement.locales') as $code => $name)
@@ -57,8 +57,8 @@
                         @endforeach
                     </div>
                 </div>
-                <div class="acct-wrap hide-sm" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
-                    <button type="button" class="icon-btn" x-on:click="open = !open" aria-label="{{ __('Help') }}" :aria-expanded="open" title="{{ __('Help') }}"><x-icon name="info" :size="17" /></button>
+                <div class="acct-wrap hide-sm" x-data="pop({ inline: true })">
+                    <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="{{ __('Help') }}" :aria-expanded="open" title="{{ __('Help') }}"><x-icon name="info" :size="17" /></button>
                     <div class="pop acct-pop" role="menu" x-show="open" x-cloak x-transition.opacity style="width:270px">
                         <div class="pop-h">{{ __('Help') }}</div>
                         <button type="button" class="pop-i" x-on:click="open = false; ui48.tour()"><x-icon name="pin" /><span style="flex:1"><b style="display:block">{{ __('Take the tour') }}</b><span class="faint xs">{{ __('Visit every page of your workspace') }}</span></span></button>
@@ -70,8 +70,8 @@
                 </div>
                 <button type="button" class="icon-btn hide-sm" x-data x-on:click="const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; fetch('{{ route('prefs.theme') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Content-Type': 'application/json' }, body: JSON.stringify({ theme: t }) })" aria-label="Switch between light and dark theme" title="Light / dark theme"><x-icon name="moon" :size="17" /></button>
                 <a class="icon-btn" href="{{ route('notifications.index') }}" wire:navigate aria-label="Notifications, {{ $unread }} unread" title="Notifications"><x-icon name="bell" :size="17" />@if ($unread)<span class="dot"></span>@endif</a>
-                <div class="acct-wrap" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
-                    <button type="button" class="acct" x-on:click="open = !open" aria-label="Account menu" :aria-expanded="open"><span class="avatar av{{ $u->id % 5 }}" aria-hidden="true">{{ $u->initials() }}</span><span class="hide-md b sm">{{ $u->name }}</span></button>
+                <div class="acct-wrap" x-data="pop({ inline: true })">
+                    <button type="button" class="acct" x-on:click="toggle($el)" aria-label="Account menu" :aria-expanded="open"><span class="avatar av{{ $u->id % 5 }}" aria-hidden="true">{{ $u->initials() }}</span><span class="hide-md b sm">{{ $u->name }}</span></button>
                     <div class="pop acct-pop" role="menu" x-show="open" x-cloak wire:ignore.self x-transition.opacity>
                         <div class="pop-h">{{ $u->email }}<br>{{ $u->supplier?->name ?? config('app.org', 'Buyer organisation') }}</div><hr>
                         <a class="pop-i" href="{{ route('settings') }}" wire:navigate><x-icon name="sliders" />{{ __('Settings') }}</a>

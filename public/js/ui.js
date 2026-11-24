@@ -18,9 +18,12 @@
 
   /* ---------- popover ---------- */
   let POP = null, CS = null, DP = null;
+  const alpinePops = new Set();
+  function closeAlpinePops(except = null) { alpinePops.forEach(pop => { if (pop !== except) pop.close(); }); }
   function closePop() { if (POP) { POP.el.remove(); POP = null; } }
   function openPop(anchor, html, o = {}) {
     closePop();
+    closeAlpinePops();
     const p = document.createElement('div'); p.className = 'pop'; p.setAttribute('role', 'menu');
     const w = Math.min(o.w || 220, innerWidth - 16); p.style.width = w + 'px'; p.innerHTML = html;
     (anchor.closest('.modal,.drawer') || document.body).appendChild(p);
@@ -180,19 +183,46 @@
       const step = now => { const k = Math.min(1, (now - t0) / 520); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; if (to > 1) requestAnimationFrame(step); });
   }
 
-  function boot() { closePop(); tipHide(); enhance(); recentTrack(); countUp(); const f = $('#toasts'); if (f && f.dataset.flash) { toast(f.dataset.flash); delete f.dataset.flash; } }
+  function boot() { closePop(); closeAlpinePops(); tipHide(); enhance(); recentTrack(); countUp(); const f = $('#toasts'); if (f && f.dataset.flash) { toast(f.dataset.flash); delete f.dataset.flash; } }
   document.addEventListener('livewire:navigated', boot);
   document.addEventListener('DOMContentLoaded', boot);
   document.addEventListener('livewire:init', () => {
     let keep = null;
-    window.Livewire.hook('morph', () => { const a = document.activeElement; keep = a && a.classList.contains('cs') && a.previousElementSibling ? a.previousElementSibling.id : null; });
+    window.Livewire.hook('morph', () => { closePop(); closeAlpinePops(); const a = document.activeElement; keep = a && a.classList.contains('cs') && a.previousElementSibling ? a.previousElementSibling.id : null; });
     window.Livewire.hook('morphed', () => { enhance(); if (keep) { const s = document.getElementById(keep); if (s && s.nextElementSibling) s.nextElementSibling.focus(); keep = null; } });
     window.Livewire.hook('commit', ({succeed}) => succeed(() => queueMicrotask(() => enhance())));
   });
   document.addEventListener('alpine:init', () => {
     window.Alpine.data('pop', (o = {}) => ({
-      open: false, pos: {},
-      toggle(btn) { this.open = !this.open; if (this.open) this.$nextTick(() => this.place(btn)); },
+      open: false, pos: {}, trigger: null, _listening: false,
+      init() { alpinePops.add(this); },
+      destroy() { this.close(); alpinePops.delete(this); },
+      toggle(btn) {
+        if (this.open) return this.close(true);
+        closePop(); closeAlpinePops(this); this.trigger = btn; this.open = true; this.listen();
+        if (!o.inline) this.$nextTick(() => this.place(btn));
+      },
+      close(returnFocus = false) {
+        const trigger = this.trigger; this.open = false; this.unlisten();
+        if (returnFocus && trigger && document.contains(trigger)) trigger.focus();
+      },
+      listen() {
+        if (this._listening) return; this._listening = true;
+        this._outside = e => { const panel = this.$refs.p; if (this.open && !panel?.contains(e.target) && !this.trigger?.contains(e.target)) this.close(); };
+        this._escape = e => { if (this.open && e.key === 'Escape') { e.stopPropagation(); this.close(true); } };
+        this._dismiss = () => this.close();
+        document.addEventListener('pointerdown', this._outside, true);
+        document.addEventListener('keydown', this._escape, true);
+        document.addEventListener('scroll', this._dismiss, true);
+        window.addEventListener('resize', this._dismiss);
+      },
+      unlisten() {
+        if (!this._listening) return; this._listening = false;
+        document.removeEventListener('pointerdown', this._outside, true);
+        document.removeEventListener('keydown', this._escape, true);
+        document.removeEventListener('scroll', this._dismiss, true);
+        window.removeEventListener('resize', this._dismiss);
+      },
       place(btn) { const p = this.$refs.p, w = Math.min(o.w || 220, innerWidth - 16), r = btn.getBoundingClientRect(); p.style.width = w + 'px'; const h = p.offsetHeight;
         let left = o.left ? r.left : r.right - w; left = Math.max(8, Math.min(left, innerWidth - w - 8)); let top = r.bottom + 6; if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 6);
         this.pos = {width: w + 'px', left: left + 'px', top: top + 'px'}; },

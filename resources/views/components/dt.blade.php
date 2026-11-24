@@ -22,7 +22,7 @@
             @endif
             @foreach ($facets as $k => [$fl, $opts])
                 @php $n = count((array) ($lw->f[$k] ?? [])); @endphp
-                <span x-data="pop({ w: 270, left: true })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
+                <span x-data="pop({ w: 270, left: true })" style="display:contents">
                     <button type="button" class="fbtn {{ $n ? 'on' : '' }}" x-on:click="toggle($el)" aria-haspopup="true">{{ $fl }}@if ($n)<span class="n">{{ $n }}</span>@endif<x-icon name="down" :size="14" /></button>
                     <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos">
                         <div class="pop-h">{{ $fl }}<span class="sp"></span><button type="button" class="link sm" wire:click="clearFacet('{{ $k }}')">Clear</button></div>
@@ -37,7 +37,7 @@
             @endforeach
             <span class="sp"></span>{{ $tools ?? '' }}
             @if ($guide)
-                <span x-data="pop({ w: 340 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
+                <span x-data="pop({ w: 340 })" style="display:contents">
                     <button type="button" class="btn btn-g btn-sm" x-on:click="toggle($el)" aria-haspopup="true"><x-icon name="info" :size="14" /><span class="hide-md">Status guide</span></button>
                     <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos"><div class="pop-h">What each status means</div>
                         @foreach ($guide as $st => [$gl, $gt])<div style="padding:7px 10px"><x-badge :status="$st" :label="$gl" /><div class="muted sm" style="margin-top:3px">{{ $gt }}</div></div>@endforeach
@@ -45,7 +45,7 @@
                 </span>
             @endif
             @if ($cols)
-                <span x-data="pop({ w: 230 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
+                <span x-data="pop({ w: 230 })" style="display:contents">
                     <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="Choose columns" title="Choose columns"><x-icon name="cols" :size="17" /></button>
                     <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos">
                         <div class="pop-h">{{ __('Columns') }}</div>
@@ -56,7 +56,7 @@
                 </span>
             @endif
             @if ($export)
-                <span x-data="pop({ w: 200 })" x-on:click.outside="open = false" x-on:keydown.escape="open = false" style="display:contents">
+                <span x-data="pop({ w: 200 })" style="display:contents">
                     <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="Export" title="Export" aria-haspopup="true"><x-icon name="download" :size="17" /></button>
                     <div class="pop" x-ref="p" x-show="open" x-cloak wire:ignore.self :style="pos" role="menu">
                         <div class="pop-h">{{ __('Export what is shown') }}</div>
