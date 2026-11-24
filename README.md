@@ -6,7 +6,7 @@ This repository is a new, independent build. It does not touch the original DPan
 
 ## Requirements
 
-- PHP 8.2 or newer with the usual Laravel extensions (pdo, mbstring, openssl, intl)
+- PHP 8.3 or newer (required by the current Composer lockfile) with the usual Laravel extensions (pdo, mbstring, openssl, intl)
 - Composer
 - SQLite (default), MySQL 8 or PostgreSQL 14+
 
