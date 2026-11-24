@@ -22,7 +22,7 @@ class PagesTest extends TestCase
         $this->seed(RealisticWorkflowSeeder::class);
         auth()->logout();
 
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->admin()->create()->fresh();
         $open = Rfq::where('status', 'open')->with('invitations')->firstOrFail();
         $closed = Rfq::where('status', 'closed')->firstOrFail();
         $draft = Rfq::where('status', 'draft')->firstOrFail();
@@ -67,12 +67,12 @@ class PagesTest extends TestCase
         }
 
         $pendingCompany = Supplier::factory()->pending()->create();
-        $pending = User::factory()->supplier($pendingCompany)->create();
+        $pending = User::factory()->supplier($pendingCompany)->create()->fresh();
         $market = Market::create(['name' => 'Fixture market', 'city' => 'Bakı', 'status' => 'active']);
         $store = Store::create(['market_id' => $market->id, 'name' => 'Fixture store', 'status' => 'active']);
-        $seller = User::factory()->create(['role' => 'seller', 'store_id' => $store->id]);
-        $marketWorker = User::factory()->create(['role' => 'market_worker', 'store_id' => $store->id]);
-        $fieldWorker = User::factory()->create(['role' => 'supplier_worker', 'supplier_id' => $supplierId]);
+        $seller = User::factory()->create(['role' => 'seller', 'store_id' => $store->id])->fresh();
+        $marketWorker = User::factory()->create(['role' => 'market_worker', 'store_id' => $store->id])->fresh();
+        $fieldWorker = User::factory()->create(['role' => 'supplier_worker', 'supplier_id' => $supplierId])->fresh();
 
         foreach ([$pending, $seller, $marketWorker, $fieldWorker] as $account) {
             foreach (['/', '/notifications', '/settings'] as $page) {
