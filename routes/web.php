@@ -5,6 +5,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SearchSuggestionController;
 
 Route::middleware('guest')->group(function () {
     Route::view('/welcome', 'pages.landing')->name('landing');
@@ -35,6 +36,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'active', 'verified'])->group(function () {
     Route::get('/', Livewire\Dashboard::class)->name('dashboard');
     Route::get('/search', Livewire\Search::class)->name('search');
+    Route::get('/search/suggest', SearchSuggestionController::class)->name('search.suggest');
     Route::get('/settings', Livewire\Settings::class)->name('settings');
     Route::get('/notifications', Livewire\Notifications::class)->name('notifications.index');
     Route::post('/prefs/theme', function (Request $request) {

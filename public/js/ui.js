@@ -109,6 +109,19 @@
   }
   function dpSet(day, keep) { const el = DP.el; el.value = day ? (DP.time ? `${day}T${DP.time}` : day) : ''; csSync(el); fire(el); if (!keep) { closePop(); if (document.contains(el) && el.nextElementSibling) el.nextElementSibling.focus(); } }
 
+  let searchTimer = null, searchSeq = 0;
+  function searchOpen(input) {
+    const form = input.closest('[data-search-suggest]'); if (!form) return; const q = input.value.trim(), seq = ++searchSeq;
+    clearTimeout(searchTimer); searchTimer = setTimeout(async () => {
+      try { const data = await fetch(form.dataset.searchSuggest + '?q=' + encodeURIComponent(q), {headers: {Accept: 'application/json'}}).then(r => r.json()); if (seq !== searchSeq || document.activeElement !== input) return;
+        const row = (r, i) => `<button type="button" class="pop-i" data-search-row="${i}" data-href="${esc(r.url)}">${ic(r.icon)}<span style="min-width:0"><b style="display:block">${esc(r.title)}</b><span class="muted sm">${esc(r.sub)}</span></span></button>`;
+        const pages = data.pages.length ? `<div class="pop-h">${tx('Go to')}</div>${data.pages.map((r, i) => row(r, i)).join('')}` : '';
+        const records = data.records.length ? `<div class="pop-h">${tx('Results')}</div>${data.records.map((r, i) => row(r, i + data.pages.length)).join('')}` : '';
+        openPop(form, pages + records || `<div class="empty" style="padding:20px"><p>${q ? tx('No results for') + ' "' + esc(q) + '".' : tx('Go to')}</p></div>`, {w: Math.max(300, form.offsetWidth), left: true});
+      } catch (_) { /* Search suggestions must never interrupt normal Enter navigation. */ }
+    }, q.length < 2 ? 0 : 200);
+  }
+
   document.addEventListener('click', e => {
     const t = e.target; if (!t.closest) return;
     if (POP && POP.el.contains(t)) {
@@ -129,12 +142,14 @@
     const row = t.closest('[data-href]'); if (row && !t.closest('a,button,input,label,select,textarea,.cs')) window.Livewire.navigate(row.dataset.href);
   });
   document.addEventListener('change', e => { const t = e.target; if (t.classList && t.classList.contains('native-hide')) csSync(t); if (t.dataset && t.dataset.tmi && DP && POP) { const h = parseInt(POP.el.querySelector('[data-tmi=h]').value, 10) || 0, m = parseInt(POP.el.querySelector('[data-tmi=m]').value, 10) || 0; tmSet(Math.min(23, Math.max(0, h)), Math.min(59, Math.max(0, m))); } });
-  document.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') autoGrow(e.target); if (POP && e.target.closest && e.target.closest('.cs-find')) csFilter(e.target); if (e.target.dataset && e.target.dataset.tmi) e.target.value = e.target.value.replace(/\D/g, ''); });
+  document.addEventListener('input', e => { if (e.target.id === 'gsearch') searchOpen(e.target); if (e.target.tagName === 'TEXTAREA') autoGrow(e.target); if (POP && e.target.closest && e.target.closest('.cs-find')) csFilter(e.target); if (e.target.dataset && e.target.dataset.tmi) e.target.value = e.target.value.replace(/\D/g, ''); });
+  document.addEventListener('focusin', e => { if (e.target.id === 'gsearch') searchOpen(e.target); });
   document.addEventListener('scroll', e => { const w = e.target; if (w.classList && (w.classList.contains('tbl-wrap') || w.classList.contains('cmp-wrap'))) edges(w); else if (POP && !(w.nodeType === 1 && POP.el.contains(w))) closePop(); tipHide(); }, true);
   window.addEventListener('resize', () => { closePop(); $$('.tbl-wrap,.cmp-wrap').forEach(edges); });
   document.addEventListener('keydown', e => {
     const a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
     if (POP && e.key === 'Escape') { e.stopPropagation(); const an = POP.anchor; closePop(); if (document.contains(an)) an.focus(); return; }
+    if (POP && POP.anchor?.id === 'gsearch' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { const rows = $$('[data-search-row]', POP.el); if (!rows.length) return; e.preventDefault(); const i = rows.indexOf(document.activeElement); rows[Math.max(0, Math.min(rows.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))].focus(); return; }
     if (POP && e.key === 'Enter' && a.closest && a.closest('.cs-find')) { e.preventDefault(); const first = POP.el.querySelector('[data-pick]:not([hidden]):not([disabled])'); if (first) first.click(); return; }
     if (POP && a.dataset && a.dataset.tmi) { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); const [h, m] = DP.time.split(':').map(Number), d = e.key === 'ArrowUp' ? 1 : -1; a.dataset.tmi === 'h' ? tmSet(h + d, m) : tmSet(h, m + d); } return; }
     if (POP && /^Arrow/.test(e.key)) {

@@ -41,7 +41,7 @@
             <button type="button" class="icon-btn menu-btn" x-on:click="nav = true" aria-label="Open navigation"><x-icon name="menu" :size="18" /></button>
             <button type="button" class="icon-btn collapse-btn" x-on:click="collapsed = !collapsed; localStorage.setItem('sb', collapsed ? '1' : '0')" aria-label="Collapse sidebar"><x-icon name="panel" :size="18" /></button>
             <span class="portal hide-md" title="You are signed in as {{ $u->roleLabel() }}"><x-icon name="shield" :size="14" />{{ __(':role workspace', ['role' => __($u->roleLabel())]) }}</span>
-            <form class="tb-search" role="search" action="{{ route('search') }}" method="get" x-data x-on:submit.prevent="Livewire.navigate('{{ route('search') }}?q=' + encodeURIComponent($refs.q.value))" x-on:keydown.window.ctrl.k.prevent="$refs.q.focus()">
+            <form class="tb-search" role="search" action="{{ route('search') }}" method="get" data-search-suggest="{{ route('search.suggest') }}" x-data x-on:submit.prevent="Livewire.navigate('{{ route('search') }}?q=' + encodeURIComponent($refs.q.value))" x-on:keydown.window.ctrl.k.prevent="$refs.q.focus()">
                 <x-icon name="search" /><input x-ref="q" id="gsearch" name="q" type="search" placeholder="{{ __('Search requests, orders, suppliers…') }}" aria-label="Global search" autocomplete="off" value="{{ request('q') }}"><kbd>Ctrl K</kbd>
             </form>
             <div class="tb-actions">
