@@ -29,16 +29,16 @@ class ReminderService
     public function run(): int
     {
         $this->sent = 0;
-        // Requests closing within 24 hours: invited suppliers that have not quoted yet.
-        foreach (Rfq::where('status', 'open')->whereBetween('deadline_at', [now(), now()->addDay()])->with('invitations', 'quotes')->get() as $rfq) {
+        // Requests closing soon (SLA rule, one day by default): invited suppliers that have not quoted yet.
+        foreach (Rfq::where('status', 'open')->whereBetween('deadline_at', [now(), now()->addDays(\App\Support\Setting::int('sla.quote_reminder_days'))])->with('invitations', 'quotes')->get() as $rfq) {
             foreach ($rfq->invitations->where('status', '!=', 'declined') as $inv) {
                 if (! $rfq->quotes->where('supplier_id', $inv->supplier_id)->where('status', 'submitted')->count()) {
                     $this->once("rfq-closing:{$rfq->id}:{$inv->supplier_id}", fn () => Notifier::supplier($inv->supplier_id, "Reminder: {$rfq->number} closes {$rfq->deadline_at->diffForHumans()} and you have not sent a quotation.", route('quotes.form', $rfq), 'Reminder'));
                 }
             }
         }
-        // Orders issued three days ago and still not acknowledged.
-        foreach (PurchaseOrder::where('status', 'issued')->where('issued_at', '<=', now()->subDays(3))->get() as $po) {
+        // Orders issued some days ago (SLA rule, three by default) and still not acknowledged.
+        foreach (PurchaseOrder::where('status', 'issued')->where('issued_at', '<=', now()->subDays(\App\Support\Setting::int('sla.po_ack_days')))->get() as $po) {
             $this->once("po-ack:{$po->id}", fn () => Notifier::supplier($po->supplier_id, "Reminder: purchase order {$po->number} is waiting for your acknowledgement.", route('orders.show', $po), 'Reminder'));
         }
         // Orders past their delivery date.
@@ -53,11 +53,11 @@ class ReminderService
             $this->once("inv-due:{$inv->id}", fn () => Notifier::send($inv->order->buyer, "Invoice {$inv->supplier_ref} is due {$inv->due_on->format('j M Y')} and not yet marked as paid.", route('invoices.show', $inv), 'Reminder'));
         }
         // Requisitions waiting for approval longer than two days.
-        foreach (Requisition::where('status', 'pending')->where('submitted_at', '<=', now()->subDays(2))->with('approvals')->get() as $req) {
+        foreach (Requisition::where('status', 'pending')->where('submitted_at', '<=', now()->subDays(\App\Support\Setting::int('sla.requisition_days')))->with('approvals')->get() as $req) {
             $step = $req->approvals->firstWhere('status', 'pending');
             if ($step) {
                 $this->once("pr-wait:{$req->id}:{$step->step}", fn () => Notifier::send(User::whereIn('role', array_unique([$step->role, 'admin']))->where('id', '!=', $req->requester_id)->get()->filter(fn (User $u) => $u->allowed('requisitions', 'A')),
-                    "Reminder: requisition {$req->number} has waited more than two days for {$step->label}.", route('requisitions.show', $req), 'Reminder'));
+                    "Reminder: requisition {$req->number} has waited too long for {$step->label}.", route('requisitions.show', $req), 'Reminder'));
             }
         }
         // Supplier documents expiring within 14 days.

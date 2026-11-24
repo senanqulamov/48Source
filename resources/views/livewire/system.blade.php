@@ -9,9 +9,25 @@
     <x-ph :title="$head[0]" :desc="$head[1]" :crumbs="[[$head[0]]]">
         @if ($tab === 'health')<button type="button" class="btn" wire:click="$refresh"><x-icon name="refresh" />Re-check now</button>@endif
     </x-ph>
+    @if ($page === 'health')<x-strip :items="$strip" />@endif
     @if ($page === 'health')<x-tabs :on="$tab" :tabs="['health' => 'Services', 'currencies' => ['Currencies', $currencies->where('active', true)->count()]]" />@endif
     @if ($tab === 'health')
-        <x-card :flush="true"><ul class="list">@foreach ($health as $h)<li><x-badge :status="$h['ok'] ? 'ok' : 'warn'" :label="$h['ok'] ? 'OK' : 'Check'" /><div class="grow"><div class="t1">{{ $h['name'] }}</div><div class="muted sm">{{ $h['note'] }}</div></div></li>@endforeach</ul></x-card>
+        <div class="grid g-2">
+            <x-card title="Services" sub="Checked each time this page opens" :flush="true"><ul class="list">@foreach ($health as $h)<li data-plain><div class="grow"><div class="t1">{{ $h['name'] }}</div><div class="muted sm">{{ $h['note'] }}</div></div><x-badge :status="$h['ok'] ? 'ok' : 'warn'" :label="$h['ok'] ? 'Operational' : 'Needs attention'" /></li>@endforeach</ul></x-card>
+            <div class="stack">
+                <x-card title="Feature flags" sub="Changes take effect at once and are logged" :flush="true"><ul class="list">
+                    @foreach ($flags as $key => $f)<li wire:key="hfl-{{ $key }}" data-plain><div class="grow"><div class="t1">{{ $f['label'] }}</div></div><x-badge :status="$f['on'] ? 'ok' : 'draft'" :label="$f['on'] ? 'On' : 'Off'" />@perm('system', 'E')<button type="button" class="btn btn-sm" wire:click="toggleFlag('{{ $key }}')">{{ $f['on'] ? 'Switch off' : 'Switch on' }}</button>@endperm</li>@endforeach
+                </ul></x-card>
+                <x-card title="Import & export">
+                    <div class="row wrap" style="gap:8px">
+                        <a class="btn" href="{{ route('impex.index') }}" wire:navigate><x-icon name="upload" />Import suppliers</a>
+                        <a class="btn" href="{{ route('accounting.index') }}" wire:navigate><x-icon name="download" />Accounting export</a>
+                        <a class="btn" href="{{ route('rfqs.index') }}" wire:navigate><x-icon name="download" />Export RFQs</a>
+                    </div>
+                    <p class="help" style="margin-top:10px">Imports accept .xlsx and .csv with the 48Source templates. Every list exports what it shows.</p>
+                </x-card>
+            </div>
+        </div>
     @elseif ($tab === 'flags')
         <x-card title="Feature flags" sub="Changes take effect at once and are logged" :flush="true"><ul class="list">
             @foreach ($flags as $key => $f)<li wire:key="fl-{{ $key }}"><div class="grow"><div class="t1">{{ $f['label'] }}</div><div class="muted sm mono">{{ $key }}</div></div><x-badge :status="$f['on'] ? 'ok' : 'draft'" :label="$f['on'] ? 'On' : 'Off'" />@perm('system', 'E')<button type="button" class="btn btn-sm" wire:click="toggleFlag('{{ $key }}')">{{ $f['on'] ? 'Switch off' : 'Switch on' }}</button>@endperm</li>@endforeach

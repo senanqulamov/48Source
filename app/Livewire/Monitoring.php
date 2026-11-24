@@ -32,9 +32,33 @@ class Monitoring extends Component
     public function mount(string $page = 'monitoring'): void
     {
         $this->page = $page === 'sla' ? 'sla' : 'monitoring';
+        foreach (\App\Support\Setting::SLA as $key => $rule) {
+            $this->rules[str_replace('.', '_', $key)] = \App\Support\Setting::int($key);
+        }
         $this->tab = $this->page === 'sla' ? 'sla' : (in_array($this->tab, ['requests', 'actions'], true) ? $this->tab : 'requests');
         $this->need('reports');
         abort_unless($this->me()->isSourcing(), 403);
+    }
+
+    /** The SLA rules as typed into the form on the SLA tracker. */
+    public array $rules = [];
+
+    public function saveRules(): void
+    {
+        $this->need('system', 'E');
+        $checks = [];
+        $names = [];
+        foreach (\App\Support\Setting::SLA as $key => [$label, , $min, $max]) {
+            $field = str_replace('.', '_', $key);
+            $checks["rules.{$field}"] = "required|integer|min:{$min}|max:{$max}";
+            $names["rules.{$field}"] = mb_strtolower($label);
+        }
+        $this->validate($checks, [], $names);
+        foreach (\App\Support\Setting::SLA as $key => $rule) {
+            \App\Support\Setting::set($key, (int) $this->rules[str_replace('.', '_', $key)]);
+        }
+        \App\Support\Audit::log('Settings', 'Changed the SLA rules');
+        $this->toast('SLA rules saved. They apply from the next check.');
     }
 
     public function runReminders(ReminderService $reminders): void
@@ -54,7 +78,7 @@ class Monitoring extends Component
                 $stage = 'Collecting quotations';
             } else {
                 $start = $r->closed_at ?? $r->deadline_at ?? $r->updated_at;
-                $due = $start->copy()->addDays(self::AWARD_TARGET_DAYS);
+                $due = $start->copy()->addDays(\App\Support\Setting::int('sla.award_days'));
                 $stage = 'Comparing, award due';
             }
             $span = max(1, $start->diffInMinutes($due, false));
@@ -81,7 +105,7 @@ class Monitoring extends Component
     {
         $u = $this->me();
         $actions = collect();
-        foreach (PurchaseOrder::visibleTo($u)->where('status', 'issued')->where('issued_at', '<=', now()->subDays(3))->with('supplier')->get() as $p) {
+        foreach (PurchaseOrder::visibleTo($u)->where('status', 'issued')->where('issued_at', '<=', now()->subDays(\App\Support\Setting::int('sla.po_ack_days')))->with('supplier')->get() as $p) {
             $actions->push([$p->number, route('orders.show', $p), "Not acknowledged by {$p->supplier->name} for " . (int) $p->issued_at->diffInDays(now()) . ' days', 'warn']);
         }
         foreach (PurchaseOrder::visibleTo($u)->whereIn('status', ['acknowledged', 'in_transit'])->whereDate('expected_at', '<', now()->toDateString())->with('supplier')->get() as $p) {
@@ -93,8 +117,8 @@ class Monitoring extends Component
         foreach (Invoice::visibleTo($u)->where('status', 'approved')->whereDate('due_on', '<', now()->toDateString())->with('supplier')->get() as $i) {
             $actions->push([$i->number, route('invoices.show', $i), "Payment to {$i->supplier->name} is overdue since {$i->due_on->format('j M')}", 'bad']);
         }
-        foreach (Requisition::visibleTo($u)->where('status', 'pending')->where('submitted_at', '<=', now()->subDays(2))->get() as $q) {
-            $actions->push([$q->number, route('requisitions.show', $q), 'Waiting for approval for more than two days', 'warn']);
+        foreach (Requisition::visibleTo($u)->where('status', 'pending')->where('submitted_at', '<=', now()->subDays(\App\Support\Setting::int('sla.requisition_days')))->get() as $q) {
+            $actions->push([$q->number, route('requisitions.show', $q), 'Waiting for approval longer than the SLA rule allows', 'warn']);
         }
 
         $rows = $this->rows();
@@ -111,7 +135,7 @@ class Monitoring extends Component
             ['l' => 'Due within 7 days', 'v' => $rows->filter(fn ($x) => $x['due']->isFuture() && $x['due']->lte($week))->count(), 's' => 'deadlines and award targets'],
         ];
 
-        return view('livewire.monitoring', ['strip' => $strip, 'rows' => $rows, 'actions' => $actions, 'target' => self::AWARD_TARGET_DAYS,
+        return view('livewire.monitoring', ['strip' => $strip, 'rows' => $rows, 'actions' => $actions, 'target' => \App\Support\Setting::int('sla.award_days'),
             'reminders' => $this->tab === 'sla' ? \App\Models\Reminder::latest('id')->limit(60)->get() : collect(), 'beat' => \Illuminate\Support\Facades\Cache::get('scheduler:heartbeat')]);
     }
 }

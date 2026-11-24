@@ -105,7 +105,23 @@ class System extends Component
 
     public function render(SystemService $system)
     {
-        return view('livewire.system', ['health' => $this->tab === 'health' ? $system->health() : [], 'flags' => collect(FeatureFlag::DEFAULTS)->map(fn ($d, $k) => ['label' => $d[0], 'on' => FeatureFlag::isOn($k)]),
+        $health = $this->tab === 'health' ? $system->health() : [];
+        $strip = [];
+        if ($this->page === 'health') {
+            $today = now()->startOfDay();
+            $mail = \App\Models\OutboxEmail::where('created_at', '>=', $today);
+            $all = (clone $mail)->count();
+            $failed = (clone $mail)->where('status', 'failed')->count();
+            $okCount = collect($health)->where('ok', true)->count();
+            $strip = [
+                ['l' => 'Overall', 'v' => $health ? $okCount.' / '.count($health) : '-', 's' => 'services working', 'c' => $health && $okCount === count($health) ? 'ok' : 'warn'],
+                ['l' => 'Emails failed today', 'v' => $failed, 's' => $failed ? 'open the outbox to resend' : 'no failed messages', 'c' => $failed ? 'bad' : '', 'href' => route('outbox.index')],
+                ['l' => 'Events today', 'v' => ActivityLog::where('created_at', '>=', $today)->count(), 's' => 'logged actions', 'href' => route('logs.index')],
+                ['l' => 'Mail delivery', 'v' => $all ? round(($all - $failed) * 100 / $all, 1).'%' : '-', 's' => $all ? $failed.' of '.$all.' failed today' : 'no mail written today', 'c' => $failed ? 'warn' : ''],
+            ];
+        }
+
+        return view('livewire.system', ['strip' => $strip, 'health' => $health, 'flags' => collect(FeatureFlag::DEFAULTS)->map(fn ($d, $k) => ['label' => $d[0], 'on' => FeatureFlag::isOn($k)]),
             'currencies' => Currency::orderBy('code')->get(), 'transfers' => $this->tab === 'data' ? ActivityLog::whereIn('area', ['Import', 'Catalog'])->where('action', 'like', 'Imported%')->latest('created_at')->limit(30)->get() : collect()]);
     }
 }

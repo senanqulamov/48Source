@@ -87,6 +87,64 @@ final class Chart
             $w, $h, $id, $grid, $line, $f($x($n - 1)), $h - $pb, $f($x(0)), $h - $pb, $id, $line, $marks);
     }
 
+    /**
+     * Vertical bars, one or two series, as in the accepted design.
+     *
+     * @param array<int, string> $labels
+     * @param array<int, int|float> $a
+     * @param array<int, int|float>|null $b
+     */
+    public static function bars(array $labels, array $a, ?array $b = null, string $unit = ''): string
+    {
+        $n = count($labels);
+        if ($n === 0) {
+            return '<p class="faint">Nothing to show yet.</p>';
+        }
+        $w = 560; $h = 190; $pl = 34; $pb = 22; $pt = 10;
+        $top = max(1, max(array_merge($a, $b ?? [0])));
+        $step = 10 ** max(0, (int) floor(log10($top)) - 1) * 5;
+        $max = (int) (ceil($top / $step) * $step) ?: 5;
+        $gw = ($w - $pl) / $n;
+        $bw = min(16, $gw / 3);
+        $y = fn (float $v) => round($pt + ($h - $pt - $pb) * (1 - $v / $max), 1);
+        $g = '';
+        for ($i = 0; $i <= 4; $i++) {
+            $v = $max / 4 * $i;
+            $g .= sprintf('<line class="gl" x1="%d" x2="%d" y1="%s" y2="%s"/><text x="%d" y="%s" text-anchor="end">%s</text>', $pl, $w, $y($v), $y($v), $pl - 6, $y($v) + 3, number_format($v));
+        }
+        foreach (array_values($labels) as $i => $l) {
+            $cx = $pl + $gw * $i + $gw / 2;
+            $va = (float) ($a[$i] ?? 0);
+            $g .= sprintf('<rect class="a" x="%s" y="%s" width="%s" height="%s" rx="2"><title>%s: %s%s</title></rect>', round($cx - ($b ? $bw + 1 : $bw / 2), 1), $y($va), round($bw, 1), max(0, round($h - $pb - $y($va), 1)), self::e($l), $unit, number_format($va));
+            if ($b) {
+                $vb = (float) ($b[$i] ?? 0);
+                $g .= sprintf('<rect class="bser" x="%s" y="%s" width="%s" height="%s" rx="2"><title>%s: %s%s</title></rect>', round($cx + 1, 1), $y($vb), round($bw, 1), max(0, round($h - $pb - $y($vb), 1)), self::e($l), $unit, number_format($vb));
+            }
+            $g .= sprintf('<text x="%s" y="%d" text-anchor="middle">%s</text>', round($cx, 1), $h - 6, self::e($l));
+        }
+
+        return sprintf('<svg class="chart" viewBox="0 0 %d %d" role="img" aria-label="Bar chart">%s</svg>', $w, $h, $g);
+    }
+
+    /**
+     * Horizontal bars: label, bar scaled to the largest value, value text.
+     *
+     * @param array<int, array{0:string,1:int|float,2:string}> $rows
+     */
+    public static function hbars(array $rows, string $empty = 'Nothing to show yet.'): string
+    {
+        if (! $rows) {
+            return '<p class="faint">'.self::e($empty).'</p>';
+        }
+        $max = max(1, max(array_column($rows, 1)));
+        $out = '';
+        foreach ($rows as [$label, $value, $text]) {
+            $out .= sprintf('<div class="hb"><span class="sm">%s</span><div class="prog"><i style="width:%s%%"></i></div><span class="mono sm num">%s</span></div>', self::e($label), max(0, min(100, round($value * 100 / $max, 1))), self::e($text));
+        }
+
+        return $out;
+    }
+
     /** @param array<int, array{0:string,1:int}> $steps label, count */
     public static function funnel(array $steps): string
     {

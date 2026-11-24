@@ -24,6 +24,10 @@ class Reports extends Component
     #[Url]
     public int $year = 0;
 
+    /** KPI reports: how many months back. */
+    #[Url(except: 12)]
+    public int $period = 12;
+
     /** Which of the three pages this is: spend, savings or kpis. */
     public string $page = 'spend';
 
@@ -68,7 +72,12 @@ class Reports extends Component
         $spend = $reports->spend($u, $this->year);
         $rank = fn ($rows) => Chart::rank($rows->take(6)->map(fn ($r) => [$r['name'], $r['cents'], Money::format($r['cents'], 'USD', false)])->all());
 
+        $an = $this->page === 'spend' ? $reports->analysis($u, $this->year) : null;
+        $allBudgets = $this->page === 'spend' ? $reports->budgets($u, $this->year) : collect();
+
         return view('livewire.reports', [
+            'kr' => $this->tab === 'kpis' ? $reports->kpiReport($u, $this->period) : null,
+            'an' => $an, 'over' => $allBudgets->filter(fn ($b) => $b['used'] > $b['amount'])->count(), 'budgetCount' => $allBudgets->count(),
             'spend' => $spend, 'area' => Chart::area(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], array_map(fn ($c) => intdiv($c, 100), array_values($spend['months'])), '$'),
             'bySupplier' => $rank($spend['bySupplier']), 'byCategory' => $rank($spend['byCategory']),
             'budgets' => $this->tab === 'budgets' ? $reports->budgets($u, $this->year) : collect(), 'savings' => $this->tab === 'savings' ? $reports->savings($u, $this->year) : null,

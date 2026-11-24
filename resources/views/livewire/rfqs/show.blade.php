@@ -63,7 +63,7 @@
     @if ($tab === 'overview')
         @php
             $mine = $u->isAdmin() || $rfq->buyer_id === $u->id;
-            $awardBy = $rfq->status === 'closed' ? ($rfq->closed_at ?? $rfq->deadline_at)?->copy()->addDays(\App\Livewire\Monitoring::AWARD_TARGET_DAYS) : ($rfq->deadline_at?->copy()->addDays(\App\Livewire\Monitoring::AWARD_TARGET_DAYS));
+            $awardBy = $rfq->status === 'closed' ? ($rfq->closed_at ?? $rfq->deadline_at)?->copy()->addDays(\App\Support\Setting::int('sla.award_days')) : ($rfq->deadline_at?->copy()->addDays(\App\Support\Setting::int('sla.award_days')));
             $canSeal = $mine && $u->allowed('rfqs', 'E') && ($rfq->status === 'draft' || ($rfq->status === 'open' && ! $rfq->sealed && $live->isEmpty()));
         @endphp
         <div class="grid g-2-1">
