@@ -146,21 +146,24 @@
   window.addEventListener('toast', e => { const d = Array.isArray(e.detail) ? e.detail[0] : e.detail; if (d) toast(d.text, d.kind); });
 
   /* ---------- Livewire request feedback ---------- */
-  let activeButton = null, activeTimer = null;
+  const busyButtons = new Map();
   const uploading = new Set();
   function spinner() { const s = document.createElement('span'); s.className = 'lw-spinner'; s.setAttribute('aria-hidden', 'true'); return s; }
   function startButton(button) {
     if (!button || button.disabled || button.dataset.lwBusy) return;
     button.dataset.lwBusy = '1'; button.disabled = true; button.setAttribute('aria-busy', 'true');
-    activeButton = button;
-    activeTimer = setTimeout(() => { if (!button.isConnected || !button.dataset.lwBusy) return; button.classList.add('lw-busy'); if (!button.querySelector('.lw-spinner')) button.prepend(spinner()); }, 150);
+    const timer = setTimeout(() => { if (!button.isConnected || !button.dataset.lwBusy) return; button.classList.add('lw-busy'); if (!button.querySelector('.lw-spinner')) button.prepend(spinner()); }, 150);
+    busyButtons.set(button, timer);
   }
   function finishButton() {
-    if (activeTimer) clearTimeout(activeTimer); activeTimer = null;
-    const button = activeButton; activeButton = null;
-    if (!button || !button.isConnected) return;
-    button.classList.remove('lw-busy'); button.querySelector('.lw-spinner')?.remove(); delete button.dataset.lwBusy;
-    button.removeAttribute('aria-busy'); button.disabled = false;
+    busyButtons.forEach((timer, button) => {
+      clearTimeout(timer);
+      if (button.isConnected) {
+        button.classList.remove('lw-busy'); button.querySelector('.lw-spinner')?.remove(); delete button.dataset.lwBusy;
+        button.removeAttribute('aria-busy'); button.disabled = false;
+      }
+    });
+    busyButtons.clear();
   }
   function formButton(form) { return form.querySelector('button[type="submit"]:not([disabled]),input[type="submit"]:not([disabled])'); }
   document.addEventListener('click', e => {
@@ -168,7 +171,8 @@
     if (button && button.hasAttribute('wire:click')) startButton(button);
   }, true);
   document.addEventListener('submit', e => {
-    const form = e.target; if (form.hasAttribute && form.hasAttribute('wire:submit')) startButton(e.submitter || formButton(form));
+    const form = e.target;
+    if (form.attributes && [...form.attributes].some(a => a.name === 'wire:submit' || a.name.startsWith('wire:submit.'))) startButton(e.submitter || formButton(form));
   }, true);
   function uploadBar(input) {
     let bar = input.parentElement?.querySelector(':scope > .lw-upload-progress');
