@@ -145,6 +145,19 @@ final class Chart
         return $out;
     }
 
+    /** The coloured banner of a market card: a gradient and a row of stalls, always the same for the same market. */
+    public static function marketArt(int $id): string
+    {
+        $h = ($id * 47 + 4) % 360;
+        $bars = '';
+        for ($i = 0; $i < 9; $i++) {
+            $seed = crc32($id.'-'.$i);
+            $bars .= sprintf('<rect x="%d" y="%s" width="34" height="90" rx="5" fill="rgba(255,255,255,%s)"/>', 6 + $i * 46, 30 + ($seed % 27), round(0.08 + (($seed >> 5) % 11) / 100, 2));
+        }
+
+        return sprintf('<svg class="m-art" viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="mg%d" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(%d 65%% 46%%)"/><stop offset="1" stop-color="hsl(%d 70%% 32%%)"/></linearGradient></defs><rect width="400" height="120" fill="url(#mg%d)"/>%s</svg>', $id, $h, ($h + 50) % 360, $id, $bars);
+    }
+
     /** @param array<int, array{0:string,1:int}> $steps label, count */
     public static function funnel(array $steps): string
     {

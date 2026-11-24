@@ -116,6 +116,8 @@ Route::middleware(['auth', 'active', 'verified'])->group(function () {
     })->name('prefs.locale');
     Route::middleware('perm:marketplace,V')->group(function () {
         Route::get('/market', Livewire\Market\Shop::class)->name('market.shop');
+        Route::get('/market/catalogue', Livewire\Market\Shop::class)->defaults('page', 'products')->name('market.products');
+        Route::get('/market/markets', Livewire\Market\Places::class)->name('market.places');
         Route::get('/market/basket', Livewire\Market\Basket::class)->name('market.basket');
         Route::get('/market/sourcing/{number?}', Livewire\Market\Sourcing::class)->name('market.sourcing');
         Route::get('/market/orders', Livewire\Market\Orders::class)->name('market.orders.index');

@@ -48,6 +48,8 @@ final class Nav
         'health.index' => 'Whether the database, cache, mail, scheduler and file storage are working.',
         'flags.index' => 'Switch optional features on or off for the whole organisation.',
         'impex.index' => 'Import suppliers from Excel or CSV and see where each list can be exported.',
+        'market.products' => 'Every product the stores list, with its sellers, lowest price and stock.',
+        'market.places' => 'The markets, what is sold in each, and how many stores and workers they have.',
         'market.basket' => 'Products you picked in the marketplace. One order is placed per store.',
         'system.index' => 'Service status, feature switches, currencies and supplier import.',
     ];
@@ -83,8 +85,9 @@ final class Nav
                 ['Finance', $finance],
                 ['Insight', $insight],
                 ['Marketplace', [
+                    ['market.products', 'Products', 'box', 'marketplace'],
                     ['categories.index', 'Categories', 'flag', 'catalog'],
-                    ['markets.index', 'Markets', 'store', 'catalog'],
+                    ['market.places', 'Markets', 'store', 'catalog'],
                     ['market.orders.index', 'Marketplace orders', 'truck', 'marketplace'],
                 ]],
                 ['People', [
@@ -114,6 +117,8 @@ final class Nav
                 ['Insight', $insight],
                 ['Network', [
                     ['suppliers.index', 'Suppliers', 'building', 'suppliers'],
+                    ['market.products', 'Products', 'box', 'marketplace'],
+                    ['market.places', 'Markets', 'store', 'marketplace'],
                     ['messages.index', 'Messages', 'mail', null],
                 ]],
                 ['Marketplace', [
@@ -130,8 +135,10 @@ final class Nav
                     ['orders.index', 'Purchase orders', 'box', 'orders'],
                 ]],
                 ['Marketplace', [
+                    ['market.products', 'Products', 'box', 'marketplace'],
+                    ['market.places', 'Markets', 'store', 'marketplace'],
                     ['market.orders.index', 'Marketplace orders', 'truck', 'marketplace'],
-                    ['market.shop', 'Buy products', 'store', 'marketplace'],
+                    ['market.shop', 'Buy products', 'cols', 'marketplace'],
                     ['market.basket', 'Basket', 'box', 'marketplace'],
                 ]],
                 ['Team', [
@@ -150,6 +157,7 @@ final class Nav
                 ['Workspace', [['dashboard', 'Dashboard', 'dash', null]]],
                 ['Marketplace', [
                     ['market.offers', 'Products', 'box', 'catalog'],
+                    ['market.places', 'Markets', 'store', 'marketplace'],
                     ['market.orders.index', 'Orders', 'truck', 'marketplace'],
                 ]],
                 ['Team', [
@@ -208,6 +216,14 @@ final class Nav
     {
         if (! $user || $routeName === 'dashboard') {
             return null;
+        }
+        // An exact menu entry wins; otherwise the group of the area the page belongs to.
+        foreach (self::groups($user, self::side($user)) as [$label, $items]) {
+            foreach ($items as [$route]) {
+                if ($route === $routeName) {
+                    return __($label);
+                }
+            }
         }
         $area = self::area($routeName);
         foreach (self::groups($user, self::side($user)) as [$label, $items]) {

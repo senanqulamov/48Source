@@ -54,3 +54,5 @@ a.strip-i{color:inherit;text-decoration:none}
 .pop{overscroll-behavior:contain}
 @media (prefers-reduced-motion:reduce){.tbl.fx tbody,.page.tabfx .tabs~*{animation:none}}
 .pop.pop-top{z-index:400}
+.oq{width:84px;height:34px}
+.p-pic{position:relative}

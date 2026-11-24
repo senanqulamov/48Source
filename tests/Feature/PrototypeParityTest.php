@@ -26,7 +26,7 @@ class PrototypeParityTest extends TestCase
             'Sourcing' => ['RFQs', 'Compare quotations', 'Purchase orders', 'Requisitions', 'Information requests', 'Contracts'],
             'Finance' => ['Invoices & receipts', 'Spend & budgets', 'Savings'],
             'Insight' => ['Supplier 360', 'Assistant'],
-            'Marketplace' => ['Categories', 'Markets', 'Marketplace orders'],
+            'Marketplace' => ['Products', 'Categories', 'Markets', 'Marketplace orders'],
             'People' => ['Suppliers', 'Users & roles', 'Messages'],
             'Monitoring' => ['RFQ monitoring', 'SLA tracker', 'KPI reports'],
             'System' => ['Notifications', 'Logs', 'System health', 'Feature flags', 'Import / export', 'Email outbox', 'Accounting export'],
@@ -39,6 +39,7 @@ class PrototypeParityTest extends TestCase
         $this->assertSame(['Workspace', 'Sourcing', 'Finance', 'Insight', 'Network', 'Marketplace', 'Records'], array_keys($buyer));
         $this->assertSame(['Invoices & receipts', 'Spend & budgets', 'Savings'], $buyer['Finance']);
         $this->assertSame(['Marketplace', 'Basket', 'My marketplace orders'], $buyer['Marketplace']);
+        $this->assertSame(['Suppliers', 'Products', 'Markets', 'Messages'], $buyer['Network']);
         $this->assertSame(['Activity logs'], $buyer['Records']);
 
         $supplier = $this->menu($this->supplierUser());
