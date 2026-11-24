@@ -16,40 +16,107 @@ use RuntimeException;
 class LargeDemoSeeder extends Seeder
 {
     private const PREFIX = 'Demo ';
+    /** Invented Azerbaijani business vocabulary. These are combinations, never numbered display names. */
+    private const CITIES = ['Bakı', 'Sumqayıt', 'Gəncə', 'Mingəçevir', 'Şirvan', 'Lənkəran'];
+    private const PEOPLE_GIVEN = ['Elvin', 'Aysel', 'Nigar', 'Tural', 'Leyla', 'Emin', 'Rauf', 'Sevinc', 'Orxan', 'Günel', 'Kamran', 'Zəhra', 'Ramil', 'Aynur', 'Cavid', 'Səbinə'];
+    private const PEOPLE_FAMILY = ['Məmmədov', 'Quliyeva', 'Rzayeva', 'Həsənov', 'Hüseynova', 'Cəfərov', 'Əliyev', 'İsmayılova', 'Abbasov', 'Babayev', 'Kərimova', 'Sultanov', 'Nəcəfli', 'Vəliyeva', 'Qasımov', 'Mirzəyeva'];
+    private const COMPANY_PREFIX = ['Abşeron', 'Qobustan', 'Şirvan', 'Xəzər', 'Zirvə', 'Araz', 'Buta', 'Gilan', 'Kür', 'Muğan'];
+    private const COMPANY_TRADE = ['Polad', 'Sement və Çınqıl', 'Elektrik Sistemləri', 'Sənaye Avadanlığı', 'Tikinti Təchizatı', 'Logistika Xidmətləri', 'Təhlükəsizlik Sistemləri', 'Texniki Həllər', 'İqlim Sistemləri', 'Ofis Təchizatı'];
+    private const COMPANY_QUALIFIER = ['Təminat', 'Layihə', 'İstehsal', 'Ticarət', 'Servis', 'İnşaat', 'Mühəndislik', 'Resurs', 'Sənaye', 'Təchizat'];
+    private const CATEGORY_TREE = [
+        'Tikinti materialları' => ['Armatur və metal məmulatlar', 'Sement və quru qarışıqlar', 'Beton və aqreqatlar', 'Kərpic və bloklar', 'İzolyasiya materialları'],
+        'Sənaye avadanlığı' => ['Nasoslar və klapanlar', 'Generatorlar və kompressorlar', 'Elektrik mühərrikləri', 'Ölçmə cihazları', 'Ehtiyat hissələri'],
+        'Elektrik və avtomatlaşdırma' => ['Kabel və naqillər', 'Paylayıcı lövhələr', 'İşıqlandırma', 'Avtomatlaşdırma və PLC', 'Akkumulyator və UPS'],
+        'İT və rabitə' => ['Noutbuk və iş stansiyaları', 'Şəbəkə avadanlığı', 'Server və saxlama', 'Ofis periferiyası', 'Proqram lisenziyaları'],
+        'Əməyin mühafizəsi' => ['Fərdi mühafizə vasitələri', 'Yanğın təhlükəsizliyi', 'İşarələr və baryerlər', 'İlk yardım və gigiyena', 'Nəzarət sistemləri'],
+        'Nəqliyyat və logistika' => ['Yükdaşıma', 'Xüsusi texnika icarəsi', 'Gömrük və ekspeditor', 'Anbar xidmətləri', 'Qablaşdırma'],
+        'İstismar xidmətləri' => ['HVAC xidməti', 'Təmizlik xidməti', 'Mühafizə xidməti', 'Texniki xidmət', 'Landşaft və abadlıq'],
+        'Peşəkar xidmətlər' => ['Layihələndirmə', 'Geodeziya və laboratoriya', 'Hüquq və audit', 'Təlim və sertifikatlaşdırma', 'Sığorta xidmətləri'],
+    ];
     private string $batch = '';
+
+    private function person(int $n): string
+    {
+        return self::PEOPLE_GIVEN[$n % count(self::PEOPLE_GIVEN)].' '.self::PEOPLE_FAMILY[intdiv($n, count(self::PEOPLE_GIVEN)) % count(self::PEOPLE_FAMILY)];
+    }
+
+    private function company(int $n): string
+    {
+        $prefix = self::COMPANY_PREFIX[$n % count(self::COMPANY_PREFIX)];
+        $trade = self::COMPANY_TRADE[intdiv($n, count(self::COMPANY_PREFIX)) % count(self::COMPANY_TRADE)];
+        $qualifier = self::COMPANY_QUALIFIER[intdiv($n, count(self::COMPANY_PREFIX) * count(self::COMPANY_TRADE)) % count(self::COMPANY_QUALIFIER)];
+
+        return "{$prefix} {$trade} {$qualifier} ".($n % 2 ? 'MMC' : 'ASC');
+    }
+
+    private function project(int $n): string
+    {
+        return ['Yasamal yaşayış kompleksi, B bloku', 'Hövsan logistika mərkəzi', 'Sumqayıt istehsalat sahəsi', 'Gəncə regional anbarı', 'Mingəçevir texniki parkı', 'Şirvan su təsərrüfatı sahəsi'][$n % 6];
+    }
+
+    private function marketName(int $n): string
+    {
+        $styles = ['Mərkəzi', 'Şərq', 'Qərb', 'Sahil', 'Dağətəyi', 'Sənaye'];
+
+        return self::CITIES[$n % count(self::CITIES)].' '.$styles[intdiv($n, count(self::CITIES)) % count($styles)].' Təchizat Bazarı';
+    }
+
+    /** @return array{name:string,unit:string,price:int} */
+    private function catalogueItem(int $n): array
+    {
+        $items = [
+            ['Armatur A500C 16 mm', 't', 148000], ['Portland sementi M400', 'bag', 760], ['Qaynaq toru 150 x 150 mm', 'sheet', 3900], ['Beton C25/30', 'm3', 14500],
+            ['Sənaye su nasosu 7.5 kW', 'pcs', 185000], ['Flanşlı klapan DN100', 'pcs', 24000], ['Mis kabel 3 x 2.5 mm²', 'm', 320], ['LED sənaye projektoru 150 W', 'pcs', 21500],
+            ['Noutbuk i7, 16 GB RAM', 'pcs', 245000], ['24 portlu şəbəkə kommutatoru', 'pcs', 98000], ['Qoruyucu dəbilqə', 'pcs', 1900], ['Yükdaşıma xidməti, Bakı', 'trip', 65000],
+        ];
+
+        return ['name' => $items[$n % count($items)][0], 'unit' => $items[$n % count($items)][1], 'price' => $items[$n % count($items)][2]];
+    }
 
     public function run(int $scale = 1, int $seed = 48, bool $fresh = false): void
     {
         if (app()->isProduction()) throw new RuntimeException('Demo data must never run in production.');
-        if ($fresh) $this->clear();
+        if ($fresh) { $this->clear(); $this->clearInterruptedAccounts(); }
         if (DB::table('demo_data_runs')->exists()) { $this->line('Large demo data already exists - use --fresh to rebuild it.'); return; }
         mt_srand($seed); $started = microtime(true); $this->batch = (string) Str::uuid(); $this->call(DatabaseSeeder::class);
         $password = env('DEMO_PASSWORD') ?: Str::password(18, symbols: true);
         $now = now(); $stamp = $now->toDateTimeString(); $passwordHash = Hash::make($password);
         $this->line('1/6 Categories, suppliers and accounts');
 
-        $groups = ['Construction', 'Metals', 'Technology', 'Facilities', 'Logistics', 'Industrial', 'Safety', 'Professional'];
-        foreach ($groups as $g) {
-            $gid = DB::table('categories')->insertGetId(['name' => self::PREFIX.$g, 'slug' => 'demo-'.Str::slug($g), 'created_at' => $stamp, 'updated_at' => $stamp]);
-            foreach (range(1, 5) as $n) DB::table('categories')->insert(['parent_id' => $gid, 'name' => self::PREFIX."$g category $n", 'slug' => "demo-".Str::slug($g)."-$n", 'created_at' => $stamp, 'updated_at' => $stamp]);
+        foreach (self::CATEGORY_TREE as $group => $children) {
+            $gid = DB::table('categories')->insertGetId(['name' => $group, 'slug' => 'catalog-'.Str::slug($group), 'created_at' => $stamp, 'updated_at' => $stamp]);
+            foreach ($children as $child) DB::table('categories')->insert(['parent_id' => $gid, 'name' => $child, 'slug' => 'catalog-'.Str::slug($group.'-'.$child), 'created_at' => $stamp, 'updated_at' => $stamp]);
         }
-        $categories = DB::table('categories')->where('slug', 'like', 'demo-%')->whereNotNull('parent_id')->pluck('id')->all();
-        $admins = $this->users(array_map(fn ($n) => ['name' => "Demo Administrator $n", 'email' => "admin$n@demo.48source.test", 'role' => 'admin'], range(1, 3)), $passwordHash, $stamp);
-        $buyerRows = array_map(fn ($n) => ['name' => $n === 40 ? 'Demo Buyer No Requests' : "Demo Buyer $n", 'email' => "bulk.buyer$n@demo.48source.test", 'role' => 'buyer', 'department' => ['Capital projects', 'IT', 'Operations'][$n % 3]], range(1, 40));
+        $categories = DB::table('categories')->where('slug', 'like', 'catalog-%')->whereNotNull('parent_id')->pluck('id')->all();
+        $admins = $this->users(array_map(fn ($n) => ['name' => $this->person($n), 'email' => "admin$n@demo.48source.test", 'role' => 'admin'], range(1, 3)), $passwordHash, $stamp);
+        $buyerRows = array_map(fn ($n) => ['name' => $this->person($n + 10), 'email' => "bulk.buyer$n@demo.48source.test", 'role' => 'buyer', 'department' => ['Kapital layihələri', 'İT və rəqəmsal həllər', 'İstismar və logistika', 'İstehsalat'][$n % 4]], range(1, 40));
         $buyers = $this->users($buyerRows, $passwordHash, $stamp);
         $supplierRows = []; $names = ['Atlas', 'Caspian', 'Nordic', 'Orion', 'Vector', 'Meridian', 'Körpü', 'Şimal']; $cities = ['Baku', 'Ganja', 'Tbilisi', 'Riga', 'Ankara'];
         foreach (range(1, 1000 * $scale) as $n) { $status = ['active', 'pending', 'inactive', 'blocked'][intdiv($n - 1, max(1, 250 * $scale)) % 4]; $supplierRows[] = ['name' => self::PREFIX.$names[$n % count($names)]." Procurement $n", 'legal_name' => self::PREFIX."Trading $n LLC", 'category_id' => $categories[$n % count($categories)], 'city' => $cities[$n % count($cities)], 'country' => 'Inventedland', 'contact_name' => "Demo Contact $n", 'email' => "supplier$n@demo.48source.test", 'phone' => '+994 50 555 '.str_pad((string) $n, 4, '0', STR_PAD_LEFT), 'status' => $status, 'status_reason' => $status === 'blocked' ? 'Demo compliance hold.' : null, 'rating_tenths' => 25 + ($n % 26), 'approved_at' => $status === 'active' ? $now->copy()->subDays(30 + ($n % 400))->toDateTimeString() : null, 'approved_by' => $admins[0], 'created_at' => $stamp, 'updated_at' => $stamp]; }
-        $this->insert('suppliers', $supplierRows); $supplierIds = DB::table('suppliers')->where('name', 'like', self::PREFIX.'%')->orderBy('id')->pluck('id')->all();
+        $supplierRows = [];
+        foreach (range(1, 1000 * $scale) as $n) {
+            $status = ['active', 'pending', 'inactive', 'blocked'][intdiv($n - 1, max(1, 250 * $scale)) % 4];
+            $supplierRows[] = ['name' => $this->company($n), 'legal_name' => $this->company($n), 'category_id' => $categories[$n % count($categories)], 'city' => self::CITIES[$n % count(self::CITIES)], 'country' => 'Azərbaycan', 'contact_name' => $this->person($n + 100), 'email' => "supplier$n@demo.48source.test", 'phone' => '+994 50 555 '.str_pad((string) $n, 4, '0', STR_PAD_LEFT), 'status' => $status, 'status_reason' => $status === 'blocked' ? 'Uyğunluq sənədləri yenilənənədək dayandırılıb.' : null, 'rating_tenths' => 25 + ($n % 26), 'approved_at' => $status === 'active' ? $now->copy()->subDays(30 + ($n % 400))->toDateTimeString() : null, 'approved_by' => $admins[0], 'created_at' => $stamp, 'updated_at' => $stamp];
+        }
+        $this->insert('suppliers', $supplierRows); $supplierIds = DB::table('suppliers')->whereIn('email', array_column($supplierRows, 'email'))->orderBy('id')->pluck('id')->all();
         $accountRows = []; foreach ($supplierIds as $i => $sid) { $n = $i + 1; $accountRows[] = ['name' => "Demo Supplier User $n", 'email' => "supplier.user$n@demo.48source.test", 'role' => 'supplier', 'supplier_id' => $sid]; if ($n % 3 === 0) $accountRows[] = ['name' => "Demo Field Worker $n", 'email' => "field$n@demo.48source.test", 'role' => 'supplier_worker', 'supplier_id' => $sid]; }
+        $accountRows = [];
+        foreach ($supplierIds as $i => $sid) { $n = $i + 1; $accountRows[] = ['name' => $this->person($n + 300), 'email' => "supplier.user$n@demo.48source.test", 'role' => 'supplier', 'supplier_id' => $sid]; if ($n % 3 === 0) $accountRows[] = ['name' => $this->person($n + 600), 'email' => "field$n@demo.48source.test", 'role' => 'supplier_worker', 'supplier_id' => $sid]; }
         $this->users($accountRows, $passwordHash, $stamp); $supplierUsers = DB::table('users')->where('email', 'like', 'supplier.user%@demo.48source.test')->pluck('id', 'supplier_id')->all();
 
         $this->line('2/6 RFQs, invitations, quotations and orders');
         $terms = ['Net 15', 'Net 30', 'Net 45']; $rfqs = []; $rfqCount = 2000 * $scale;
         foreach (range(1, $rfqCount) as $n) { $status = $n <= 1125 * $scale ? 'awarded' : ['draft', 'open', 'closed', 'cancelled'][$n % 4]; $when = $now->copy()->subDays(mt_rand(1, 540)); $rfqs[] = ['number' => sprintf('RFQ-%d-D%05d', $now->year, $n), 'title' => self::PREFIX.($n === 1 ? str_repeat('Long construction procurement title ', 6) : ['Steel reinforcement', 'Industrial pump', 'Network hardware', 'Facility cleaning', 'Freight transport'][$n % 5])." request $n", 'description' => 'Invented procurement request for realistic searching and reporting.', 'type' => $n % 4 === 0 ? 'public' : 'invited', 'category_id' => $categories[$n % count($categories)], 'buyer_id' => $buyers[$n % 39], 'status' => $status, 'currency' => ['USD', 'EUR', 'AZN'][$n % 3], 'budget_cents' => $n % 97 === 0 ? 0 : (50000 + ($n % 700) * 10000), 'deadline_at' => $when->copy()->addDays(10)->toDateTimeString(), 'delivery_location' => 'Demo depot '.($n % 12 + 1), 'required_by' => $when->copy()->addDays(45)->toDateString(), 'requirements' => 'Demo specification and quality certificates.', 'payment_terms' => $terms[$n % 3], 'scoring_preset' => 'balanced', 'sealed' => $n % 7 === 0, 'round' => 1, 'published_at' => $status === 'draft' ? null : $when->toDateTimeString(), 'closed_at' => in_array($status, ['closed', 'awarded'], true) ? $when->copy()->addDays(10)->toDateTimeString() : null, 'awarded_at' => $status === 'awarded' ? $when->copy()->addDays(12)->toDateTimeString() : null, 'cancelled_at' => $status === 'cancelled' ? $when->copy()->addDays(3)->toDateTimeString() : null, 'cancel_reason' => $status === 'cancelled' ? 'Demo scope changed.' : null, 'created_at' => $when->toDateTimeString(), 'updated_at' => $when->toDateTimeString()]; }
-        $this->insert('rfqs', $rfqs); $rfqIds = DB::table('rfqs')->where('title', 'like', self::PREFIX.'%')->orderBy('id')->pluck('id')->all();
+        $rfqs = [];
+        foreach (range(1, $rfqCount) as $n) {
+            $status = $n <= 1125 * $scale ? 'awarded' : ['draft', 'open', 'closed', 'cancelled'][$n % 4]; $when = $now->copy()->subDays(mt_rand(1, 360)); $item = $this->catalogueItem($n);
+            $rfqs[] = ['number' => sprintf('RFQ-%d-D%05d', $now->year, $n), 'title' => $item['name'].' - '.$this->project($n), 'description' => $item['name'].' tədarükü üçün texniki və kommersiya təklifi sorğusu.', 'type' => $n % 4 === 0 ? 'public' : 'invited', 'category_id' => $categories[$n % count($categories)], 'buyer_id' => $buyers[$n % 39], 'status' => $status, 'currency' => ['AZN', 'USD', 'EUR'][$n % 3], 'budget_cents' => $n % 97 === 0 ? 0 : $item['price'] * (10 + $n % 90), 'deadline_at' => $when->copy()->addDays(10)->toDateTimeString(), 'delivery_location' => $this->project($n), 'required_by' => $when->copy()->addDays(45)->toDateString(), 'requirements' => 'Keyfiyyət sertifikatları və uyğunluq sənədləri təqdim edilməlidir.', 'payment_terms' => $terms[$n % 3], 'scoring_preset' => 'balanced', 'sealed' => $n % 7 === 0, 'round' => 1, 'published_at' => $status === 'draft' ? null : $when->toDateTimeString(), 'closed_at' => in_array($status, ['closed', 'awarded'], true) ? $when->copy()->addDays(10)->toDateTimeString() : null, 'awarded_at' => $status === 'awarded' ? $when->copy()->addDays(12)->toDateTimeString() : null, 'cancelled_at' => $status === 'cancelled' ? $when->copy()->addDays(3)->toDateTimeString() : null, 'cancel_reason' => $status === 'cancelled' ? 'Layihə həcmi yenidən nəzərdən keçirilir.' : null, 'created_at' => $when->toDateTimeString(), 'updated_at' => $when->toDateTimeString()];
+        }
+        $this->insert('rfqs', $rfqs); $rfqIds = DB::table('rfqs')->where('number', 'like', 'RFQ-'.$now->year.'-D%')->orderBy('id')->pluck('id')->all();
         $items = []; foreach ($rfqIds as $i => $id) { $lines = $i === 0 ? 25 : ($i === 1 ? 1 : 1 + ($i % 8)); for ($p = 1; $p <= $lines; $p++) $items[] = ['rfq_id' => $id, 'position' => $p, 'name' => ['Rebar B500B', 'Industrial valve', 'Laptop workstation', 'Safety helmet', 'Freight service'][($i + $p) % 5]." $p", 'description' => 'Invented line item.', 'quantity_milli' => (10 + (($i + $p) % 200)) * 1000, 'unit' => 'pcs', 'target_price_cents' => 1000 + (($i + $p) % 9000), 'created_at' => $stamp, 'updated_at' => $stamp]; }
+        $items = []; foreach ($rfqIds as $i => $id) { $item = $this->catalogueItem($i); $items[] = ['rfq_id' => $id, 'position' => 1, 'name' => $item['name'], 'description' => 'Layihə üzrə tələb olunan material və ya xidmət.', 'quantity_milli' => (10 + $i % 90) * 1000, 'unit' => $item['unit'], 'target_price_cents' => $item['price'], 'created_at' => $stamp, 'updated_at' => $stamp]; }
         $this->insert('rfq_items', $items); $firstItems = DB::table('rfq_items')->selectRaw('MIN(id) id, rfq_id')->whereIn('rfq_id', $rfqIds)->groupBy('rfq_id')->pluck('id', 'rfq_id')->all();
-        $invitations = []; $quotes = []; foreach ($rfqIds as $i => $rid) { $quoteN = $i % 5 === 0 ? 0 : 5; for ($q = 0; $q < max(3, $quoteN); $q++) { $sid = $supplierIds[($i * 7 + $q) % (250 * $scale)]; $invitations[] = ['rfq_id' => $rid, 'supplier_id' => $sid, 'status' => $q < $quoteN ? 'accepted' : 'pending', 'decline_reason' => null, 'responded_at' => $stamp, 'created_at' => $stamp, 'updated_at' => $stamp]; if ($q < $quoteN) $quotes[] = ['rfq_id' => $rid, 'supplier_id' => $sid, 'submitted_by' => $supplierUsers[$sid] ?? null, 'status' => $i < 1125 * $scale && $q === 0 ? 'won' : ($q === 3 && $i % 9 === 0 ? 'withdrawn' : 'submitted'), 'currency' => ['USD','EUR','AZN'][$i % 3], 'delivery_days' => 3 + ($q * 2), 'payment_terms' => $terms[$q % 3], 'valid_until' => $now->copy()->addDays($i % 11 === 0 ? -1 : 30)->toDateString(), 'notes' => 'Invented quotation.', 'total_cents' => 100000 + $i * 23 + $q * 1000, 'revision' => $q === 2 && $i % 7 === 0 ? 1 : 0, 'submitted_at' => $stamp, 'created_at' => $stamp, 'updated_at' => $stamp]; } }
+        $invitations = []; $quotes = []; foreach ($rfqIds as $i => $rid) { $quoteN = $i < 1125 * $scale ? 5 : ($i % 5 === 0 ? 0 : 5); for ($q = 0; $q < max(3, $quoteN); $q++) { $sid = $supplierIds[($i * 7 + $q) % (250 * $scale)]; $invitations[] = ['rfq_id' => $rid, 'supplier_id' => $sid, 'status' => $q < $quoteN ? 'accepted' : 'pending', 'decline_reason' => null, 'responded_at' => $stamp, 'created_at' => $stamp, 'updated_at' => $stamp]; if ($q < $quoteN) $quotes[] = ['rfq_id' => $rid, 'supplier_id' => $sid, 'submitted_by' => $supplierUsers[$sid] ?? null, 'status' => $i < 1125 * $scale && $q === 0 ? 'won' : ($q === 3 && $i % 9 === 0 ? 'withdrawn' : 'submitted'), 'currency' => ['USD','EUR','AZN'][$i % 3], 'delivery_days' => 3 + ($q * 2), 'payment_terms' => $terms[$q % 3], 'valid_until' => $now->copy()->addDays($i % 11 === 0 ? -1 : 30)->toDateString(), 'notes' => 'Invented quotation.', 'total_cents' => 100000 + $i * 23 + $q * 1000, 'revision' => $q === 2 && $i % 7 === 0 ? 1 : 0, 'submitted_at' => $stamp, 'created_at' => $stamp, 'updated_at' => $stamp]; } }
         $this->insert('rfq_invitations', $invitations); $this->insert('quotes', $quotes);
         $quoteRows = DB::table('quotes')->whereIn('rfq_id', $rfqIds)->get(['id','rfq_id','total_cents']); $quoteItems = []; foreach ($quoteRows as $q) $quoteItems[] = ['quote_id' => $q->id, 'rfq_item_id' => $firstItems[$q->rfq_id], 'unit_price_cents' => $q->total_cents, 'total_cents' => $q->total_cents, 'created_at' => $stamp, 'updated_at' => $stamp]; $this->insert('quote_items', $quoteItems);
         $this->makeOrders($rfqIds, $supplierIds, $buyers, $firstItems, $supplierUsers, $stamp, $now, $scale);
@@ -59,9 +126,10 @@ class LargeDemoSeeder extends Seeder
         $this->engagementRecords($buyers, $supplierIds, $supplierUsers, $rfqIds, $stamp, $now, $scale);
         $this->line('4/6 Markets, products, offers and marketplace orders');
         $this->marketplace($categories, $buyers, $passwordHash, $stamp, $now, $scale);
+        $this->polishLegacyDisplayData($now);
         $this->line('5/6 Reports, notifications and sequences');
         foreach ($categories as $category) foreach ([$now->year - 1, $now->year] as $year) DB::table('budgets')->updateOrInsert(['year' => $year, 'category_id' => $category], ['amount_cents' => $category % 13 === 0 ? 0 : 10000000 + $category * 1000, 'created_at' => $stamp, 'updated_at' => $stamp]);
-        DB::table('activity_logs')->insert(['user_id' => $buyers[0], 'actor_name' => 'Demo Buyer 1', 'area' => 'RFQs', 'action' => 'Created demo data', 'subject_type' => null, 'subject_id' => null, 'subject_label' => 'Large demo dataset', 'supplier_id' => null, 'meta' => json_encode(['seed' => $seed]), 'created_at' => $stamp]);
+        DB::table('activity_logs')->insert(['user_id' => $buyers[0], 'actor_name' => $this->person(10), 'area' => 'RFQs', 'action' => 'Test məlumatları yaradıldı', 'subject_type' => null, 'subject_id' => null, 'subject_label' => 'Satınalma məlumat dəsti', 'supplier_id' => null, 'meta' => json_encode(['seed' => $seed]), 'created_at' => $stamp]);
         $this->syncSequences($rfqCount, 900 * $scale); DB::table('demo_data_runs')->insert(['seed' => $seed, 'scale' => $scale, 'password_hint' => substr($password, 0, 2).'...', 'created_at' => $stamp, 'updated_at' => $stamp]);
         $this->line('6/6 Done in '.number_format(microtime(true) - $started, 1).' seconds.');
         $this->table(['Table', 'Rows'], collect(['suppliers','users','rfqs','rfq_items','quotes','purchase_orders','products','offers','market_orders'])->map(fn ($t) => [$t, DB::table($t)->count()])->all());
@@ -87,6 +155,36 @@ class LargeDemoSeeder extends Seeder
     private function table(array $head, array $rows): void { $this->command?->table($head, $rows); }
     private function info(string $text): void { $this->command?->info($text); }
     private function syncSequences(int $rfqs, int $orders): void { foreach (['RFQ' => $rfqs, 'PO' => $orders, 'REQ' => 400, 'CON' => 120, 'INV' => 1200, 'RFI' => 150, 'MO' => 3000] as $name => $value) DB::table('sequences')->updateOrInsert(['name' => $name, 'year' => now()->year], ['value' => $value]); }
+
+    /** Replace old volume-fixture labels after their relationships have been created. */
+    private function polishLegacyDisplayData($now): void
+    {
+        $set = fn (string $table, array $values) => DB::table('demo_records')->where('batch', $this->batch)->where('table_name', $table)->orderBy('record_id')->chunkById(500, fn ($rows) => DB::table($table)->whereIn('id', $rows->pluck('record_id'))->update($values), 'record_id');
+        $set('rfq_items', ['description' => 'Layihə üzrə tələb olunan material və ya xidmət.']);
+        $set('purchase_order_items', ['name' => 'Təsdiqlənmiş tədarük xətti']);
+        $set('requisitions', ['justification' => 'Layihə planına uyğun təsdiqlənmiş ehtiyac.']);
+        $set('requisition_items', ['name' => 'Layihə materialı']);
+        $set('contract_items', ['name' => 'Çərçivə müqaviləsi üzrə material']);
+        $set('contract_releases', ['note' => 'Təsdiqlənmiş çağırış sifarişi']);
+        $set('goods_receipts', ['note' => 'Anbar qəbul qeydi']);
+        $set('supplier_documents', ['title' => 'Uyğunluq sənədi']);
+        $set('supplier_actions', ['title' => 'Uyğunluq tədbiri', 'detail' => 'Təchizatçı ilə razılaşdırılmış düzəldici tədbir.']);
+        $set('field_assessments', ['title' => 'Sahəyə giriş və boşaltma qiymətləndirməsi', 'findings' => 'Sahə yoxlamasının nəticələri qeydə alınıb.']);
+        $set('rfis', ['description' => 'Təchizatçı imkanları və çatdırılma müddəti barədə məlumat sorğusu.']);
+        $set('messages', ['body' => 'Tədarük üzrə yenilənmiş məlumat göndərildi.']);
+        $set('market_orders', ['deliver_to' => 'Layihə sahəsinin qəbul məntəqəsi', 'note' => 'Bazar sifarişi', 'cancel_reason' => 'Sifarişin həcmi dəyişdirildi.']);
+        $set('products', ['description' => 'Sənaye və tikinti üçün kataloq məhsulu.']);
+        $set('activity_logs', ['actor_name' => $this->person(1), 'action' => 'Test məlumatları yaradıldı', 'subject_label' => 'Satınalma məlumat dəsti']);
+
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'users')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('users')->where('id', $id)->update(['name' => $this->person($i + 500)]);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'requisitions')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('requisitions')->where('id', $id)->update(['title' => $this->catalogueItem($i)['name'].' tələbi - '.$this->project($i)]);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'contracts')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('contracts')->where('id', $id)->update(['title' => $this->catalogueItem($i)['name'].' üzrə çərçivə müqaviləsi']);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'rfis')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('rfis')->where('id', $id)->update(['title' => $this->catalogueItem($i)['name'].' üzrə bazar araşdırması']);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'conversations')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('conversations')->where('id', $id)->update(['subject' => $this->project($i).' üzrə tədarük müzakirəsi']);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'markets')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('markets')->where('id', $id)->update(['name' => $this->marketName($i), 'city' => self::CITIES[$i % count(self::CITIES)], 'address' => 'Sənaye məhəlləsi']);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'stores')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('stores')->where('id', $id)->update(['name' => $this->company($i + 2000).' satış məntəqəsi']);
+        foreach (DB::table('demo_records')->where('batch', $this->batch)->where('table_name', 'products')->orderBy('record_id')->pluck('record_id')->values() as $i => $id) DB::table('products')->where('id', $id)->update(['name' => $this->catalogueItem($i)['name'], 'unit' => $this->catalogueItem($i)['unit']]);
+    }
     private function clear(): void
     {
         // The small DemoSeeder uses the same safe domain, so never delete by email
@@ -144,6 +242,30 @@ class LargeDemoSeeder extends Seeder
             DB::table('categories')->where('slug', 'like', 'demo-%')->delete();
         });
     }
+
+    /** A failed pre-tracker run can only have created these deterministic account addresses. */
+    private function clearInterruptedAccounts(): void
+    {
+        // A run interrupted before the marker table is available still has these
+        // deterministic addresses. Remove their dependent supplier rows first so
+        // a following --fresh run cannot accidentally select two generations.
+        $supplierIds = DB::table('suppliers')->where('email', 'like', 'supplier%@demo.48source.test')->pluck('id');
+        if ($supplierIds->isNotEmpty()) {
+            DB::table('supplier_documents')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('supplier_scorecards')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('supplier_actions')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('field_assessments')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('rfi_responses')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('rfq_questions')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('quotes')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('rfq_invitations')->whereIn('supplier_id', $supplierIds)->delete();
+            DB::table('suppliers')->whereIn('id', $supplierIds)->delete();
+        }
+        $catalogIds = DB::table('categories')->where('slug', 'like', 'catalog-%')->pluck('id');
+        DB::table('categories')->whereIn('parent_id', $catalogIds)->delete();
+        DB::table('categories')->whereIn('id', $catalogIds)->delete();
+        DB::table('users')->where(fn ($q) => $q->where('email', 'like', 'admin%@demo.48source.test')->orWhere('email', 'like', 'bulk.buyer%@demo.48source.test')->orWhere('email', 'like', 'supplier.user%@demo.48source.test')->orWhere('email', 'like', 'field%@demo.48source.test')->orWhere('email', 'like', 'seller.%@demo.48source.test')->orWhere('email', 'like', 'market.worker.%@demo.48source.test'))->delete();
+    }
     /** Remove marker-owned rows before using the legacy name-based fallback. */
     private function clearTracked(): void
     {
@@ -196,7 +318,7 @@ class LargeDemoSeeder extends Seeder
     {
         $documents=[];$scores=[];$actions=[];$assessments=[];
         foreach ($suppliers as $i=>$supplier) { $user=$supplierUsers[$supplier]; foreach(range(1,4) as $n)$documents[]=['supplier_id'=>$supplier,'type'=>['registration','iso','insurance','tax'][$n-1],'title'=>'Demo compliance document '.$n,'path'=>null,'original_name'=>null,'expires_on'=>$n===1?null:$now->copy()->addDays((($i+$n)%4===0)?-10:(($i+$n)%4===1?15:180))->toDateString(),'status'=>$n%3===0?'pending':'verified','uploaded_by'=>$user,'verified_by'=>$n%3===0?null:$buyers[$i%39],'created_at'=>$stamp,'updated_at'=>$stamp];
-            for($q=0;$q<6;$q++){$period=$now->copy()->subQuarters($q);$scores[]=['supplier_id'=>$supplier,'period'=>$period->year.'-Q'.$period->quarter,'quality'=>3+$i%3,'delivery'=>3+($i+$q)%3,'price'=>3+($i+1)%3,'service'=>3+($i+2)%3,'score_tenths'=>35+($i%16),'comment'=>'Invented quarterly supplier scorecard.','created_by'=>$buyers[$i%39],'created_at'=>$stamp,'updated_at'=>$stamp];}
+            for($q=0;$q<6;$q++){$period=$now->copy()->startOfQuarter()->subQuarters($q);$scores[]=['supplier_id'=>$supplier,'period'=>$period->year.'-Q'.$period->quarter,'quality'=>3+$i%3,'delivery'=>3+($i+$q)%3,'price'=>3+($i+1)%3,'service'=>3+($i+2)%3,'score_tenths'=>35+($i%16),'comment'=>'Invented quarterly supplier scorecard.','created_by'=>$buyers[$i%39],'created_at'=>$stamp,'updated_at'=>$stamp];}
             if($i%3===0)$actions[]=['supplier_id'=>$supplier,'title'=>'Demo corrective action '.($i+1),'detail'=>'Invented follow-up action.','due_on'=>$now->copy()->addDays($i%4===0?-8:20)->toDateString(),'status'=>$i%5===0?'done':'open','owner_id'=>$buyers[$i%39],'done_at'=>$i%5===0?$stamp:null,'created_at'=>$stamp,'updated_at'=>$stamp];
         }
         $this->insert('supplier_documents',$documents);$this->insert('supplier_scorecards',$scores);$this->insert('supplier_actions',$actions);
