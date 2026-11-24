@@ -21,18 +21,28 @@
   const alpinePops = new Set();
   function closeAlpinePops(except = null) { alpinePops.forEach(pop => { if (pop !== except) pop.close(); }); }
   function closePop() { if (POP) { POP.el.remove(); POP = null; } }
+  function placePop(anchor, p, o = {}) {
+    const edge = 8, gap = 6, r = anchor.getBoundingClientRect(), w = Math.min(o.w || 220, innerWidth - edge * 2);
+    p.style.width = w + 'px';
+    const below = innerHeight - r.bottom - edge, above = r.top - edge, down = below >= above, free = down ? below : above;
+    p.style.maxHeight = Math.max(1, Math.min(320, free - gap)) + 'px'; p.style.overflowY = 'auto';
+    const h = p.offsetHeight;
+    let left = o.left ? r.left : r.right - w; left = Math.max(edge, Math.min(left, innerWidth - w - edge));
+    const top = down ? r.bottom + gap : r.top - h - gap;
+    p.style.left = left + 'px'; p.style.top = top + 'px';
+    /* A transformed modal or drawer becomes the fixed-position containing block. */
+    const q = p.getBoundingClientRect();
+    if (Math.abs(q.left - left) > 1 || Math.abs(q.top - top) > 1) {
+      p.style.left = (left - (q.left - left)) + 'px'; p.style.top = (top - (q.top - top)) + 'px';
+    }
+    return {width: w + 'px', left: p.style.left, top: p.style.top, maxHeight: p.style.maxHeight};
+  }
   function openPop(anchor, html, o = {}) {
     closePop();
     closeAlpinePops();
-    const p = document.createElement('div'); p.className = 'pop'; p.setAttribute('role', 'menu');
-    const w = Math.min(o.w || 220, innerWidth - 16); p.style.width = w + 'px'; p.innerHTML = html;
+    const p = document.createElement('div'); p.className = 'pop'; p.setAttribute('role', 'menu'); p.innerHTML = html;
     (anchor.closest('.modal,.drawer') || document.body).appendChild(p);
-    const r = anchor.getBoundingClientRect(), h = p.offsetHeight;
-    let left = o.left ? r.left : r.right - w; left = Math.max(8, Math.min(left, innerWidth - w - 8));
-    let top = r.bottom + 6; if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 6);
-    p.style.left = left + 'px'; p.style.top = top + 'px'; POP = {el: p, anchor};
-    /* a dialog that is animating or transformed becomes the containing block: correct for it */
-    const q = p.getBoundingClientRect(); if (Math.abs(q.left - left) > 1 || Math.abs(q.top - top) > 1) { p.style.left = (left - (q.left - left)) + 'px'; p.style.top = (top - (q.top - top)) + 'px'; }
+    placePop(anchor, p, o); POP = {el: p, anchor};
     return p;
   }
 
@@ -210,7 +220,7 @@
         if (this._listening) return; this._listening = true;
         this._outside = e => { const panel = this.$refs.p; if (this.open && !panel?.contains(e.target) && !this.trigger?.contains(e.target)) this.close(); };
         this._escape = e => { if (this.open && e.key === 'Escape') { e.stopPropagation(); this.close(true); } };
-        this._dismiss = () => this.close();
+        this._dismiss = e => { if (!e || !this.$refs.p?.contains(e.target)) this.close(); };
         document.addEventListener('pointerdown', this._outside, true);
         document.addEventListener('keydown', this._escape, true);
         document.addEventListener('scroll', this._dismiss, true);
@@ -223,9 +233,7 @@
         document.removeEventListener('scroll', this._dismiss, true);
         window.removeEventListener('resize', this._dismiss);
       },
-      place(btn) { const p = this.$refs.p, w = Math.min(o.w || 220, innerWidth - 16), r = btn.getBoundingClientRect(); p.style.width = w + 'px'; const h = p.offsetHeight;
-        let left = o.left ? r.left : r.right - w; left = Math.max(8, Math.min(left, innerWidth - w - 8)); let top = r.bottom + 6; if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 6);
-        this.pos = {width: w + 'px', left: left + 'px', top: top + 'px'}; },
+      place(btn) { this.pos = placePop(btn, this.$refs.p, o); },
     }));
     window.Alpine.data('ov', () => ({ bye() { const s = this.$root; if (s.classList.contains('closing')) return; s.classList.add('closing'); setTimeout(() => this.$wire.close(), 160); } }));
   });
