@@ -1447,4 +1447,12 @@ return [
     'what is inside.' => 'içində nə var.',
     'with stock' => 'ehtiyatla',
     'workspaces' => 'iş sahələri',
+    'Quotation comparison' => 'Təkliflərin müqayisəsi',
+    'Pick a request to compare its quotations side by side. Closed requests are ready for an award decision.' => 'Təklifləri yan-yana müqayisə etmək üçün sorğu seçin. Bağlanmış sorğular qalib seçimi üçün hazırdır.',
+    'Search request or RFQ number' => 'Sorğu və ya RFQ nömrəsini axtarın',
+    'Search comparison requests' => 'Müqayisə sorğularını axtarın',
+    'Price spread' => 'Qiymət fərqi',
+    'Award due' => 'Qalib seçimi son tarixi',
+    'Nothing to compare yet' => 'Hələ müqayisə ediləcək heç nə yoxdur',
+    'Closed requests with quotations will appear here. They can then be compared side by side.' => 'Təklifləri olan bağlanmış sorğular burada görünəcək. Sonra onları yan-yana müqayisə edə bilərsiniz.',
 ];

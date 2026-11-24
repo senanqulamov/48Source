@@ -1447,4 +1447,12 @@ return [
     'what is inside.' => 'что внутри.',
     'with stock' => 'в наличии',
     'workspaces' => 'рабочие места',
+    'Quotation comparison' => 'Сравнение котировок',
+    'Pick a request to compare its quotations side by side. Closed requests are ready for an award decision.' => 'Выберите запрос, чтобы сравнить его котировки рядом. Закрытые запросы готовы к выбору поставщика.',
+    'Search request or RFQ number' => 'Поиск запроса или номера RFQ',
+    'Search comparison requests' => 'Поиск запросов для сравнения',
+    'Price spread' => 'Разница цен',
+    'Award due' => 'Срок выбора поставщика',
+    'Nothing to compare yet' => 'Пока нечего сравнивать',
+    'Closed requests with quotations will appear here. They can then be compared side by side.' => 'Здесь появятся закрытые запросы с котировками. Их можно будет сравнить рядом.',
 ];
