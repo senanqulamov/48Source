@@ -30,18 +30,15 @@
     let left = o.left ? r.left : r.right - w; left = Math.max(edge, Math.min(left, innerWidth - w - edge));
     const top = down ? r.bottom + gap : r.top - h - gap;
     p.style.left = left + 'px'; p.style.top = top + 'px';
-    /* A transformed modal or drawer becomes the fixed-position containing block. */
-    const q = p.getBoundingClientRect();
-    if (Math.abs(q.left - left) > 1 || Math.abs(q.top - top) > 1) {
-      p.style.left = (left - (q.left - left)) + 'px'; p.style.top = (top - (q.top - top)) + 'px';
-    }
+    /* The list is on the page body, so these are screen coordinates. Do not measure it again here: its opening animation scales it and would give a wrong offset. */
     return {width: w + 'px', left: p.style.left, top: p.style.top, maxHeight: p.style.maxHeight};
   }
   function openPop(anchor, html, o = {}) {
     closePop();
     closeAlpinePops();
     const p = document.createElement('div'); p.className = 'pop'; p.setAttribute('role', 'menu'); p.innerHTML = html;
-    (anchor.closest('.modal,.drawer') || document.body).appendChild(p);
+    /* Always on the page body: inside a dialog, the dialog's own transform shifts a fixed list away from its field. */
+    document.body.appendChild(p); if (anchor.closest('.modal,.drawer')) p.classList.add('pop-top');
     placePop(anchor, p, o); POP = {el: p, anchor};
     return p;
   }
@@ -208,14 +205,24 @@
       const step = now => { const k = Math.min(1, (now - t0) / 520); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; if (to > 1) requestAnimationFrame(step); });
   }
 
-  function boot() { closePop(); closeAlpinePops(); tipHide(); enhance(); recentTrack(); countUp(); const f = $('#toasts'); if (f && f.dataset.flash) { toast(f.dataset.flash); delete f.dataset.flash; } }
+  /* Rows and list entries with one main link behave like the prototype: the whole row is clickable and gets the hover. */
+  function rows() {
+    $$('.tbl tbody tr:not([data-href]):not(.sec):not([data-plain])').forEach(tr => { const a = tr.querySelector('td a[href]:not([target]):not([download])'); if (!a || tr.querySelectorAll('td a[href]').length > 3) return; tr.dataset.href = a.getAttribute('href'); tr.classList.add('click'); });
+    $$('.list li:not([data-href]):not([data-plain])').forEach(li => { const a = li.querySelectorAll('a[href]'); if (a.length !== 1 || a[0].target || li.querySelector('button,input,select,textarea')) return; li.dataset.href = a[0].getAttribute('href'); li.classList.add('click'); });
+  }
+  /* Small transitions from the prototype: the table body fades on a filter or page change, tab content rises. */
+  let TABFX = false;
+  function fx(root) { (root || document).querySelectorAll('.tbl').forEach(t => { t.classList.remove('fx'); void t.offsetWidth; t.classList.add('fx'); }); }
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.tabs a,.tabs button,.seg a,.seg button')) TABFX = true; }, true);
+  function tabfx() { const pg = $('.page'); if (pg && TABFX) { pg.classList.remove('enter', 'tabfx'); void pg.offsetWidth; pg.classList.add('tabfx'); } TABFX = false; }
+  function boot() { rows(); tabfx(); closePop(); closeAlpinePops(); tipHide(); enhance(); recentTrack(); countUp(); const f = $('#toasts'); if (f && f.dataset.flash) { toast(f.dataset.flash); delete f.dataset.flash; } }
   document.addEventListener('livewire:navigated', boot);
   document.addEventListener('DOMContentLoaded', boot);
   document.addEventListener('livewire:init', () => {
     let keep = null;
     window.Livewire.hook('morph', () => { closePop(); closeAlpinePops(); const a = document.activeElement; keep = a && a.classList.contains('cs') && a.previousElementSibling ? a.previousElementSibling.id : null; });
-    window.Livewire.hook('morphed', () => { enhance(); if (keep) { const s = document.getElementById(keep); if (s && s.nextElementSibling) s.nextElementSibling.focus(); keep = null; } });
-    window.Livewire.hook('commit', ({succeed}) => succeed(() => queueMicrotask(() => enhance())));
+    window.Livewire.hook('morphed', () => { rows(); tabfx(); enhance(); if (keep) { const s = document.getElementById(keep); if (s && s.nextElementSibling) s.nextElementSibling.focus(); keep = null; } });
+    window.Livewire.hook('commit', ({component, commit, succeed}) => { const list = commit && ((commit.updates && Object.keys(commit.updates).some(k => /^(search|q|status|page|sort|dir|per|f$|f\.)/.test(k))) || (commit.calls || []).some(c => /^(setStatus|toggleFacet|sortBy|gotoPage|nextPage|previousPage|clearFilters|setPage)/.test(c.method))); succeed(() => queueMicrotask(() => { enhance(); rows(); if (list && component && component.el) fx(component.el); })); });
   });
   document.addEventListener('alpine:init', () => {
     window.Alpine.data('pop', (o = {}) => ({
