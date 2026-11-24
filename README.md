@@ -24,22 +24,33 @@ php artisan serve
 
 Open http://127.0.0.1:8000 and sign in.
 
-### Demo data (local only)
+### Database and local workflow data
+
+The default seeder is **reference data only**: categories and feature flags. It never
+creates fake users or business records and is safe to rerun.
 
 ```bash
-php artisan db:seed --class=DemoSeeder
+php artisan migrate --seed
+php artisan app:create-admin you@company.com "Your Name"
 ```
 
-This loads invented companies and people with Azerbaijani names and cities (none of them is a real organisation or a real person), plus requests, quotations and one purchase order. The seeder refuses to run on production. All demo accounts share one password: `DEMO_PASSWORD` from `.env` if you set it, otherwise a random one printed once when the seeder finishes.
+For **disposable local databases only**, the single supported procurement history
+fixture is:
 
-| Role | Email |
-|---|---|
-| Administrator | admin@demo.48source.test |
-| Buyer | buyer@demo.48source.test |
-| Buyer (second, isolated) | buyer2@demo.48source.test |
-| Supplier | supplier@demo.48source.test |
-| Supplier (second) | supplier2@demo.48source.test |
-| Supplier (pending approval) | supplier5@demo.48source.test |
+```bash
+php artisan db:seed --class=RealisticWorkflowSeeder
+php artisan test --filter=RealisticWorkflowSeederTest
+```
+
+It creates 72 coherent RFQs and their itemized quotations, awards, purchase orders,
+receipts, invoices, and a year of AZN-only workflow dates. These are **synthetic** records,
+not actual company transactions. The seeder refuses to run in production or staging,
+or when business records already exist. It will not purge existing data.
+
+`DemoSeeder` and `LargeDemoSeeder` are compatibility aliases pointing to the
+same workflow seeder; legacy scale/fresh generation has been removed. See
+[`docs/DATABASE.md`](docs/DATABASE.md) for migration policy and safe test setup.
+Do not run `migrate:fresh` on a valuable database.
 
 ### Scheduler and mail
 

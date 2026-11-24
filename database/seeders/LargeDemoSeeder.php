@@ -13,7 +13,7 @@ class LargeDemoSeeder extends Seeder
 {
     public function run(int $scale = 1, int $seed = 48, bool $fresh = false): void
     {
-        if ($scale !== 1 || $fresh) {
+        if ($scale !== 1 || $fresh || $seed !== 48) {
             throw new InvalidArgumentException(
                 'Legacy scale/fresh options are unsupported. Use RealisticWorkflowSeeder on a fresh disposable database.'
             );
