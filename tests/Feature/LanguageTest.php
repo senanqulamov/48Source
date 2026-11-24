@@ -29,6 +29,20 @@ class LanguageTest extends TestCase
             ->assertOk()->assertSee('Save profile');
     }
 
+    public function test_the_header_language_menu_keeps_option_clicks_inside_its_popover(): void
+    {
+        $user = $this->person('en');
+
+        $this->actingAs($user)->get(route('settings'))
+            ->assertOk()
+            ->assertSee('x-ref="p"', false);
+
+        $this->post(route('prefs.locale'), ['locale' => 'ru'])
+            ->assertRedirect();
+
+        $this->assertSame('ru', $user->fresh()->locale);
+    }
+
     public function test_what_a_person_typed_is_never_translated(): void
     {
         // A supplier whose name happens to be an interface word, inside a text area and a script.

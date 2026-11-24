@@ -50,7 +50,7 @@
                 @endif
                 <div class="acct-wrap hide-sm" x-data="pop({ inline: true })">
                     <button type="button" class="btn btn-sm btn-g" x-on:click="toggle($el)" aria-label="{{ __('Language') }}" :aria-expanded="open" title="{{ __('Language') }}"><x-icon name="globe" :size="15" />{{ strtoupper(app()->getLocale()) }}</button>
-                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak wire:ignore.self x-transition.opacity style="width:190px">
+                    <div class="pop acct-pop" role="menu" x-ref="p" x-show="open" x-cloak wire:ignore.self x-transition.opacity style="width:190px">
                         <div class="pop-h">{{ __('Language') }}</div>
                         @foreach (config('procurement.locales') as $code => $name)
                             <form method="post" action="{{ route('prefs.locale') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}"><button class="pop-i {{ app()->getLocale() === $code ? 'on' : '' }}" type="submit"><span style="flex:1">{{ $name }}</span>@if (app()->getLocale() === $code)<span class="k"><x-icon name="check" :size="15" /></span>@endif</button></form>
@@ -59,7 +59,7 @@
                 </div>
                 <div class="acct-wrap hide-sm" x-data="pop({ inline: true })">
                     <button type="button" class="icon-btn" x-on:click="toggle($el)" aria-label="{{ __('Help') }}" :aria-expanded="open" title="{{ __('Help') }}"><x-icon name="info" :size="17" /></button>
-                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak x-transition.opacity style="width:270px">
+                    <div class="pop acct-pop" role="menu" x-ref="p" x-show="open" x-cloak x-transition.opacity style="width:270px">
                         <div class="pop-h">{{ __('Help') }}</div>
                         <button type="button" class="pop-i" x-on:click="open = false; ui48.tour()"><x-icon name="pin" /><span style="flex:1"><b style="display:block">{{ __('Take the tour') }}</b><span class="faint xs">{{ __('Visit every page of your workspace') }}</span></span></button>
                         <button type="button" class="pop-i" x-on:click="open = false; ui48.shortcuts()"><x-icon name="sliders" /><span style="flex:1">{{ __('Keyboard shortcuts') }}</span><span class="k"><kbd>?</kbd></span></button>
@@ -72,7 +72,7 @@
                 <a class="icon-btn" href="{{ route('notifications.index') }}" wire:navigate aria-label="Notifications, {{ $unread }} unread" title="Notifications"><x-icon name="bell" :size="17" />@if ($unread)<span class="dot"></span>@endif</a>
                 <div class="acct-wrap" x-data="pop({ inline: true })">
                     <button type="button" class="acct" x-on:click="toggle($el)" aria-label="Account menu" :aria-expanded="open"><span class="avatar av{{ $u->id % 5 }}" aria-hidden="true">{{ $u->initials() }}</span><span class="hide-md b sm">{{ $u->name }}</span></button>
-                    <div class="pop acct-pop" role="menu" x-show="open" x-cloak wire:ignore.self x-transition.opacity>
+                    <div class="pop acct-pop" role="menu" x-ref="p" x-show="open" x-cloak wire:ignore.self x-transition.opacity>
                         <div class="pop-h">{{ $u->email }}<br>{{ $u->supplier?->name ?? config('app.org', 'Buyer organisation') }}</div><hr>
                         <a class="pop-i" href="{{ route('settings') }}" wire:navigate><x-icon name="sliders" />{{ __('Settings') }}</a>
                         <form method="post" action="{{ route('logout') }}">@csrf<button class="pop-i" type="submit"><x-icon name="logout" />{{ __('Sign out') }}</button></form>
