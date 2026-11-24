@@ -137,7 +137,59 @@
     t.innerHTML = `${ic(kind === 'alert' ? 'alert' : 'check')}<div>${esc(text)}</div>`;
     box.appendChild(t); setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 220); }, 4400);
   }
+  function reloadToast(text) {
+    const box = $('#toasts'); if (!box) return;
+    const t = document.createElement('div'); t.className = 'toast bad'; t.setAttribute('role', 'alert');
+    t.innerHTML = `${ic('alert')}<div>${esc(text)}</div><button type="button" class="link sm">Reload</button>`;
+    t.querySelector('button').addEventListener('click', () => location.reload()); box.appendChild(t);
+  }
   window.addEventListener('toast', e => { const d = Array.isArray(e.detail) ? e.detail[0] : e.detail; if (d) toast(d.text, d.kind); });
+
+  /* ---------- Livewire request feedback ---------- */
+  let activeButton = null, activeTimer = null;
+  const uploading = new Set();
+  function spinner() { const s = document.createElement('span'); s.className = 'lw-spinner'; s.setAttribute('aria-hidden', 'true'); return s; }
+  function startButton(button) {
+    if (!button || button.disabled || button.dataset.lwBusy) return;
+    button.dataset.lwBusy = '1'; button.disabled = true; button.setAttribute('aria-busy', 'true');
+    activeButton = button;
+    activeTimer = setTimeout(() => { if (!button.isConnected || !button.dataset.lwBusy) return; button.classList.add('lw-busy'); if (!button.querySelector('.lw-spinner')) button.prepend(spinner()); }, 150);
+  }
+  function finishButton() {
+    if (activeTimer) clearTimeout(activeTimer); activeTimer = null;
+    const button = activeButton; activeButton = null;
+    if (!button || !button.isConnected) return;
+    button.classList.remove('lw-busy'); button.querySelector('.lw-spinner')?.remove(); delete button.dataset.lwBusy;
+    button.removeAttribute('aria-busy'); button.disabled = false;
+  }
+  function formButton(form) { return form.querySelector('button[type="submit"]:not([disabled]),input[type="submit"]:not([disabled])'); }
+  document.addEventListener('click', e => {
+    const button = e.target.closest && e.target.closest('button,[role="button"]');
+    if (button && button.hasAttribute('wire:click')) startButton(button);
+  }, true);
+  document.addEventListener('submit', e => {
+    const form = e.target; if (form.hasAttribute && form.hasAttribute('wire:submit')) startButton(e.submitter || formButton(form));
+  }, true);
+  function uploadBar(input) {
+    let bar = input.parentElement?.querySelector(':scope > .lw-upload-progress');
+    if (!bar) { bar = document.createElement('div'); bar.className = 'lw-upload-progress'; bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-label', 'Upload progress'); bar.innerHTML = '<span></span>'; input.insertAdjacentElement('afterend', bar); }
+    return bar;
+  }
+  function uploadState(input, percent, phase = 'progress') {
+    const bar = uploadBar(input); bar.hidden = false; bar.setAttribute('aria-valuenow', String(percent)); bar.querySelector('span').style.width = `${percent}%`;
+    const form = input.closest('form');
+    if (phase === 'start') uploading.add(input);
+    if (phase === 'done') { uploading.delete(input); setTimeout(() => { if (bar) bar.hidden = true; }, 500); }
+    if (form) form.querySelectorAll('button[type="submit"],input[type="submit"]').forEach(b => { b.disabled = [...uploading].some(i => i.closest('form') === form); });
+  }
+  document.addEventListener('livewire-upload-start', e => uploadState(e.target, 0, 'start'));
+  document.addEventListener('livewire-upload-progress', e => uploadState(e.target, e.detail.progress || 0));
+  document.addEventListener('livewire-upload-finish', e => uploadState(e.target, 100, 'done'));
+  document.addEventListener('livewire-upload-error', e => { uploadState(e.target, 0, 'done'); toast('The upload failed. Please try again.', 'alert'); });
+  document.addEventListener('livewire:navigate', () => { const p = $('#lw-progress'); if (p) { p.className = 'on'; p.setAttribute('aria-hidden', 'false'); } });
+  document.addEventListener('livewire:navigated', () => { const p = $('#lw-progress'); if (!p) return; p.className = 'done'; setTimeout(() => { p.className = ''; p.setAttribute('aria-hidden', 'true'); }, 180); });
+  function networkState() { const b = $('#offline-banner'); if (b) b.hidden = navigator.onLine; }
+  window.addEventListener('offline', networkState); window.addEventListener('online', networkState); document.addEventListener('DOMContentLoaded', networkState);
 
   /* ---------- recently opened records, kept in this browser ---------- */
   const RK = '48source-recent';
@@ -166,7 +218,10 @@
     let keep = null;
     window.Livewire.hook('morph', () => { const a = document.activeElement; keep = a && a.classList.contains('cs') && a.previousElementSibling ? a.previousElementSibling.id : null; });
     window.Livewire.hook('morphed', () => { enhance(); if (keep) { const s = document.getElementById(keep); if (s && s.nextElementSibling) s.nextElementSibling.focus(); keep = null; } });
-    window.Livewire.hook('commit', ({succeed}) => succeed(() => queueMicrotask(() => enhance())));
+    window.Livewire.hook('commit', ({succeed, fail}) => {
+      succeed(() => { finishButton(); queueMicrotask(() => enhance()); });
+      fail(({status}) => { finishButton(); if (status === 419) reloadToast('Your session expired. Reload to continue.'); else toast('The request could not be completed. Please try again.', 'alert'); });
+    });
   });
   document.addEventListener('alpine:init', () => {
     window.Alpine.data('pop', (o = {}) => ({

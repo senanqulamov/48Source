@@ -56,7 +56,7 @@ class Auction extends Component
         $standing = $service->standing($a);
         $rank = $u->supplier_id ? array_search($u->supplier_id, array_keys($standing), true) : false;
 
-        return view('livewire.rfqs.auction', ['rfq' => $rfq, 'a' => $a, 'standing' => $standing, 'sourcing' => $u->isSourcing(), 'rank' => $rank === false ? null : $rank + 1, 'own' => $u->supplier_id ? ($standing[$u->supplier_id] ?? null) : null,
+        return view('livewire.rfqs.auction', ['rfq' => $rfq, 'a' => $a, 'standing' => $standing, 'sourcing' => $u->isSourcing(), 'rank' => $rank === false ? null : $rank + 1, 'own' => $u->supplier_id ? ($standing[$u->supplier_id] ?? null) : null, 'updatedAt' => now()->timestamp,
             'ceiling' => $u->supplier_id && $a->isLive() ? $service->ceilingFor($a, $u->supplier_id) : null, 'bids' => $u->isSourcing() ? $a->bids()->with('supplier')->latest('id')->limit(30)->get() : $a->bids()->where('supplier_id', $u->supplier_id)->latest('id')->limit(30)->get()])->title('Auction ' . $rfq->number);
     }
 }

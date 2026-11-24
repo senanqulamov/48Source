@@ -15,6 +15,7 @@
             @endforeach
         </nav>
         <div class="tr-tools">
+            <button type="button" class="icon-btn" wire:click="$refresh" aria-label="Refresh this page" title="Refresh"><x-icon name="refresh" :size="15" /></button>
             @if ($pager && $pager['of'] > 1)
                 <span class="tr-pager">
                     @if ($pager['prev'])<a class="icon-btn" href="{{ $pager['prev'] }}" wire:navigate aria-label="Previous record" title="Previous"><x-icon name="left" :size="15" /></a>@else<button type="button" class="icon-btn" disabled aria-label="Previous record"><x-icon name="left" :size="15" /></button>@endif

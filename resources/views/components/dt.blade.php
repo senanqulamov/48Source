@@ -8,10 +8,10 @@
     $pageKeys = $keys ? collect($keys)->map(fn ($k) => (string) $k)->all() : [];
     $nsel = count(array_intersect($pageKeys, $lw->selected));
 @endphp
-<section {{ $attributes->class(['card', 'dt', 'dt-' . $id]) }}>
+<section {{ $attributes->class(['card', 'dt', 'dt-' . $id]) }} wire:loading.attr="aria-busy" aria-busy="false">
     @if ($lw->hide)<style>@foreach ($lw->hide as $h).dt.dt-{{ $id }} table.tbl [data-c="{{ preg_replace('/[^a-z0-9_]/i', '', $h) }}"]{display:none!important}@endforeach</style>@endif
     <div class="dt-top">
-        <div class="dt-search"><x-icon name="search" /><input type="search" placeholder="{{ $search }}" aria-label="{{ $label }}" wire:model.live.debounce.300ms="q">@if ($lw->q !== '')<button type="button" class="dt-clear" wire:click="$set('q', '')" aria-label="Clear search"><x-icon name="x" :size="14" /></button>@endif<kbd>/</kbd></div>
+        <div class="dt-search"><x-icon name="search" /><input type="search" placeholder="{{ $search }}" aria-label="{{ $label }}" wire:model.live.debounce.300ms="q"><span class="dt-input-spin" wire:loading.delay wire:target="q" aria-hidden="true"></span><span class="sr-only" wire:loading.delay wire:target="q">Loading</span>@if ($lw->q !== '')<button type="button" class="dt-clear" wire:click="$set('q', '')" aria-label="Clear search"><x-icon name="x" :size="14" /></button>@endif<kbd>/</kbd></div>
         <div class="dt-tools">
             @if ($quick)
                 <div class="seg" role="group" aria-label="{{ $quickLabel }}">
@@ -66,7 +66,8 @@
             @endif
         </div>
     </div>
-    <div>
+    <div class="dt-body">
+        <div class="dt-loading" wire:loading.delay.block aria-hidden="true"><span></span></div>
         @if ($active || trim($lw->q) !== '')
             <div class="dt-chips"><span class="muted sm"><b style="color:var(--text)">{{ $rows->total() }}</b> of {{ $all }} {{ $noun }}</span>
                 @if (trim($lw->q) !== '')<button type="button" class="fchip" wire:click="$set('q', '')" aria-label="Remove search filter">Search: "{{ trim($lw->q) }}"<x-icon name="x" :size="12" /></button>@endif

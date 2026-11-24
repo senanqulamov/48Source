@@ -111,6 +111,10 @@ The scheduler (`php artisan schedule:work`, or one cron entry for `schedule:run`
 
 `public/js/ui.js` (plain script, no build step) replaces native selects and date inputs with the prototype's custom controls, and adds tooltips, toasts, keyboard shortcuts (`/` focuses the table search, `Ctrl K` the global search) and row navigation. It re-applies itself after every Livewire update. Put `data-native` on a wrapper to keep a native control.
 
+### Loading states
+
+The shared loading layer lives in `public/css/extra.css` and `public/js/ui.js`. It adds a delayed spinner and disables the exact button that starts a Livewire action, including form submitters, so new pages should use normal `wire:click` and `wire:submit` directives rather than duplicate per-button markup. `x-dt` provides the table busy region, search spinner and loading bar; use it for new lists. `x-ph` provides the refresh control. File inputs with `wire:model` receive a progress bar automatically. Keep loading feedback delayed by about 150 ms, mark custom busy regions with `aria-busy`, and use the existing `.sk` class for lazy or overlay placeholders.
+
 ## What is in part 3
 
 | Area | What it does | Where |

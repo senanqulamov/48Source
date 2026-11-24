@@ -19,6 +19,8 @@
     <script src="{{ asset('js/ui.js') }}?v={{ filemtime(public_path('js/ui.js')) }}" defer data-navigate-once></script>
 </head>
 <body>
+<div id="lw-progress" role="progressbar" aria-label="Loading page" aria-hidden="true"></div>
+<div id="offline-banner" class="offline-banner" role="status" aria-live="polite" hidden>You're offline. Changes will be sent when your connection returns.</div>
 <div class="app" x-data="{ nav: false, collapsed: localStorage.getItem('sb') === '1' }" :class="{ navopen: nav, collapsed: collapsed }">
     <nav class="sb" aria-label="Primary">
         <div class="sb-top"><a class="brand" href="{{ route('dashboard') }}" wire:navigate aria-label="48Source home"><span class="mark" aria-hidden="true">48</span><span class="brand-name">48Source</span></a></div>

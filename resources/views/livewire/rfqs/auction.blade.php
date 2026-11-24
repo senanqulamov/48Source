@@ -4,7 +4,7 @@
         <x-slot:pre><div class="row wrap" style="margin-bottom:4px"><span class="mono muted">{{ $rfq->number }}</span><x-badge :status="$live ? 'warn' : 'ok'" :label="$live ? 'Live' : 'Ended'" /></div></x-slot:pre>
         @if ($sourcing)@if ($live)@perm('quotes', 'A')<button type="button" class="btn btn-d" wire:click="endNow" wire:confirm="End the auction now? The current totals become final.">End now</button>@endperm @endif<a class="btn {{ $live ? '' : 'btn-p' }}" href="{{ route('rfqs.compare', $rfq) }}" wire:navigate><x-icon name="cols" />Compare quotations</a>@endif
     </x-ph>
-    <p class="ph-d" style="margin:-10px 0 16px">{{ $rfq->title }}</p>
+    <p class="ph-d" style="margin:-10px 0 16px">{{ $rfq->title }} @if ($live)<span class="muted sm" x-data="{ at: {{ $updatedAt }}, ago: 0 }" x-init="setInterval(() => ago = Math.max(0, Math.floor(Date.now() / 1000 - at)), 1000)" wire:key="updated-{{ $updatedAt }}">- updated <span x-text="ago"></span>s ago</span>@endif</p>
     <div class="strip">
         <div class="strip-i"><span class="strip-l">{{ $live ? 'Time left' : 'Ended' }}</span><span class="strip-v" data-done="1" @if ($live) x-data="{ end: {{ $a->ends_at->getTimestampMs() }}, t: '' , tick() { const s = Math.max(0, Math.floor((this.end - Date.now()) / 1000)); this.t = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); } }" x-init="tick(); setInterval(() => tick(), 1000)" x-text="t" wire:key="clock-{{ $a->ends_at->timestamp }}" @endif>{{ $live ? '' : $a->ends_at->format('H:i') }}</span><span class="strip-s">{{ $live ? 'ends ' . $a->ends_at->format('H:i:s') : $a->ends_at->format('j M Y') }}&nbsp;</span></div>
         @if ($sourcing)
