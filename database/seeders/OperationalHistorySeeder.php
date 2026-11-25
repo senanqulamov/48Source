@@ -42,7 +42,7 @@ class OperationalHistorySeeder extends Seeder
             foreach ($lines as $line) {
                 $subtotal += Fixture::qtyTotal($line->price_cents, (3 + ($i % 12)) * 1000);
             }
-            $placed = $now->subDays(320-$i)->setTime(10+$i%6,30);
+            $placed = $now->subDays(340 - $i * 2)->setTime(10 + $i % 6, 30);
             $status = $i % 13 === 0 ? 'cancelled' : ($i > 156 ? 'placed' : ($i > 143 ? 'confirmed' : ($i > 131 ? 'ready' : 'delivered')));
             $orderId = Fixture::insert('market_orders', Fixture::stamped([
                 'number' => sprintf('MO-%d-W%04d', $placed->year, $i+1),

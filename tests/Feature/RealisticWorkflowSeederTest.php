@@ -73,6 +73,11 @@ class RealisticWorkflowSeederTest extends TestCase
                 ->where('purchase_order_id',$po->id)->sum('total_cents'));
         }
 
+        $this->assertGreaterThan(0, DB::table('market_orders')
+            ->where('created_at', '>=', now()->subDays(30))->count());
+        $this->assertGreaterThan(0, DB::table('market_orders')
+            ->where('created_at', '<', now()->subMonths(6))->count());
+
         $orders = DB::table('market_orders')->get();
         foreach ($orders as $order) {
             $this->assertSame((int)$order->total_cents,(int)DB::table('market_order_items')
