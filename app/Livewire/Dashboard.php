@@ -51,22 +51,27 @@ class Dashboard extends Component
         }
 
         $all = $rfqs()->withCount('liveQuotes')->get(['id', 'status']);
-        $orders = $pos()->with('supplier:id,name')->get(['id', 'supplier_id', 'status', 'total_cents', 'created_at']);
+        $orders = $pos()->with('supplier:id,name')->get(['id', 'supplier_id', 'status', 'total_cents', 'currency', 'created_at']);
         $months = \App\Support\Chart::lastMonths();
         $cnt = fn (string $st) => $all->where('status', $st)->count();
         $c = \App\Support\Chart::COLORS;
-        $top = $orders->where('status', '!=', 'cancelled')->groupBy('supplier_id')->map(fn ($g) => [$g->first()->supplier->name, (int) $g->sum('total_cents'), \App\Support\Money::format((int) $g->sum('total_cents'), 'USD')])->sortByDesc(fn ($x) => $x[1])->take(5)->values()->all();
         $live = $orders->where('status', '!=', 'cancelled');
+        // Cents from different currencies must never be added or ranked as USD.
+        $codes = $live->pluck('currency')->filter()->unique()->values();
+        $currency = $codes->count() > 1 ? null : ($codes->first() ?? 'AZN');
+        $valued = $currency === null ? collect() : $live;
+        $top = $valued->groupBy('supplier_id')->map(fn ($g) => [$g->first()->supplier->name, (int) $g->sum('total_cents'), \App\Support\Money::format((int) $g->sum('total_cents'), $currency)])->sortByDesc(fn ($x) => $x[1])->take(5)->values()->all();
         $closing = $rfqs()->where('status', 'open')->whereBetween('deadline_at', [now(), now()->addDays(7)])->count();
 
         return [
             'closing' => $closing,
             'viz' => [
                 'donut' => \App\Support\Chart::donut([['Open', $cnt('open'), $c[0]], ['Closed, comparing', $cnt('closed'), $c[3]], ['Awarded', $cnt('awarded'), $c[2]], ['Draft', $cnt('draft'), $c[5]], ['Cancelled', $cnt('cancelled'), $c[4]]], $all->count(), 'requests'),
-                'total' => (int) $live->sum('total_cents'), 'orders' => $live->count(),
-                'area' => \App\Support\Chart::area(array_values($months), array_map(fn ($k) => intdiv((int) $live->filter(fn ($p) => $p->created_at->format('Y-m') === $k)->sum('total_cents'), 100), array_keys($months)), '$'),
+                'total' => (int) $valued->sum('total_cents'), 'orders' => $live->count(),
+                'currency' => $currency, 'mixed_currency' => $currency === null,
+                'area' => $currency === null ? '' : \App\Support\Chart::area(array_values($months), array_map(fn ($k) => intdiv((int) $valued->filter(fn ($p) => $p->created_at->format('Y-m') === $k)->sum('total_cents'), 100), array_keys($months)), \App\Support\Money::SYMBOLS[$currency] ?? $currency),
                 'funnel' => \App\Support\Chart::funnel([['Published', $all->where('status', '!=', 'draft')->count()], ['Received quotations', $all->where('live_quotes_count', '>', 0)->count()], ['Awarded', $live->count()], ['Delivered', $live->whereIn('status', ['delivered', 'invoiced'])->count()], ['Invoiced', $live->where('status', 'invoiced')->count()]]),
-                'rank' => \App\Support\Chart::rank($top),
+                'rank' => $currency === null ? '' : \App\Support\Chart::rank($top),
             ],
             'strip' => [
                 ['l' => 'Open requests', 'v' => $rfqs()->where('status', 'open')->count(), 's' => $rfqs()->where('status', 'draft')->count().' in draft', 'href' => route('rfqs.index', ['status' => 'open'])],
@@ -95,14 +100,18 @@ class Dashboard extends Component
         $won = PurchaseOrder::visibleTo($u)->where('status', '!=', 'cancelled')->with('buyer:id,name')->get();
         $months = \App\Support\Chart::lastMonths();
         $c = \App\Support\Chart::COLORS;
+        $codes = $won->pluck('currency')->filter()->unique()->values();
+        $currency = $codes->count() > 1 ? null : ($codes->first() ?? 'AZN');
+        $valued = $currency === null ? collect() : $won;
 
         return [
             'viz' => [
                 'donut' => \App\Support\Chart::donut([['Awaiting my response', $n(['pending', 'accepted', 'public', 'withdrawn']), $c[0]], ['Quoted, open', $n(['sent']), $c[1]], ['Under review', $n(['review']), $c[3]], ['Won', $n(['won']), $c[2]], ['Not won or missed', $n(['lost', 'declined', 'missed', 'cancelled']), $c[5]]], $mine->count(), 'requests'),
-                'total' => (int) $won->sum('total_cents'), 'orders' => $won->count(),
-                'area' => \App\Support\Chart::area(array_values($months), array_map(fn ($k) => intdiv((int) $won->filter(fn ($p) => $p->created_at->format('Y-m') === $k)->sum('total_cents'), 100), array_keys($months)), '$'),
+                'total' => (int) $valued->sum('total_cents'), 'orders' => $won->count(),
+                'currency' => $currency, 'mixed_currency' => $currency === null,
+                'area' => $currency === null ? '' : \App\Support\Chart::area(array_values($months), array_map(fn ($k) => intdiv((int) $valued->filter(fn ($p) => $p->created_at->format('Y-m') === $k)->sum('total_cents'), 100), array_keys($months)), \App\Support\Money::SYMBOLS[$currency] ?? $currency),
                 'funnel' => \App\Support\Chart::funnel([['Invited', $mine->count()], ['Quoted', $n(['sent', 'review', 'won', 'lost'])], ['Won', $won->count()], ['Delivered', $won->whereIn('status', ['delivered', 'invoiced'])->count()], ['Invoiced', $won->where('status', 'invoiced')->count()]]),
-                'rank' => \App\Support\Chart::rank($won->groupBy('buyer_id')->map(fn ($g) => [$g->first()->buyer->name, (int) $g->sum('total_cents'), \App\Support\Money::format((int) $g->sum('total_cents'), 'USD')])->sortByDesc(fn ($x) => $x[1])->take(5)->values()->all()),
+                'rank' => $currency === null ? '' : \App\Support\Chart::rank($valued->groupBy('buyer_id')->map(fn ($g) => [$g->first()->buyer->name, (int) $g->sum('total_cents'), \App\Support\Money::format((int) $g->sum('total_cents'), $currency)])->sortByDesc(fn ($x) => $x[1])->take(5)->values()->all()),
             ],
             'supplier' => $u->supplier,
             'strip' => [
@@ -128,7 +137,12 @@ class Dashboard extends Component
         }
         $orders = \App\Models\MarketOrder::where('store_id', $store->id);
         $tasks = \App\Models\WorkerTask::where('store_id', $store->id)->where('status', 'open')->count();
-        $month = (int) (clone $orders)->where('status', '!=', 'cancelled')->where('created_at', '>=', now()->startOfMonth())->sum('total_cents');
+        $monthlyOrders = (clone $orders)->where('status', '!=', 'cancelled')
+            ->where('created_at', '>=', now()->startOfMonth())->get(['currency', 'total_cents']);
+        $currencies = $monthlyOrders->pluck('currency')->filter()->unique();
+        $monthlyLabel = $currencies->count() > 1
+            ? 'Mixed currencies'
+            : \App\Support\Money::format((int) $monthlyOrders->sum('total_cents'), $currencies->first() ?? 'AZN', false);
         $sc = [[route('market.tasks'), 'check', 'Tasks', $tasks . ' to pick or deliver'], [route('market.orders.index'), 'truck', 'Sales', 'Every order placed with the store']];
         if ($u->role === 'seller') {
             array_unshift($sc, [route('market.offers'), 'box', 'My products', 'Prices, stock and price list import']);
@@ -141,7 +155,7 @@ class Dashboard extends Component
                 ['l' => 'New orders', 'v' => (clone $orders)->where('status', 'placed')->count(), 's' => 'waiting to be confirmed', 'href' => route('market.orders.index', ['status' => 'placed'])],
                 ['l' => 'Open tasks', 'v' => $tasks, 's' => 'pick or deliver', 'href' => route('market.tasks')],
                 ['l' => 'Products on sale', 'v' => \App\Models\Offer::where('store_id', $store->id)->where('status', 'active')->where('stock_milli', '>', 0)->count(), 's' => 'with stock'],
-                ['l' => 'Sales this month', 'v' => \App\Support\Money::format($month, 'USD', false), 's' => 'not counting cancelled orders'],
+                ['l' => 'Sales this month', 'v' => $monthlyLabel, 's' => 'not counting cancelled orders'],
             ],
             'orders' => (clone $orders)->whereIn('status', ['placed', 'confirmed', 'ready'])->with('buyer', 'supplier')->oldest('id')->limit(8)->get(),
             'low' => \App\Models\Offer::where('store_id', $store->id)->where('status', 'active')->whereColumn('stock_milli', '<', 'moq_milli')->with('product')->limit(8)->get(),

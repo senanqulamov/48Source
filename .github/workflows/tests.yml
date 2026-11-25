@@ -3,6 +3,7 @@ name: Tests
 on:
   push:
     branches:
+      - main
       - master
       - '*.x'
   pull_request:
@@ -19,7 +20,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.2, 8.3, 8.4]
+        php: [8.3, 8.4]
 
     name: PHP ${{ matrix.php }}
 
@@ -42,6 +43,15 @@ jobs:
 
       - name: Generate app key
         run: php artisan key:generate
+
+      - name: Verify the exact one-command bootstrap
+        env:
+          DB_CONNECTION: sqlite
+          APP_ENV: local
+        run: |
+          touch database/ci-seed.sqlite
+          DB_DATABASE="$(pwd)/database/ci-seed.sqlite" php artisan migrate:fresh --seed --force
+          rm -f database/ci-seed.sqlite
 
       - name: Execute tests
         run: php artisan test
