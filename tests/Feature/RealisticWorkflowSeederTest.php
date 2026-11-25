@@ -20,7 +20,7 @@ class RealisticWorkflowSeederTest extends TestCase
         $this->assertSame(105, DB::table('stores')->count());
         $this->assertSame(240, DB::table('rfqs')->count());
         $this->assertSame(240, DB::table('requisitions')->count());
-        $this->assertSame(count(\\App\\Support\\Perm::ROLES)*count(\\App\\Support\\Perm::MODULES),
+        $this->assertSame(count(\App\Support\Perm::ROLES)*count(\App\Support\Perm::MODULES),
             DB::table('role_permissions')->count());
         $this->assertGreaterThan(0, DB::table('sequences')->count());
         $this->assertGreaterThan(280, DB::table('products')->count());
