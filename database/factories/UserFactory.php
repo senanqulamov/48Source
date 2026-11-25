@@ -25,6 +25,11 @@ class UserFactory extends Factory
         ];
     }
 
+    public function buyer(): static
+    {
+        return $this->state(['role' => 'buyer', 'supplier_id' => null]);
+    }
+
     public function admin(): static
     {
         return $this->state(['role' => 'admin']);
