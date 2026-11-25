@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Livewire\Concerns\Page;
+use App\Livewire\Concerns\WithTable;
 use App\Models\Invoice;
 use App\Models\PurchaseOrder;
 use App\Models\Requisition;
@@ -16,18 +17,18 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
 #[Title('Monitoring & SLA')]
 class Monitoring extends Component
 {
-    use Page, WithPagination;
+    use Page, WithTable {
+        WithTable::export as tableExport;
+    }
 
     /** Days allowed between closing a request and awarding it. */
     public const AWARD_TARGET_DAYS = 5;
 
-    #[Url(except: 'requests')]
     public string $tab = 'requests';
 
     /** monitoring or sla */
@@ -40,21 +41,15 @@ class Monitoring extends Component
             $this->rules[str_replace('.', '_', $key)] = \App\Support\Setting::int($key);
         }
         $this->tab = $this->page === 'sla' ? 'sla' : (in_array($this->tab, ['requests', 'actions'], true) ? $this->tab : 'requests');
+        if ($this->page === 'sla') {
+            $this->status = 'action';
+        }
         $this->need('reports');
         abort_unless($this->me()->isSourcing(), 403);
     }
 
     /** The SLA rules as typed into the form on the SLA tracker. */
     public array $rules = [];
-
-    #[Url(except: 'action')]
-    public string $show = 'action';
-
-    #[Url(except: '')]
-    public string $stage = '';
-
-    #[Url(except: '')]
-    public string $q = '';
 
     #[Url(except: '')]
     public string $kind = '';
@@ -84,44 +79,50 @@ class Monitoring extends Component
         $this->toast($n ? "{$n} reminder(s) sent." : 'Nothing new to remind. Each reminder is sent once.');
     }
 
-    public function setShow(string $show): void
-    {
-        $this->show = in_array($show, ['action', 'ok', 'all'], true) ? $show : 'action';
-        $this->resetPage();
-    }
-
-    public function setStage(string $stage): void
-    {
-        $this->stage = in_array($stage, ['', 'open', 'closed'], true) ? $stage : '';
-        $this->resetPage();
-    }
-
-    public function updatedQ(): void
-    {
-        $this->resetPage();
-    }
-
     public function updatedKind(): void
     {
         $this->resetPage('hist');
+    }
+
+    public function clearFilters(): void
+    {
+        $this->q = '';
+        $this->status = $this->page === 'sla' ? 'action' : '';
+        $this->f = [];
+        $this->selected = [];
+        $this->resetPage();
     }
 
     /** @return \Illuminate\Support\Collection<int, array> */
     private function filteredRows()
     {
         $rows = $this->rows();
-        if ($this->show === 'action') {
+        if ($this->status === 'action') {
             $rows = $rows->whereIn('risk.0', ['bad', 'warn']);
-        } elseif ($this->show === 'ok') {
+        } elseif ($this->status === 'ok') {
             $rows = $rows->where('risk.0', 'ok');
         }
-        if ($this->stage !== '') {
-            $rows = $rows->where('rfq.status', $this->stage);
+        $stage = $this->facet('stage', ['open', 'closed']);
+        $risk = $this->facet('risk', ['bad', 'warn', 'ok']);
+        $owners = $this->facet('owner', $rows->pluck('rfq.buyer_id')->map(fn ($id) => (string) $id)->all());
+        if ($stage) {
+            $rows = $rows->whereIn('rfq.status', $stage);
+        }
+        if ($risk) {
+            $rows = $rows->whereIn('risk.0', $risk);
+        }
+        if ($owners) {
+            $rows = $rows->whereIn('rfq.buyer_id', $owners);
         }
         $query = mb_strtolower(trim($this->q));
         if ($query !== '') {
             $rows = $rows->filter(fn ($x) => str_contains(mb_strtolower($x['rfq']->title.' '.$x['rfq']->number.' '.$x['rfq']->buyer->name), $query));
         }
+
+        $key = $this->sortCol('due');
+        $rows = $rows->sortBy(fn ($x) => match ($key) {
+            'title' => $x['rfq']->title, 'owner' => $x['rfq']->buyer->name, 'used' => $x['pct'], 'status' => $x['risk'][0], default => $x['due']->timestamp
+        }, $this->sortDir() === 'desc' ? SORT_REGULAR : SORT_REGULAR, $this->sortDir() === 'desc');
 
         return $rows->values();
     }
@@ -172,9 +173,23 @@ class Monitoring extends Component
         })->sortBy([fn ($a, $b) => ['bad' => 0, 'warn' => 1, 'ok' => 2][$a['risk'][0]] <=> ['bad' => 0, 'warn' => 1, 'ok' => 2][$b['risk'][0]], fn ($a, $b) => $a['due'] <=> $b['due']])->values();
     }
 
-    public function export()
+    public function export(string $format = 'xlsx')
     {
+        if ($this->page === 'sla') {
+            return $this->tableExport($format);
+        }
+
         return Sheet::download('monitoring', ['RFQ', 'Title', 'Stage', 'Owner', 'Due', 'SLA used %', 'Status'], $this->filteredRows()->map(fn ($x) => [$x['rfq']->number, $x['rfq']->title, $x['stage'], $x['rfq']->buyer->name, $x['due']->format('Y-m-d H:i'), $x['pct'], $x['risk'][1]])->all());
+    }
+
+    protected function sortable(): array
+    {
+        return ['title', 'owner', 'due', 'used', 'status'];
+    }
+
+    protected function exportData(): array
+    {
+        return ['sla-deadlines', ['RFQ', 'Title', 'Stage', 'Owner', 'Due', 'SLA used %', 'Status'], $this->filteredRows()->map(fn ($x) => [$x['rfq']->number, $x['rfq']->title, $x['stage'], $x['rfq']->buyer->name, $x['due']->format('Y-m-d H:i'), $x['pct'], $x['risk'][1]])->all()];
     }
 
     public function render()
@@ -202,7 +217,7 @@ class Monitoring extends Component
             $filtered = $this->filteredRows();
             $history = $this->history();
             $historyText = ReminderText::describe($history);
-            $deadlineRows = $this->paginate($filtered, 10);
+            $deadlineRows = $this->paginate($filtered, $this->perPage());
             $historyRows = $this->paginate($history, 8, 'hist');
             $overdue = $rows->filter(fn ($x) => $x['risk'][0] === 'bad' && $x['late'])->count();
             $atRisk = $rows->filter(fn ($x) => ! ($x['risk'][0] === 'bad' && $x['late']) && in_array($x['risk'][0], ['bad', 'warn'], true))->count();
