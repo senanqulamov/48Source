@@ -6,40 +6,62 @@ This repository is a new, independent build. It does not touch the original DPan
 
 ## Requirements
 
-- PHP 8.2 or newer with the usual Laravel extensions (pdo, mbstring, openssl, intl)
+- PHP 8.3 or newer (required by the current Composer lockfile) with the usual Laravel extensions (pdo, mbstring, openssl, intl)
 - Composer
 - SQLite (default), MySQL 8 or PostgreSQL 14+
 
-## Set up
+## Setup (new local development database)
 
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite        # or point DB_* in .env at MySQL / PostgreSQL
-php artisan migrate --seed            # tables + categories and feature flags (no user accounts)
-php artisan app:create-admin you@company.com "Your Name"   # asks for the password
+touch database/database.sqlite # or configure DB_* in .env for MySQL/PostgreSQL
+php artisan migrate:fresh --seed
 php artisan serve
 ```
 
-Open http://127.0.0.1:8000 and sign in.
+**This one command builds the entire local dataset.** Do not run `migrate:fresh` against
+a database whose data matters: Laravel drops *all* tables before recreating them.
+Back up any data before resetting. The default seeder only loads reference
+categories/feature flags in production or staging (it never invents real
+business records in those environments).
 
-### Demo data (local only)
+The command prints progress through the dependency-ordered phases:
+reference catalog → 130 supplier companies and 105 buyers → 105 seller
+stores/markets with **783** product offers → 240 RFQs created from **240
+requisitions and actual product catalog items** → approximately 184 awards/
+purchase orders → receipts/invoices, 170 marketplace orders, 47 contracts,
+supplier documents, scorecards, field assessments, RFI/BAFO, messages, audit
+logs, notifications, and supporting operational records.
 
-```bash
-php artisan db:seed --class=DemoSeeder
-```
+The reference catalog has **12 groups, 72 subcategories and 288 distinct
+real-world product types**. Store inventories have 5–10 catalog products each.
+Totals are computed with integer minor-unit arithmetic in AZN. All company
+and personal names, historical transactions, supplier ratings and documents
+are **realistic fictional test data**—not verified external business data.
 
-This loads invented companies and people with Azerbaijani names and cities (none of them is a real organisation or a real person), plus requests, quotations and one purchase order. The seeder refuses to run on production. All demo accounts share one password: `DEMO_PASSWORD` from `.env` if you set it, otherwise a random one printed once when the seeder finishes.
+### Local test accounts
 
-| Role | Email |
+The command prints a generated password **only to your local terminal**.
+Alternatively set `WORKFLOW_SEED_PASSWORD` in a **local disposable** `.env`
+before running it. That password is shared by synthetic accounts for easy
+role testing. It is suppressed in CI logs.
+
+| Role | Sample login |
 |---|---|
-| Administrator | admin@demo.48source.test |
-| Buyer | buyer@demo.48source.test |
-| Buyer (second, isolated) | buyer2@demo.48source.test |
-| Supplier | supplier@demo.48source.test |
-| Supplier (second) | supplier2@demo.48source.test |
-| Supplier (pending approval) | supplier5@demo.48source.test |
+| Admin | `admin@workflow.48source.test` |
+| Buyer | `workflow.buyer.0@example.test` |
+| Supplier | `workflow.supplier.0@example.test` |
+| Seller | `workflow.seller.0@example.test` |
+| Market worker | `workflow.market-worker.0@example.test` |
+| Supplier field worker | `workflow.field-worker.0@example.test` |
+
+Rerunning `php artisan db:seed` on the same local database is idempotent:
+it does not duplicate the data. An existing unrelated business dataset makes
+the workflow seeder refuse to run. The retired `DemoSeeder`,
+`LargeDemoSeeder` and `RealisticWorkflowSeeder` are compatibility aliases
+for the same default pipeline. See [database guidance](docs/DATABASE.md).
 
 ### Scheduler and mail
 
