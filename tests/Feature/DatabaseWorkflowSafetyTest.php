@@ -18,6 +18,12 @@ class DatabaseWorkflowSafetyTest extends TestCase
         $count = DB::table('categories')->count();
         $this->seed(ReferenceCatalogSeeder::class);
 
+        DB::table('role_permissions')->where('role','buyer')->where('module','rfqs')
+            ->update(['abilities' => 'V']);
+        $this->seed(ReferenceCatalogSeeder::class);
+        $this->assertSame('V', DB::table('role_permissions')->where('role','buyer')
+            ->where('module','rfqs')->value('abilities'));
+
         $this->assertSame($count, DB::table('categories')->count());
         $this->assertSame(0, DB::table('users')->count());
         $this->assertGreaterThanOrEqual(280, DB::table('products')->count());
