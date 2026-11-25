@@ -294,11 +294,11 @@ class OperationalHistorySeeder extends Seeder
                 ],$opened->addDays($m)));
             }
             foreach ([$rfq->buyer_id,$supplierUser] as $userId) {
-                Fixture::insert('conversation_reads',Fixture::stamped([
+                Fixture::insert('conversation_reads', [
                     'conversation_id' => $conv, 'user_id' => $userId,
                     'message_id' => $userId === $rfq->buyer_id ? $last : $last-1,
                     'read_at' => $opened->addDays(2),
-                ],$opened->addDays(2)));
+                ]);
             }
             if ($i%4===0) {
                 $filename = "attachments/rfq/{$rfq->id}/requirements.txt";
