@@ -1,14 +1,16 @@
 <?php
 
+use App\Http\Controllers\SearchSuggestionController;
 use App\Livewire;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SearchSuggestionController;
+
+// The landing page is public: signed-in people can return to it too.
+Route::view('/welcome', 'pages.landing')->name('landing');
 
 Route::middleware('guest')->group(function () {
-    Route::view('/welcome', 'pages.landing')->name('landing');
     Route::get('/two-factor', Livewire\Auth\TwoFactor::class)->name('two-factor');
     Route::get('/login', Livewire\Auth\Login::class)->name('login');
     Route::get('/register', Livewire\Auth\Register::class)->name('register');

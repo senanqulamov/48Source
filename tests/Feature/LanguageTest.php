@@ -91,6 +91,14 @@ class LanguageTest extends TestCase
         $this->get(route('landing', ['lang' => 'en']))->assertOk()->assertSee('Sign in');
     }
 
+    public function test_an_authenticated_user_can_return_to_the_landing_page(): void
+    {
+        $this->actingAs($this->person('en'))
+            ->get(route('landing'))
+            ->assertOk()
+            ->assertSee('every purchase on one accountable record.');
+    }
+
     public function test_every_dictionary_entry_has_both_languages(): void
     {
         $az = require lang_path('ui/az.php');

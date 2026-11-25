@@ -215,7 +215,13 @@
   function fx(root) { (root || document).querySelectorAll('.tbl').forEach(t => { t.classList.remove('fx'); void t.offsetWidth; t.classList.add('fx'); }); }
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.tabs a,.tabs button,.seg a,.seg button')) TABFX = true; }, true);
   function tabfx() { const pg = $('.page'); if (pg && TABFX) { pg.classList.remove('enter', 'tabfx'); void pg.offsetWidth; pg.classList.add('tabfx'); } TABFX = false; }
-  function boot() { rows(); tabfx(); closePop(); closeAlpinePops(); tipHide(); enhance(); recentTrack(); countUp(); const f = $('#toasts'); if (f && f.dataset.flash) { toast(f.dataset.flash); delete f.dataset.flash; } }
+  function revealActiveSidebarItem() {
+    const nav = $('.sb-nav'), active = $('.sb-nav .sb-item[aria-current="page"], .sb-nav .sb-item.on');
+    if (!nav || !active) return;
+    const navBox = nav.getBoundingClientRect(), itemBox = active.getBoundingClientRect();
+    nav.scrollTop += itemBox.top - navBox.top - (nav.clientHeight - active.offsetHeight) / 2;
+  }
+  function boot() { rows(); tabfx(); closePop(); closeAlpinePops(); tipHide(); enhance(); recentTrack(); countUp(); requestAnimationFrame(revealActiveSidebarItem); const f = $('#toasts'); if (f && f.dataset.flash) { toast(f.dataset.flash); delete f.dataset.flash; } }
   document.addEventListener('livewire:navigated', boot);
   document.addEventListener('DOMContentLoaded', boot);
   document.addEventListener('livewire:init', () => {

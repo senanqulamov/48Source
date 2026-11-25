@@ -8,17 +8,21 @@ use App\Models\PurchaseOrder;
 use App\Models\Requisition;
 use App\Models\Rfq;
 use App\Services\ReminderService;
+use App\Support\ReminderText;
 use App\Support\Sheet;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
 #[Title('Monitoring & SLA')]
 class Monitoring extends Component
 {
-    use Page;
+    use Page, WithPagination;
 
     /** Days allowed between closing a request and awarding it. */
     public const AWARD_TARGET_DAYS = 5;
@@ -43,6 +47,18 @@ class Monitoring extends Component
     /** The SLA rules as typed into the form on the SLA tracker. */
     public array $rules = [];
 
+    #[Url(except: 'action')]
+    public string $show = 'action';
+
+    #[Url(except: '')]
+    public string $stage = '';
+
+    #[Url(except: '')]
+    public string $q = '';
+
+    #[Url(except: '')]
+    public string $kind = '';
+
     public function saveRules(): void
     {
         $this->need('system', 'E');
@@ -66,6 +82,66 @@ class Monitoring extends Component
         $this->need('system', 'E');
         $n = $reminders->run();
         $this->toast($n ? "{$n} reminder(s) sent." : 'Nothing new to remind. Each reminder is sent once.');
+    }
+
+    public function setShow(string $show): void
+    {
+        $this->show = in_array($show, ['action', 'ok', 'all'], true) ? $show : 'action';
+        $this->resetPage();
+    }
+
+    public function setStage(string $stage): void
+    {
+        $this->stage = in_array($stage, ['', 'open', 'closed'], true) ? $stage : '';
+        $this->resetPage();
+    }
+
+    public function updatedQ(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedKind(): void
+    {
+        $this->resetPage('hist');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, array> */
+    private function filteredRows()
+    {
+        $rows = $this->rows();
+        if ($this->show === 'action') {
+            $rows = $rows->whereIn('risk.0', ['bad', 'warn']);
+        } elseif ($this->show === 'ok') {
+            $rows = $rows->where('risk.0', 'ok');
+        }
+        if ($this->stage !== '') {
+            $rows = $rows->where('rfq.status', $this->stage);
+        }
+        $query = mb_strtolower(trim($this->q));
+        if ($query !== '') {
+            $rows = $rows->filter(fn ($x) => str_contains(mb_strtolower($x['rfq']->title.' '.$x['rfq']->number.' '.$x['rfq']->buyer->name), $query));
+        }
+
+        return $rows->values();
+    }
+
+    private function paginate(\Illuminate\Support\Collection $items, int $perPage, string $pageName = 'page'): LengthAwarePaginator
+    {
+        $page = $this->getPage($pageName);
+
+        return new LengthAwarePaginator($items->forPage($page, $perPage)->values(), $items->count(), $perPage, $page, ['path' => request()->url(), 'pageName' => $pageName]);
+    }
+
+    private function history()
+    {
+        $prefixes = ['rfq' => 'rfq-closing:%', 'po' => 'po-%', 'inv' => 'inv-due:%', 'pr' => 'pr-wait:%', 'doc' => 'doc-exp:%'];
+        $query = \App\Models\Reminder::latest('id');
+        if (isset($prefixes[$this->kind])) {
+            $query->where('key', 'like', $prefixes[$this->kind]);
+        }
+
+        return $query->get();
     }
 
     /** @return \Illuminate\Support\Collection<int, array> */
@@ -98,7 +174,7 @@ class Monitoring extends Component
 
     public function export()
     {
-        return Sheet::download('monitoring', ['RFQ', 'Title', 'Stage', 'Owner', 'Due', 'SLA used %', 'Status'], $this->rows()->map(fn ($x) => [$x['rfq']->number, $x['rfq']->title, $x['stage'], $x['rfq']->buyer->name, $x['due']->format('Y-m-d H:i'), $x['pct'], $x['risk'][1]])->all());
+        return Sheet::download('monitoring', ['RFQ', 'Title', 'Stage', 'Owner', 'Due', 'SLA used %', 'Status'], $this->filteredRows()->map(fn ($x) => [$x['rfq']->number, $x['rfq']->title, $x['stage'], $x['rfq']->buyer->name, $x['due']->format('Y-m-d H:i'), $x['pct'], $x['risk'][1]])->all());
     }
 
     public function render()
@@ -106,7 +182,7 @@ class Monitoring extends Component
         $u = $this->me();
         $actions = collect();
         foreach (PurchaseOrder::visibleTo($u)->where('status', 'issued')->where('issued_at', '<=', now()->subDays(\App\Support\Setting::int('sla.po_ack_days')))->with('supplier')->get() as $p) {
-            $actions->push([$p->number, route('orders.show', $p), "Not acknowledged by {$p->supplier->name} for " . (int) $p->issued_at->diffInDays(now()) . ' days', 'warn']);
+            $actions->push([$p->number, route('orders.show', $p), "Not acknowledged by {$p->supplier->name} for ".(int) $p->issued_at->diffInDays(now()).' days', 'warn']);
         }
         foreach (PurchaseOrder::visibleTo($u)->whereIn('status', ['acknowledged', 'in_transit'])->whereDate('expected_at', '<', now()->toDateString())->with('supplier')->get() as $p) {
             $actions->push([$p->number, route('orders.show', $p), "Delivery from {$p->supplier->name} was due {$p->expected_at->format('j M')}", 'bad']);
@@ -122,13 +198,25 @@ class Monitoring extends Component
         }
 
         $rows = $this->rows();
+        if ($this->page === 'sla') {
+            $filtered = $this->filteredRows();
+            $history = $this->history();
+            $historyText = ReminderText::describe($history);
+            $deadlineRows = $this->paginate($filtered, 10);
+            $historyRows = $this->paginate($history, 8, 'hist');
+            $overdue = $rows->filter(fn ($x) => $x['risk'][0] === 'bad' && $x['late'])->count();
+            $atRisk = $rows->filter(fn ($x) => ! ($x['risk'][0] === 'bad' && $x['late']) && in_array($x['risk'][0], ['bad', 'warn'], true))->count();
+            $strip = [
+                ['l' => 'Tracked requests', 'v' => $rows->count(), 's' => $rows->where('rfq.status', 'open')->count().' quoting · '.$rows->where('rfq.status', 'closed')->count().' awaiting award'],
+                ['l' => 'Overdue', 'v' => $overdue, 's' => 'past the deadline or award target', 'c' => 'bad'],
+                ['l' => 'At risk', 'v' => $atRisk, 's' => 'need action before the deadline', 'c' => 'warn'],
+                ['l' => 'Reminders sent', 'v' => \App\Models\Reminder::where('created_at', '>=', now()->subDays(7))->count(), 's' => 'in the last 7 days'],
+            ];
+
+            return view('livewire.monitoring', compact('strip', 'rows', 'actions', 'deadlineRows', 'historyRows', 'historyText') + ['beat' => Cache::get('scheduler:heartbeat'), 'target' => \App\Support\Setting::int('sla.award_days')]);
+        }
         $week = now()->addDays(7);
-        $strip = $this->page === 'sla' ? [
-            ['l' => 'Tracked RFQs', 'v' => $rows->count(), 's' => 'open or in evaluation'],
-            ['l' => 'Reminders sent today', 'v' => \App\Models\Reminder::whereDate('created_at', now()->toDateString())->count(), 's' => 'each one is sent once'],
-            ['l' => 'At risk', 'v' => $rows->where('risk.0', 'warn')->count(), 's' => 'need action before the deadline', 'c' => 'warn'],
-            ['l' => 'Overdue or breached', 'v' => $rows->where('risk.0', 'bad')->count(), 's' => 'past the award target', 'c' => 'bad', 'href' => route('monitoring.index')],
-        ] : [
+        $strip = [
             ['l' => 'Active RFQs', 'v' => $rows->count(), 's' => $rows->where('rfq.status', 'open')->count().' quoting · '.$rows->where('rfq.status', 'closed')->count().' in evaluation'],
             ['l' => 'At risk', 'v' => $rows->where('risk.0', 'warn')->count(), 's' => 'need action before the deadline', 'c' => 'warn'],
             ['l' => 'Overdue or breached', 'v' => $rows->where('risk.0', 'bad')->count(), 's' => 'past the deadline or the award target', 'c' => 'bad'],
@@ -136,6 +224,6 @@ class Monitoring extends Component
         ];
 
         return view('livewire.monitoring', ['strip' => $strip, 'rows' => $rows, 'actions' => $actions, 'target' => \App\Support\Setting::int('sla.award_days'),
-            'reminders' => $this->tab === 'sla' ? \App\Models\Reminder::latest('id')->limit(60)->get() : collect(), 'beat' => \Illuminate\Support\Facades\Cache::get('scheduler:heartbeat')]);
+            'reminders' => collect(), 'beat' => Cache::get('scheduler:heartbeat')]);
     }
 }
