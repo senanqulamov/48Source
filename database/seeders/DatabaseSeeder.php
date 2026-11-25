@@ -54,7 +54,11 @@ class DatabaseSeeder extends Seeder
         Fixture::note('Complete', 'All seed phases committed successfully.');
         Fixture::note('Accounts', 'Example admin: admin@workflow.48source.test');
         Fixture::note('Accounts', 'Buyer: workflow.buyer.0@example.test / Supplier: workflow.supplier.0@example.test');
-        Fixture::note('Accounts', 'Local-only password: '.Fixture::password());
+        if (env('CI') || app()->environment('testing')) {
+            Fixture::note('Accounts', 'Synthetic fixture credentials suppressed in CI/testing logs.');
+        } else {
+            Fixture::note('Accounts', 'Local-only password: '.Fixture::password());
+        }
         Fixture::note('Warning', 'Fictional people and companies; valid business workflows, NOT real customer transactions.');
     }
 }

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\FeatureFlag;
+use App\Support\Perm;
 use Database\Seeders\Support\Fixture;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -135,6 +136,18 @@ class ReferenceCatalogSeeder extends Seeder
                 }
             }
         }
+        foreach (Perm::ROLES as $role => $label) {
+            foreach (Perm::MODULES as $module => $moduleLabel) {
+                DB::table('role_permissions')->updateOrInsert(
+                    ['role' => $role, 'module' => $module],
+                    Fixture::stamped([
+                        'role' => $role, 'module' => $module,
+                        'abilities' => Perm::DEFAULTS[$role][$module] ?? '',
+                    ])
+                );
+            }
+        }
+        Perm::flush();
         foreach (FeatureFlag::DEFAULTS as $key => [$label, $on]) {
             FeatureFlag::firstOrCreate(['key' => $key], ['label' => $label, 'enabled' => $on]);
         }

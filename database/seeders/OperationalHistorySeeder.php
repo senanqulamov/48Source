@@ -21,7 +21,8 @@ class OperationalHistorySeeder extends Seeder
         $this->sourcingActivity();
         $this->communication();
         $this->budgets();
-        Fixture::note('Operations', 'Marketplace orders, contract releases, assessments, RFIs, messages, documents, scorecards, logs and notifications.');
+        $this->sequences();
+        Fixture::note('Operations', 'Marketplace orders, contracts, assessments, RFIs, messages, documents, scores, logs and notifications.');
     }
 
     private function marketplace(): void
@@ -332,7 +333,7 @@ class OperationalHistorySeeder extends Seeder
                     'user_id' => $supplierUser, 'to' => DB::table('users')->where('id',$supplierUser)->value('email'),
                     'subject' => '48Source RFQ notification '.$rfq->number,
                     'body' => 'Synthetic email fixture — no mail was sent.',
-                    'area' => 'Sourcing', 'status' => 'sent', 'sent_at' => $opened,
+                    'area' => 'Sourcing', 'status' => 'queued', 'sent_at' => null,
                 ],$opened));
             }
             if ($i%5 === 0) {
@@ -358,4 +359,19 @@ class OperationalHistorySeeder extends Seeder
             }
         }
     }
+    private function sequences(): void
+    {
+        // Keep live Sequence::next(...) counters above all seeded W-prefixed examples.
+        // W-references are distinct, but counters are initialized for regular user actions.
+        $year = (int) Fixture::now()->year;
+        foreach (['RFQ','PO','REQ','INV','CT','CR','MO','RFI','FA'] as $type) {
+            foreach ([$year-1,$year] as $y) {
+                DB::table('sequences')->updateOrInsert(
+                    ['name' => $type,'year' => $y],
+                    ['name' => $type,'year' => $y,'value' => 500]
+                );
+            }
+        }
+    }
+
 }
