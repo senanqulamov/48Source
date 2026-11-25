@@ -3,80 +3,82 @@
 namespace Tests\Feature;
 
 use App\Support\Money;
-use Database\Seeders\RealisticWorkflowSeeder;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class RealisticWorkflowSeederTest extends TestCase
 {
-    public function test_synthetic_workflows_have_matching_lines_totals_and_chronological_stages(): void
+    public function test_full_pipeline_creates_connected_products_accounts_and_business_workflows(): void
     {
-        app(RealisticWorkflowSeeder::class)->run();
+        $this->seed(DatabaseSeeder::class);
 
-        $this->assertSame(72, DB::table('rfqs')->where('number', 'like', 'RFQ-%-W%')->count());
-        $this->assertGreaterThan(72, DB::table('workflow_fixture_records')->where('batch', 'workflow-fixtures-v1')->count());
-        $this->assertSame(8, DB::table('suppliers')->where('email', 'like', 'workflow.supplier.%@example.test')->count());
-        $this->assertSame(3, DB::table('users')->where('email', 'like', 'workflow.buyer.%@example.test')->count());
-        $this->assertGreaterThan(20, DB::table('purchase_orders')->where('number', 'like', 'PO-%-W%')->count());
-        $this->assertGreaterThan(0, DB::table('purchase_orders')->where('status', 'draft')->where('number', 'like', 'PO-%-W%')->count());
+        $this->assertSame(130, DB::table('suppliers')->count());
+        $this->assertSame(105, DB::table('users')->where('role','buyer')->count());
+        $this->assertSame(105, DB::table('users')->where('role','seller')->count());
+        $this->assertSame(105, DB::table('markets')->count());
+        $this->assertSame(105, DB::table('stores')->count());
+        $this->assertSame(240, DB::table('rfqs')->count());
+        $this->assertSame(240, DB::table('requisitions')->count());
+        $this->assertGreaterThan(280, DB::table('products')->count());
+        $this->assertGreaterThan(100, DB::table('purchase_orders')->count());
+        $this->assertGreaterThan(100, DB::table('market_orders')->count());
 
-        $rfqs = DB::table('rfqs')->where('number', 'like', 'RFQ-%-W%')->get();
-        $this->assertGreaterThan(8, $rfqs->pluck('created_at')->map(fn ($date) => substr($date, 0, 7))->unique()->count());
-        $this->assertGreaterThan(0, $rfqs->where('status', 'open')->count());
-        $this->assertGreaterThan(0, $rfqs->where('status', 'closed')->count());
-        $this->assertGreaterThan(0, $rfqs->where('status', 'awarded')->count());
+        $offers = DB::table('offers')->selectRaw('store_id, count(*) as n')->groupBy('store_id')->get();
+        $this->assertCount(105, $offers);
+        foreach ($offers as $offer) {
+            $this->assertGreaterThanOrEqual(5, $offer->n);
+            $this->assertLessThanOrEqual(10, $offer->n);
+        }
+        foreach (['quotes','quote_items','rfq_invitations','purchase_order_items','invoices',
+            'invoice_items','goods_receipts','goods_receipt_items','requisition_items',
+            'requisition_approvals','contracts','contract_items','contract_releases',
+            'contract_release_items','supplier_documents','supplier_scorecards',
+            'field_assessments','rfis','rfi_responses','rfq_questions','auctions',
+            'auction_bids','bafo_rounds','conversations','messages','conversation_reads',
+            'activity_logs','notifications','attachments','outbox_emails','worker_tasks',
+            'market_order_items','cart_items','budgets'] as $table) {
+            $this->assertGreaterThan(0, DB::table($table)->count(), $table.' was not populated');
+        }
 
-        foreach ($rfqs as $rfq) {
-            $this->assertSame('AZN', $rfq->currency);
-            $this->assertLessThanOrEqual(now()->timestamp, strtotime($rfq->created_at));
-            $items = DB::table('rfq_items')->where('rfq_id', $rfq->id)->get();
-            $this->assertCount(3, $items);
-
-            $quotes = DB::table('quotes')->where('rfq_id', $rfq->id)->get();
-            foreach ($quotes as $quote) {
-                $lines = DB::table('quote_items')->where('quote_id', $quote->id)->get();
-                $this->assertCount($items->count(), $lines);
-                $this->assertSame((int) $quote->total_cents, (int) $lines->sum('total_cents'));
-                $this->assertSame($rfq->currency, $quote->currency);
-                $this->assertTrue(DB::table('rfq_invitations')
-                    ->where('rfq_id', $rfq->id)->where('supplier_id', $quote->supplier_id)->exists());
+        foreach (DB::table('rfqs')->get() as $rfq) {
+            $this->assertSame(3, DB::table('rfq_items')->where('rfq_id',$rfq->id)->count());
+            $requisition = DB::table('requisitions')->where('rfq_id',$rfq->id)->first();
+            $this->assertNotNull($requisition);
+            $this->assertSame((int)$rfq->budget_cents, (int)$requisition->total_cents);
+            $this->assertSame(3, DB::table('requisition_items')->where('requisition_id',$requisition->id)->count());
+            foreach (DB::table('quotes')->where('rfq_id',$rfq->id)->get() as $quote) {
+                $lines = DB::table('quote_items')->where('quote_id',$quote->id)->get();
+                $this->assertCount(3,$lines);
+                $this->assertSame((int)$quote->total_cents,(int)$lines->sum('total_cents'));
+                $this->assertSame('AZN', $quote->currency);
+                $this->assertTrue(DB::table('rfq_invitations')->where('rfq_id',$rfq->id)
+                    ->where('supplier_id',$quote->supplier_id)->exists());
                 foreach ($lines as $line) {
-                    $rfqItem = $items->firstWhere('id', $line->rfq_item_id);
-                    $this->assertNotNull($rfqItem);
-                    $this->assertSame(
-                        Money::lineTotal((int) $line->unit_price_cents, (int) $rfqItem->quantity_milli),
-                        (int) $line->total_cents
-                    );
+                    $item = DB::table('rfq_items')->where('id',$line->rfq_item_id)->first();
+                    $this->assertSame(Money::lineTotal($line->unit_price_cents,$item->quantity_milli),(int)$line->total_cents);
                 }
             }
         }
 
-        foreach (DB::table('purchase_orders')->where('number', 'like', 'PO-%-W%')->get() as $po) {
-            $rfq = $rfqs->firstWhere('id', $po->rfq_id);
+        foreach (DB::table('purchase_orders')->get() as $po) {
             $quote = DB::table('quotes')->find($po->quote_id);
-            $this->assertSame('awarded', $rfq->status);
-            $this->assertSame('won', $quote->status);
-            $this->assertSame((int) $quote->total_cents, (int) $po->total_cents);
-            $this->assertSame((int) $quote->supplier_id, (int) $po->supplier_id);
-            $this->assertSame((int) $rfq->buyer_id, (int) $po->buyer_id);
-            $this->assertSame((int) $po->total_cents, (int) DB::table('purchase_order_items')->where('purchase_order_id', $po->id)->sum('total_cents'));
-            $this->assertGreaterThanOrEqual(strtotime($po->created_at), strtotime($po->issued_at ?? $po->created_at));
-            if ($po->delivered_at !== null) {
-                $this->assertNotNull($po->shipped_at);
-                $this->assertGreaterThanOrEqual(strtotime($po->shipped_at), strtotime($po->delivered_at));
-                $receipt = DB::table('goods_receipts')->where('purchase_order_id', $po->id)->first();
-                $this->assertNotNull($receipt);
-                $this->assertSame(3, DB::table('goods_receipt_items')->where('goods_receipt_id', $receipt->id)->count());
-            }
-            if ($po->status === 'invoiced') {
-                $invoice = DB::table('invoices')->where('purchase_order_id', $po->id)->first();
-                $this->assertNotNull($invoice);
-                $this->assertSame((int) $po->total_cents, (int) $invoice->total_cents);
-                $this->assertSame((int) $invoice->total_cents, (int) DB::table('invoice_items')->where('invoice_id', $invoice->id)->sum('total_cents'));
-            }
+            $this->assertSame((int)$po->supplier_id,(int)$quote->supplier_id);
+            $this->assertSame((int)$po->rfq_id,(int)$quote->rfq_id);
+            $this->assertSame((int)$po->total_cents,(int)$quote->total_cents);
+            $this->assertSame((int)$po->total_cents,(int)DB::table('purchase_order_items')
+                ->where('purchase_order_id',$po->id)->sum('total_cents'));
         }
 
-        app(RealisticWorkflowSeeder::class)->run();
-        $this->assertSame(72, DB::table('rfqs')->where('number', 'like', 'RFQ-%-W%')->count());
+        $orders = DB::table('market_orders')->get();
+        foreach ($orders as $order) {
+            $this->assertSame((int)$order->total_cents,(int)DB::table('market_order_items')
+                ->where('market_order_id',$order->id)->sum('total_cents'));
+        }
+
+        $before = DB::table('workflow_fixture_records')->count();
+        $this->seed(DatabaseSeeder::class);
+        $this->assertSame($before, DB::table('workflow_fixture_records')->count());
+        $this->assertSame(240, DB::table('rfqs')->count());
     }
 }

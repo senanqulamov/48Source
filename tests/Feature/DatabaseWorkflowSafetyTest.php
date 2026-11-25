@@ -3,9 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Supplier;
-use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
-use Database\Seeders\RealisticWorkflowSeeder;
+use Database\Seeders\ReferenceCatalogSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -13,30 +12,30 @@ use Tests\TestCase;
 
 class DatabaseWorkflowSafetyTest extends TestCase
 {
-    public function test_reference_seed_is_idempotent_and_creates_no_business_accounts(): void
+    public function test_reference_catalog_can_be_seeded_twice_without_creating_business_accounts(): void
     {
-        $this->seed(DatabaseSeeder::class);
-        $first = DB::table('categories')->count();
-        $this->seed(DatabaseSeeder::class);
+        $this->seed(ReferenceCatalogSeeder::class);
+        $count = DB::table('categories')->count();
+        $this->seed(ReferenceCatalogSeeder::class);
 
-        $this->assertSame($first, DB::table('categories')->count());
-        $this->assertSame(0, User::count());
-        $this->assertSame(0, DB::table('rfqs')->count());
+        $this->assertSame($count, DB::table('categories')->count());
+        $this->assertSame(0, DB::table('users')->count());
+        $this->assertGreaterThanOrEqual(280, DB::table('products')->count());
         $this->assertTrue(Schema::hasTable('workflow_fixture_records'));
     }
 
-    public function test_fixture_refuses_populated_database_without_modifying_it(): void
+    public function test_default_seeder_rejects_preexisting_business_data_without_deleting_it(): void
     {
         $supplier = Supplier::factory()->create();
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('already contains business records');
+        $this->expectExceptionMessage('Refusing to mix fixtures');
 
         try {
-            app(RealisticWorkflowSeeder::class)->run();
+            $this->seed(DatabaseSeeder::class);
         } finally {
-            $this->assertDatabaseHas('suppliers', ['id' => $supplier->id]);
+            $this->assertDatabaseHas('suppliers', ['id'=>$supplier->id]);
             $this->assertSame(1, DB::table('suppliers')->count());
-            $this->assertSame(0, DB::table('workflow_fixture_records')->count());
+            $this->assertSame(0, DB::table('rfqs')->count());
         }
     }
 }
