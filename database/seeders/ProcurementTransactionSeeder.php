@@ -42,7 +42,7 @@ class ProcurementTransactionSeeder extends Seeder
             }
             $buyer = $buyers[$i % count($buyers)];
             $status = match (true) {
-                $age <= 6 => 'draft',
+                $age <= 9 => 'draft',
                 $age <= 19 => 'open',
                 $age <= 33 => 'closed',
                 $i % 19 === 0 => 'cancelled',
