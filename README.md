@@ -10,47 +10,58 @@ This repository is a new, independent build. It does not touch the original DPan
 - Composer
 - SQLite (default), MySQL 8 or PostgreSQL 14+
 
-## Set up
+## Setup (new local development database)
 
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite        # or point DB_* in .env at MySQL / PostgreSQL
-php artisan migrate --seed            # tables + categories and feature flags (no user accounts)
-php artisan app:create-admin you@company.com "Your Name"   # asks for the password
+touch database/database.sqlite # or configure DB_* in .env for MySQL/PostgreSQL
+php artisan migrate:fresh --seed
 php artisan serve
 ```
 
-Open http://127.0.0.1:8000 and sign in.
+**This one command builds the entire local dataset.** Do not run `migrate:fresh` against
+a database whose data matters: Laravel drops *all* tables before recreating them.
+Back up any data before resetting. The default seeder only loads reference
+categories/feature flags in production or staging (it never invents real
+business records in those environments).
 
-### Database and local workflow data
+The command prints progress through the dependency-ordered phases:
+reference catalog → 130 supplier companies and 105 buyers → 105 seller
+stores/markets with **783** product offers → 240 RFQs created from **240
+requisitions and actual product catalog items** → approximately 184 awards/
+purchase orders → receipts/invoices, 170 marketplace orders, 47 contracts,
+supplier documents, scorecards, field assessments, RFI/BAFO, messages, audit
+logs, notifications, and supporting operational records.
 
-The default seeder is **reference data only**: categories and feature flags. It never
-creates fake users or business records and is safe to rerun.
+The reference catalog has **12 groups, 72 subcategories and 288 distinct
+real-world product types**. Store inventories have 5–10 catalog products each.
+Totals are computed with integer minor-unit arithmetic in AZN. All company
+and personal names, historical transactions, supplier ratings and documents
+are **realistic fictional test data**—not verified external business data.
 
-```bash
-php artisan migrate --seed
-php artisan app:create-admin you@company.com "Your Name"
-```
+### Local test accounts
 
-For **disposable local databases only**, the single supported procurement history
-fixture is:
+The command prints a generated password **only to your local terminal**.
+Alternatively set `WORKFLOW_SEED_PASSWORD` in a **local disposable** `.env`
+before running it. That password is shared by synthetic accounts for easy
+role testing. It is suppressed in CI logs.
 
-```bash
-php artisan db:seed --class=RealisticWorkflowSeeder
-php artisan test --filter=RealisticWorkflowSeederTest
-```
+| Role | Sample login |
+|---|---|
+| Admin | `admin@workflow.48source.test` |
+| Buyer | `workflow.buyer.0@example.test` |
+| Supplier | `workflow.supplier.0@example.test` |
+| Seller | `workflow.seller.0@example.test` |
+| Market worker | `workflow.market-worker.0@example.test` |
+| Supplier field worker | `workflow.field-worker.0@example.test` |
 
-It creates 72 coherent RFQs and their itemized quotations, awards, purchase orders,
-receipts, invoices, and a year of AZN-only workflow dates. These are **synthetic** records,
-not actual company transactions. The seeder refuses to run in production or staging,
-or when business records already exist. It will not purge existing data.
-
-`DemoSeeder` and `LargeDemoSeeder` are compatibility aliases pointing to the
-same workflow seeder; legacy scale/fresh generation has been removed. See
-[`docs/DATABASE.md`](docs/DATABASE.md) for migration policy and safe test setup.
-Do not run `migrate:fresh` on a valuable database.
+Rerunning `php artisan db:seed` on the same local database is idempotent:
+it does not duplicate the data. An existing unrelated business dataset makes
+the workflow seeder refuse to run. The retired `DemoSeeder`,
+`LargeDemoSeeder` and `RealisticWorkflowSeeder` are compatibility aliases
+for the same default pipeline. See [database guidance](docs/DATABASE.md).
 
 ### Scheduler and mail
 

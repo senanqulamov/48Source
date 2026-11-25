@@ -1,95 +1,114 @@
-# 48Source database — migration and fixture contract
+# 48Source database and complete local workflow fixtures
 
-## Structure (24 November 2026)
-
-- `database/migrations/` contains **historical Laravel migrations**. Applied
-  migrations are immutable: do not rename, merge, edit, delete, or renumber them
-  in an already-initialized environment.
-- `DatabaseSeeder` creates only idempotent categories and feature flags. It is
-  appropriate for `migrate --seed` and production deployments.
-- `RealisticWorkflowSeeder` is the **only active business-history fixture**.
-  `DemoSeeder` and `LargeDemoSeeder` are tiny compatibility aliases. New code
-  must call `RealisticWorkflowSeeder` directly.
-- `database/factories/` contains isolated **test model factories**, not bulk
-  fixture or production-data logic. Do not treat Faker outputs as real businesses.
-- `workflow_fixture_records` tracks each inserted fixture row, but no automated
-  destructive cleanup is provided. This avoids touching non-fixture data.
-- The existing `demo_records` and `demo_data_runs` tables and their migrations
-  remain for compatibility with databases that previously applied them. They
-  are **legacy**, not a supported mechanism for seeding new records.
-
-## Setup: new disposable local database
-
-Configure a separate `DB_DATABASE` in your local `.env`, not your existing
-development/production database. Verify that database name first.
+## One command (local or test database only)
 
 ```bash
-php artisan migrate --seed
-php artisan db:seed --class=RealisticWorkflowSeeder
-php artisan test --filter=RealisticWorkflowSeederTest
+php artisan migrate:fresh --seed
 ```
 
-These synthetic records are purpose-built to test live application workflows:
+This **destroys every table** in the configured database, recreates migrations,
+and executes `DatabaseSeeder` in a dependency-safe order. Never use it on
+production, on a shared database, or where you have records to keep.
+Before running, confirm `APP_ENV`, `DB_CONNECTION`, `DB_DATABASE`,
+and take a verified backup.
 
-RFQ → invitation → complete quote lines → award → matching PO lines →
-received quantities → invoice items → payment dates.
+### What is seeded
 
-The fixture uses AZN consistently and integer minor-unit arithmetic.
-The rows reflect *plausible scenarios*; they are not verified market prices,
-suppliers, compliance certifications, or commercial facts.
+1. **ReferenceCatalogSeeder:** 12 groups, 72 subcategories, 288 detailed
+   real-world product types, 3 currency definitions, default feature flags
+   and the full role-permission matrix.
+2. **BusinessIdentitySeeder:** one local administrator, 105 separate buyers,
+   130 supplier businesses and one login for each. 120 approved supplier
+   accounts; 10 pending approval for realistic onboarding screens.
+3. **MarketplaceInventorySeeder:** 105 markets, 105 associated stores and
+   separate seller accounts, 783 offer rows—5 to 10 different catalog products
+   per seller—with AZN prices, lead time and available inventory.
+   Additional market-worker users are assigned to stores.
+4. **ProcurementTransactionSeeder:** 240 approved/draft requisitions and
+   product-based RFQs, each with 3 requisition and RFQ lines; supplier
+   invitations are matched by the supplier's specialty group. Supplier
+   quotations have the same actual items and mathematically correct totals.
+   The auction/award cycle leads to ~184 POs, with realistic draft/issued/
+   acknowledged/in-transit/delivered/invoiced states, receipts and invoice
+   lines linked to their PO lines.
+5. **OperationalHistorySeeder:** 170 market orders with real store offer
+   lines, pick/deliver worker tasks, 47 frame contracts and releases,
+   supplier document files (plain-text synthetic placeholders with disclaimers),
+   scorecards/actions, field assessments and workers, RFIs/responses,
+   quotation Q&A, auctions/bids, BAFO rounds, messages and read markers,
+   attachment files, activity logs, notifications, email outbox records,
+   budgets, reminders and document/numbering references.
 
-The seeder **refuses** to run on production/staging, when existing procurement,
-marketplace or contract records would be mixed into its charts, or before its
-tracking migration is applied. An idempotent repeated run makes no changes.
-Set `WORKFLOW_SEED_PASSWORD` **only in a disposable local environment** if UI
-login is needed; otherwise fixture accounts use random unprinted passwords.
+Each stage reports its progress in the console. The default Laravel
+`migrate:fresh --seed` output also lists each migration as it runs.
+The seeder is idempotent and refuses to mix synthetic records with an
+existing business dataset. A failure rolls back inserted database rows.
 
-Accounts:
-- `workflow.buyer.0@example.test` through `.2` (buyers)
-- `workflow.supplier.0@example.test` through `.7` (suppliers)
+### Accounts
 
-### Existing populated local database
+Set `WORKFLOW_SEED_PASSWORD` only in your isolated local `.env` if you
+want a fixed testing password; otherwise the seed command generates one
+and prints it only in a local terminal (never in CI).
 
-**Do not** run a destructive cleanup on it. Back up and point your local
-environment at an entirely *new* SQLite/MySQL/PostgreSQL database, migrate it,
-then seed there. Legacy bulk demo rows are not silently deleted or rewritten.
-No import/migration of historical user data is performed by this PR.
+- Admin: `admin@workflow.48source.test`
+- Buyer: `workflow.buyer.0@example.test` to `workflow.buyer.104@example.test`
+- Supplier: `workflow.supplier.0@example.test` to `.129`
+- Seller: `workflow.seller.0@example.test` to `.104`
+- Store worker: `workflow.market-worker.0@example.test` (even store indexes)
+- Field worker: `workflow.field-worker.0@example.test` (every 3rd supplier)
 
-## Migrations: why these were not squashed into one file
+### Important distinction
 
-The active repository has already published the foundational `0001_...` and
-`2026_...` migrations. Laravel records their **filenames** in the `migrations`
-table. Editing or deleting them may cause fresh installs to diverge from
-existing installs and makes rollback or disaster recovery unpredictable.
+These are test *scenarios*, not real verified commercial transactions.
+Catalog descriptions correspond to identifiable physical product types,
+but company names, employee identities, prices, supplier certifications
+and purchase/payment events are fictional and internally consistent.
+Actual business records require permissioned CRM, accounting or ERP imports.
+Files generated under `storage/app/private/` explicitly say they are
+synthetic, not authentic supplier documentation.
 
-A single baseline for fresh installations is possible, but it should be
-produced from a real, **fully migrated database**, not manually concatenated:
-1. Inventory the `migrations` table across every deployed environment.
-2. Check every database for schema drift and back up records and assets.
-3. On a clean disposable environment, run `php artisan migrate:fresh` **only
-   after verifying the target database**, run all tests, then
-   `php artisan schema:dump` to produce a supported schema snapshot.
-4. Compare the dump to all deployed schemas; consider `schema:dump --prune`
-   **only in a separately reviewed migration-baseline PR** with a documented
-   compatibility and rollback plan.
-5. Retain historical migrations until every initialized environment is
-   verified compatible with the chosen new-install baseline.
+## Files and responsibilities
 
-**This PR intentionally does not prune applied migrations.** It consolidates
-the seeding behavior and tests without risking your current business database.
+- `database/migrations/`: historical immutable Laravel schema changes.
+- `database/seeders/DatabaseSeeder.php`: **the only canonical entry point**.
+- `ReferenceCatalogSeeder.php`, `BusinessIdentitySeeder.php`,
+  `MarketplaceInventorySeeder.php`, `ProcurementTransactionSeeder.php`,
+  `OperationalHistorySeeder.php`: one clear phase per functional area.
+- `Support/Fixture.php`: shared money, IDs, test passwords, timestamps
+  and fixture bookkeeping.
+- `database/factories/`: isolated factories for model tests. Never
+  mistake Faker output for external business records.
+- `RealisticWorkflowSeeder`, `DemoSeeder`, `LargeDemoSeeder`: legacy
+  aliases that call the same canonical pipeline. Bulk random generation and
+  destructive `--fresh` cleanup are deliberately retired.
+- `workflow_fixture_records`: fixture batch tracking.
+- `demo_records` / `demo_data_runs`: obsolete legacy tables left in the
+  migration history for compatibility. New fixtures never use them.
 
-## Required checks
+## Historical migration consolidation
+
+Do **not** delete/rename or manually merge migrations already applied in a
+live database. Laravel tracks filenames and rollback batches. This PR
+delivers a clean `migrate:fresh --seed` experience through the existing
+migration chain and a consolidated seeder pipeline.
+
+For a separate future physical schema baseline: back up every live database,
+review migration histories and drift across environments, generate a
+supported schema dump from a disposable migrated database, verify
+new-install and upgrade paths, and only then consider prune under a
+separate reviewed migration-baseline PR.
+
+## Verification
+
+The pull request tests this exact command in isolated SQLite databases
+under PHP 8.3 and 8.4:
 
 ```bash
-php artisan migrate --seed
-php artisan migrate:status
-php artisan db:seed --class=RealisticWorkflowSeeder
+php artisan migrate:fresh --seed --force
 php artisan test --filter=RealisticWorkflowSeederTest
-php artisan test --filter=LargeDemoSeederTest
-vendor/bin/pint --test
 php artisan test
 ```
 
-Never conflate currency values: AZN + EUR + USD is not a valid money total.
-The dashboard must show a single-currency series or a mixed-currency notice
-until a separately verified FX conversion is implemented.
+Never add currencies together without verified exchange rates. The
+dashboard reports actual AZN values, and identifies mixed-currency
+reporting without silently assuming exchange rates.
