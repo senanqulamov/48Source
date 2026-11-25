@@ -127,7 +127,7 @@ class ReferenceCatalogSeeder extends Seeder
                 foreach ($itemNames as $itemName) {
                     $sku = 'CAT-'.strtoupper(substr(sha1($group.'|'.$name.'|'.$itemName), 0, 12));
                     $unit = str_contains(mb_strtolower($itemName), 'service') || str_contains(mb_strtolower($itemName), 'trip') || str_contains(mb_strtolower($itemName), 'workshop') ? 'service' : 'pcs';
-                    DB::table('products')->updateOrInsert(['sku' => $sku], Fixture::stamped([
+                    DB::table('products')->insertOrIgnore(Fixture::stamped([
                         'sku' => $sku, 'name' => $itemName, 'category_id' => $child->id,
                         'unit' => $unit, 'description' => $group.' / '.$name.'. Specification-based procurement item.',
                         'status' => 'active',
@@ -138,8 +138,7 @@ class ReferenceCatalogSeeder extends Seeder
         }
         foreach (Perm::ROLES as $role => $label) {
             foreach (Perm::MODULES as $module => $moduleLabel) {
-                DB::table('role_permissions')->updateOrInsert(
-                    ['role' => $role, 'module' => $module],
+                DB::table('role_permissions')->insertOrIgnore(
                     Fixture::stamped([
                         'role' => $role, 'module' => $module,
                         'abilities' => Perm::DEFAULTS[$role][$module] ?? '',
@@ -152,7 +151,7 @@ class ReferenceCatalogSeeder extends Seeder
             FeatureFlag::firstOrCreate(['key' => $key], ['label' => $label, 'enabled' => $on]);
         }
         foreach (['AZN' => 'Azerbaijani manat', 'USD' => 'United States dollar', 'EUR' => 'Euro'] as $code => $name) {
-            DB::table('currencies')->updateOrInsert(['code' => $code], Fixture::stamped(['code' => $code, 'name' => $name, 'active' => true]));
+            DB::table('currencies')->insertOrIgnore(Fixture::stamped(['code' => $code, 'name' => $name, 'active' => true]));
         }
         Fixture::note('Catalog', "{$groups} groups, {$subcategories} subcategories, {$products} real-world product types.");
     }
