@@ -93,7 +93,7 @@ class ProcurementTransactionSeeder extends Seeder
                 'deadline_at' => $deadline, 'delivery_location' => ['Bakı','Sumqayıt','Gəncə'][$i % 3],
                 'required_by' => $deadline->addDays(35)->toDateString(),
                 'requirements' => 'Texniki uyğunluq, orijinal sənədlər, çatdırılma və zəmanət tələbləri.',
-                'payment_terms' => 'Net 30', 'scoring_preset' => ['balanced','price','schedule'][$i%3],
+                'payment_terms' => 'Net 30', 'scoring_preset' => ['balanced','price','quality'][$i%3],
                 'sealed' => $i % 7 === 0, 'published_at' => $status === 'draft' ? null : $start->addDay(),
                 'closed_at' => $closed, 'awarded_at' => $awardedAt,
                 'cancelled_at' => $status === 'cancelled' ? $start->addDays(4) : null,
